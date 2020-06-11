@@ -12,15 +12,9 @@ CREATE TABLE dokument
 );
 
 CREATE TABLE hendelse_dokument(
-    hendelse_id references hendelse(id),
-    dokument_id references dokument(id),
+    hendelse_id INTEGER references hendelse(id),
+    dokument_id INTEGER references dokument(id),
     PRIMARY KEY (hendelse_id, dokument_id)
-);
-
-CREATE TABLE vedtak_dokument(
-    vedtak_id references vedtak(id),
-    dokument_id references dokument(id),
-    PRIMARY KEY (vedtak_id, dokument_id)
 );
 
 CREATE TABLE vedtaksperiode
@@ -38,18 +32,25 @@ CREATE TABLE vedtak(
     tom                   DATE      NOT NULL,
     forbrukte_sykedager   INTEGER   NOT NULL,
     gjenstaende_sykedager INTEGER   NOT NULL,
-    vedtaksperiode_id references vedtaksperiode(id)
+    vedtaksperiode_id INTEGER references vedtaksperiode(id)
 );
-CREATE INDEX vedtak_vedtaksperiode_idx ON vedtak(vedtaksperiode_id)
+CREATE INDEX vedtak_vedtaksperiode_idx ON vedtak(vedtaksperiode_id);
+
+CREATE TABLE vedtak_dokument(
+    vedtak_id INTEGER references vedtak(id),
+    dokument_id INTEGER references dokument(id),
+    PRIMARY KEY (vedtak_id, dokument_id)
+);
+
 
 CREATE TABLE vedtak_tilstand
 (
     id        SERIAL PRIMARY KEY,
     vedtaksperiode_id INTEGER NOT NULL REFERENCES vedtaksperiode(id),
     sist_endret TIMESTAMP NOT NULL,
-    tilstand varchar NOT NULL,
+    tilstand varchar NOT NULL
 );
-CREATE INDEX vedtak_tilstand_vedtaksperiode_idx ON vedtak_tilstand(vedtaksperiode_id)
+CREATE INDEX vedtak_tilstand_vedtaksperiode_idx ON vedtak_tilstand(vedtaksperiode_id);
 
 CREATE TABLE oppdrag
 (
@@ -60,7 +61,7 @@ CREATE TABLE oppdrag
     fagsystemId VARCHAR,
     totalbeløp  INTEGER
 );
-CREATE INDEX oppdrag_vedtak_id_idx ON oppdrag(vedtak_id)
+CREATE INDEX oppdrag_vedtak_id_idx ON oppdrag(vedtak_id);
 
 CREATE TABLE utbetaling
 (

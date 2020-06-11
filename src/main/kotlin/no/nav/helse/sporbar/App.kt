@@ -22,12 +22,9 @@ fun launchApplication(env: Environment) {
         .getDataSource()
 
     val dokumentDao = DokumentDao(dataSource)
-    val utbetaltDao = UtbetaltDao(dataSource)
 
     RapidApplication.Builder(RapidApplication.RapidApplicationConfig.fromEnv(env.raw))
         .build().apply {
-            NyttDokumentRiver(this, dokumentDao)
-            UtbetaltRiver(this, utbetaltDao, dokumentDao)
             start()
         }
 }

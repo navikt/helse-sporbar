@@ -5,8 +5,6 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.flywaydb.core.Flyway
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
@@ -40,33 +38,54 @@ internal class NyttDokumentRiverTest {
     }
 
     @Test
-    fun `skriver dokumenter til hendelse`() {
-        val søknadHendelseId = UUID.randomUUID()
-        val sykmelding = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Sykmelding)
-        val søknad = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Søknad)
-        val inntektsmelding = Hendelse(UUID.randomUUID(), UUID.randomUUID(), Dokument.Inntektsmelding)
+    fun `lagrer sykmelding`() {
+        val nySøknadHendelseId = UUID.randomUUID()
+        val sykmeldingId = UUID.randomUUID()
+        val søknadId = UUID.randomUUID()
+        testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
 
-        testRapid.sendTestMessage(sendtSøknadMessage(sykmelding, søknad))
-        testRapid.sendTestMessage(inntektsmeldingMessage(inntektsmelding))
-
-        val dokumenter = dokumentDao.finn(listOf(sykmelding.hendelseId, søknad.hendelseId, inntektsmelding.hendelseId))
-        assertEquals(Dokumenter(sykmelding, søknad, inntektsmelding), dokumenter)
     }
 
-    @Test
-    fun `håndterer duplikate dokumenter`() {
-        val søknadHendelseId = UUID.randomUUID()
-        val sykmelding = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Sykmelding)
-        val søknad = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Søknad)
-        val inntektsmelding = Hendelse(UUID.randomUUID(), UUID.randomUUID(), Dokument.Inntektsmelding)
+//    @Test
+//    fun `skriver dokumenter til hendelse`() {
+//        val søknadHendelseId = UUID.randomUUID()
+//        val sykmelding = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Sykmelding)
+//        val søknad = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Søknad)
+//        val inntektsmelding = Hendelse(UUID.randomUUID(), UUID.randomUUID(), Dokument.Inntektsmelding)
+//
+//        testRapid.sendTestMessage(sendtSøknadMessage(sykmelding, søknad))
+//        testRapid.sendTestMessage(inntektsmeldingMessage(inntektsmelding))
+//
+//        val dokumenter = dokumentDao.finn(listOf(sykmelding.hendelseId, søknad.hendelseId, inntektsmelding.hendelseId))
+//        assertEquals(Dokumenter(sykmelding, søknad, inntektsmelding), dokumenter)
+//    }
+//
+//    @Test
+//    fun `håndterer duplikate dokumenter`() {
+//        val søknadHendelseId = UUID.randomUUID()
+//        val sykmelding = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Sykmelding)
+//        val søknad = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Søknad)
+//        val inntektsmelding = Hendelse(UUID.randomUUID(), UUID.randomUUID(), Dokument.Inntektsmelding)
+//
+//        testRapid.sendTestMessage(sendtSøknadArbeidsgiverMessage(sykmelding, søknad))
+//        testRapid.sendTestMessage(sendtSøknadMessage(sykmelding, søknad))
+//        testRapid.sendTestMessage(inntektsmeldingMessage(inntektsmelding))
+//
+//        val dokumenter = dokumentDao.finn(listOf(sykmelding.hendelseId, søknad.hendelseId, inntektsmelding.hendelseId))
+//        assertEquals(Dokumenter(sykmelding, søknad, inntektsmelding), dokumenter)
+//    }
 
-        testRapid.sendTestMessage(sendtSøknadArbeidsgiverMessage(sykmelding, søknad))
-        testRapid.sendTestMessage(sendtSøknadMessage(sykmelding, søknad))
-        testRapid.sendTestMessage(inntektsmeldingMessage(inntektsmelding))
-
-        val dokumenter = dokumentDao.finn(listOf(sykmelding.hendelseId, søknad.hendelseId, inntektsmelding.hendelseId))
-        assertEquals(Dokumenter(sykmelding, søknad, inntektsmelding), dokumenter)
-    }
+    private fun nySøknadMessage(
+        nySøknadHendelseId: UUID,
+        sykmeldingDokumentId: UUID,
+        søknadDokumentId: UUID
+    ) =
+        """{
+            "@event_name": "ny_søknad",
+            "@id": "$nySøknadHendelseId",
+            "id": "$søknadDokumentId",
+            "sykmeldingId": "$sykmeldingDokumentId"
+        }"""
 
     private fun sendtSøknadMessage(sykmelding: Hendelse, søknad: Hendelse) =
         """{

@@ -22,7 +22,10 @@ class DokumentDao(val datasource: DataSource) {
 
     fun finn(hendelseIder: List<UUID>) = sessionOf(datasource).use { session ->
         @Language("PostgreSQL")
-        val query = "SELECT * FROM hendelse WHERE hendelse_id = ANY((?)::uuid[])"
+        val query = """SELECT * FROM hendelse h
+            INNER JOIN hendelse_dokument hd ON h.hendelse_id = hd.hendelse_id
+             INNER JOIN dokument d ON hd.dokument_id = d.id
+            WHERE hendelse_id = ANY((?)::uuid[])""".trimMargin()
         session.run(
             queryOf(query, hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() })
                 .map { row ->
@@ -32,12 +35,6 @@ class DokumentDao(val datasource: DataSource) {
                         type = enumValueOf(row.string("type"))
                     )
                 }.asList
-        )
-    }.let { hendelser ->
-        Dokumenter(
-            sykmelding = hendelser.first { it.type == Dokument.Sykmelding },
-            søknad = hendelser.first { it.type == Dokument.Søknad },
-            inntektsmelding = hendelser.firstOrNull { it.type == Dokument.Inntektsmelding }
         )
     }
 

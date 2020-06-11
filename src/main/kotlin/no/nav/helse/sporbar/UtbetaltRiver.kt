@@ -10,7 +10,6 @@ private val log: Logger = LoggerFactory.getLogger("sporbar")
 
 internal class UtbetaltRiver(
     rapidsConnection: RapidsConnection,
-    private val utbetaltDao: UtbetaltDao,
     private val dokumentDao: DokumentDao
 ) : River.PacketListener {
 
@@ -36,20 +35,6 @@ internal class UtbetaltRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
-        val vedtak = Vedtak(
-            hendelseId = UUID.fromString(packet["@id"].asText()),
-            fødselsnummer = packet["fødselsnummer"].asText(),
-            orgnummer = packet["organisasjonsnummer"].asText(),
-            dokumenter = packet["hendelser"].toDokumenter(),
-            oppdrag = packet["utbetalt"].toOppdrag(),
-            fom = packet["fom"].asLocalDate(),
-            tom = packet["tom"].asLocalDate(),
-            forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
-            gjenståendeSykedager = packet["gjenståendeSykedager"].asInt(),
-            opprettet = packet["@opprettet"].asLocalDateTime()
-        )
-        utbetaltDao.opprett(vedtak)
-        log.info("Utbetaling på ${packet["aktørId"]} lagret")
     }
 
     private fun JsonNode.toDokumenter() =
