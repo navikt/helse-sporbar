@@ -5,14 +5,15 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.flywaydb.core.Flyway
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
 
 internal class NyttDokumentRiverTest {
-    val testRapid = TestRapid()
-    val embeddedPostgres = EmbeddedPostgres.builder().setPort(56789).start()
-    val hikariConfig = HikariConfig().apply {
+    private val testRapid = TestRapid()
+    private val embeddedPostgres = EmbeddedPostgres.builder().setPort(56789).start()
+    private val hikariConfig = HikariConfig().apply {
         this.jdbcUrl = embeddedPostgres.getJdbcUrl("postgres", "postgres")
         maximumPoolSize = 3
         minimumIdle = 1
@@ -20,8 +21,8 @@ internal class NyttDokumentRiverTest {
         connectionTimeout = 1000
         maxLifetime = 30001
     }
-    val dataSource = HikariDataSource(hikariConfig)
-    val dokumentDao = DokumentDao(dataSource)
+    private val dataSource = HikariDataSource(hikariConfig)
+    private val dokumentDao = DokumentDao(dataSource)
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
@@ -44,6 +45,9 @@ internal class NyttDokumentRiverTest {
         val søknadId = UUID.randomUUID()
         testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
 
+        val dokumenter = dokumentDao.finn(listOf(nySøknadHendelseId))
+
+        assertEquals(2, dokumenter.size)
     }
 
 //    @Test
@@ -84,29 +88,30 @@ internal class NyttDokumentRiverTest {
             "@event_name": "ny_søknad",
             "@id": "$nySøknadHendelseId",
             "id": "$søknadDokumentId",
-            "sykmeldingId": "$sykmeldingDokumentId"
+            "sykmeldingId": "$sykmeldingDokumentId",
+            "@opprettet": "2020-06-10T10:46:46.007854"
         }"""
 
-    private fun sendtSøknadMessage(sykmelding: Hendelse, søknad: Hendelse) =
-        """{
-            "@event_name": "sendt_søknad_nav",
-            "@id": "${sykmelding.hendelseId}",
-            "id": "${søknad.dokumentId}",
-            "sykmeldingId": "${sykmelding.dokumentId}"
-        }"""
-
-    private fun sendtSøknadArbeidsgiverMessage(sykmelding: Hendelse, søknad: Hendelse) =
-        """{
-            "@event_name": "sendt_søknad_arbeidsgiver",
-            "@id": "${sykmelding.hendelseId}",
-            "id": "${søknad.dokumentId}",
-            "sykmeldingId": "${sykmelding.dokumentId}"
-        }"""
-
-    private fun inntektsmeldingMessage(hendelse: Hendelse) =
-        """{
-            "@event_name": "inntektsmelding",
-            "@id": "${hendelse.hendelseId}",
-            "inntektsmeldingId": "${hendelse.dokumentId}"
-        }"""
+//    private fun sendtSøknadMessage(sykmelding: Hendelse, søknad: Hendelse) =
+//        """{
+//            "@event_name": "sendt_søknad_nav",
+//            "@id": "${sykmelding.hendelseId}",
+//            "id": "${søknad.dokumentId}",
+//            "sykmeldingId": "${sykmelding.dokumentId}"
+//        }"""
+//
+//    private fun sendtSøknadArbeidsgiverMessage(sykmelding: Hendelse, søknad: Hendelse) =
+//        """{
+//            "@event_name": "sendt_søknad_arbeidsgiver",
+//            "@id": "${sykmelding.hendelseId}",
+//            "id": "${søknad.dokumentId}",
+//            "sykmeldingId": "${sykmelding.dokumentId}"
+//        }"""
+//
+//    private fun inntektsmeldingMessage(hendelse: Hendelse) =
+//        """{
+//            "@event_name": "inntektsmelding",
+//            "@id": "${hendelse.hendelseId}",
+//            "inntektsmeldingId": "${hendelse.dokumentId}"
+//        }"""
 }

@@ -4,7 +4,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
-data class Vedtaksperiode(
+internal data class Vedtaksperiode(
     val vedtaksperiodeId: UUID,
     val fnr: String,
     val orgnummer: String,

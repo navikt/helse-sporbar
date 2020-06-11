@@ -24,13 +24,13 @@ internal class VedtaksperiodeEndretRiver(rapidsConnection: RapidsConnection, pri
         when (packet["@event_name"].textValue()) {
             "inntektsmelding" -> {
                 val dokumentId = UUID.fromString(packet["inntektsmeldingId"].textValue())
-                dokumentDao.opprett(Hendelse(dokumentId, hendelseId, Dokument.Inntektsmelding))
+//                dokumentDao.opprett(Hendelse(dokumentId, hendelseId, Dokument.Inntektsmelding))
             }
             "sendt_søknad_nav", "sendt_søknad_arbeidsgiver" -> {
                 val sykmeldingId = UUID.fromString(packet["sykmeldingId"].textValue())
-                dokumentDao.opprett(Hendelse(sykmeldingId, hendelseId, Dokument.Sykmelding))
+//                dokumentDao.opprett(Hendelse(sykmeldingId, hendelseId, Dokument.Sykmelding))
                 val søknadId = UUID.fromString(packet["id"].textValue())
-                dokumentDao.opprett(Hendelse(søknadId, hendelseId, Dokument.Søknad))
+//                dokumentDao.opprett(Hendelse(søknadId, hendelseId, Dokument.Søknad))
             }
             else -> throw IllegalStateException("Ukjent event (etter whitelist :mind_blown:)")
         }
