@@ -1,40 +1,28 @@
-package no.nav.helse.spokelse
+package no.nav.helse.sporbar
 
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
-class OldVedtak(
+data class Vedtaksperiode(
     val vedtaksperiodeId: UUID,
-    val fødselsnummer: String,
+    val fnr: String,
     val orgnummer: String,
-    val utbetalinger: List<OldUtbetaling>,
     val opprettet: LocalDateTime,
-    val forbrukteSykedager: Int,
-    val gjenståendeSykedager: Int?,
-    val dokumenter: Dokumenter
+    val vedtak: Vedtak?,
+    val dokumenter: List<Dokument>
 )
 
-class OldUtbetaling(
-    val fom: LocalDate,
-    val tom: LocalDate,
-    val grad: Double,
-    val dagsats: Int,
-    val beløp: Int,
-    val totalbeløp: Int
-)
+enum class VedtaksperiodeTilstand {
+    Tilstand
+}
 
 data class Vedtak(
-    val hendelseId: UUID,
-    val fødselsnummer: String,
-    val orgnummer: String,
-    val dokumenter: Dokumenter,
-    val oppdrag: List<Oppdrag>,
     val fom: LocalDate,
     val tom: LocalDate,
     val forbrukteSykedager: Int,
     val gjenståendeSykedager: Int,
-    val opprettet: LocalDateTime
+    val oppdrag: List<Oppdrag>
 ) {
     data class Oppdrag(
         val mottaker: String,

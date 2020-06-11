@@ -1,4 +1,4 @@
-package no.nav.helse.spokelse
+package no.nav.helse.sporbar
 
 import kotliquery.Session
 import kotliquery.queryOf

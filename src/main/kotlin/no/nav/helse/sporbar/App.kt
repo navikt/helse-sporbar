@@ -1,4 +1,4 @@
-package no.nav.helse.spokelse
+package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -23,21 +23,17 @@ fun launchApplication(env: Environment) {
 
     val dokumentDao = DokumentDao(dataSource)
     val utbetaltDao = UtbetaltDao(dataSource)
-    val vedtakDao = VedtakDao(dataSource)
 
     RapidApplication.Builder(RapidApplication.RapidApplicationConfig.fromEnv(env.raw))
         .build().apply {
             NyttDokumentRiver(this, dokumentDao)
             UtbetaltRiver(this, utbetaltDao, dokumentDao)
-            OldUtbetalingRiver(this, vedtakDao, dokumentDao)
-            TilUtbetalingBehovRiver(this, dokumentDao)
             start()
         }
 }
 
 @KtorExperimentalAPI
-internal fun Application.spokelse(env: Environment.Auth) {
-    azureAdAppAuthentication(env)
+internal fun Application.sporbar(env: Environment.Auth) {
     install(ContentNegotiation) {
         jackson {
             disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)

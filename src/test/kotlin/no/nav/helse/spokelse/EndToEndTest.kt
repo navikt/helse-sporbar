@@ -1,4 +1,4 @@
-package no.nav.helse.spokelse
+package no.nav.helse.sporbar
 
 import com.opentable.db.postgres.embedded.EmbeddedPostgres
 import com.zaxxer.hikari.HikariConfig
