@@ -3,6 +3,7 @@ package no.nav.helse.sporbar
 import kotliquery.queryOf
 import kotliquery.sessionOf
 import org.intellij.lang.annotations.Language
+import java.time.LocalDateTime
 import java.util.*
 import javax.sql.DataSource
 
@@ -12,12 +13,13 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         val fnr: String,
         val orgnummer: String,
         val dokumentId: UUID,
-        val dokumentType: Dokument.Type
+        val dokumentType: Dokument.Type,
+        val tilstand: Vedtaksperiode.Tilstand
     )
 
     internal fun finn(fødselsnummer: String): List<Vedtaksperiode> {
         @Language("PostgreSQL")
-        val query = """SELECT v.*, d.*
+        val query = """SELECT v.*, d.*, (SELECT vt.tilstand FROM vedtak_tilstand vt WHERE vt.vedtaksperiode_id = v.id ORDER BY vt.id DESC LIMIT 1)
                        FROM vedtaksperiode v
                            INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
                            INNER JOIN dokument d on vd.dokument_id = d.id
@@ -33,7 +35,8 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                                 fnr = row.string("fodselsnummer"),
                                 orgnummer = row.string("orgnummer"),
                                 dokumentId = row.uuid("dokument_id"),
-                                dokumentType = enumValueOf(row.string("type"))
+                                dokumentType = enumValueOf(row.string("type")),
+                                tilstand = enumValueOf(row.string("tilstand"))
                             )
                         }
                         .asList
@@ -46,7 +49,8 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                     entry.value.first().fnr,
                     entry.value.first().orgnummer,
                     null,
-                    entry.value.map { Dokument(it.dokumentId, it.dokumentType) }
+                    entry.value.map { Dokument(it.dokumentId, it.dokumentType) },
+                    entry.value.first().tilstand
                 )
             }
     }
@@ -55,10 +59,13 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         fnr: String,
         orgnummer: String,
         vedtaksperiodeId: UUID,
-        hendelseIder: List<UUID>
+        hendelseIder: List<UUID>,
+        timestamp: LocalDateTime,
+        tilstand: Vedtaksperiode.Tilstand
     ) {
         @Language("PostgreSQL")
         val query = """INSERT INTO vedtaksperiode(vedtaksperiode_id, fodselsnummer, orgnummer) VALUES (?, ?, ?) ON CONFLICT DO NOTHING;
+                       INSERT INTO vedtak_tilstand(vedtaksperiode_id, sist_endret, tilstand) VALUES ((SELECT id from vedtaksperiode WHERE vedtaksperiode_id = ?), ?, ?);
                        INSERT INTO vedtak_dokument(vedtaksperiode_id, dokument_id)
                            (SELECT
                                    (SELECT id from vedtaksperiode WHERE vedtaksperiode_id = ?),
@@ -73,9 +80,8 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
             session.run(
                 queryOf(
                     query,
-                    vedtaksperiodeId,
-                    fnr,
-                    orgnummer,
+                    vedtaksperiodeId, fnr, orgnummer,
+                    vedtaksperiodeId, timestamp, tilstand.name,
                     vedtaksperiodeId,
                     hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
                 ).asExecute

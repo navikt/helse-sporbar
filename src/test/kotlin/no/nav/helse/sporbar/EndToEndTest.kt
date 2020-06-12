@@ -53,14 +53,21 @@ internal class EndToEndTest {
         val vedtaksperiodeId = UUID.randomUUID()
         testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
         testRapid.sendTestMessage(vedtaksperiodeEndret(vedtaksperiodeId, "START", "MOTTATT_SYKMELDING_FERDIG_GAP", listOf(nySøknadHendelseId)))
+
+        val vedtaksperiodeEtterSykmelding = vedtaksperiodeDao.finn(FNR).first()
+        assertEquals(vedtaksperiodeId, vedtaksperiodeEtterSykmelding.vedtaksperiodeId)
+        assertEquals(Vedtaksperiode.Tilstand.MOTTATT_SYKMELDING_FERDIG_GAP, vedtaksperiodeEtterSykmelding.tilstand)
+
         testRapid.sendTestMessage(sendtSøknadMessage(sendtSøknadHendelseId, sykmeldingId, søknadId))
         testRapid.sendTestMessage(vedtaksperiodeEndret(vedtaksperiodeId, "MOTTATT_SYKMELDING_FERDIG_GAP", "AVVENTER_GAP", listOf(nySøknadHendelseId, sendtSøknadHendelseId)))
 
-        val vedtaksperiode = vedtaksperiodeDao.finn(FNR).first()
-        assertEquals(vedtaksperiodeId, vedtaksperiode.vedtaksperiodeId)
-        assertEquals(2, vedtaksperiode.dokumenter.size)
-        assertEquals(sykmeldingId, vedtaksperiode.dokumenter[0].dokumentId)
-        assertEquals(søknadId, vedtaksperiode.dokumenter[1].dokumentId)
+        val vedtaksperiodeEtterSøknad = vedtaksperiodeDao.finn(FNR).first()
+        assertEquals(vedtaksperiodeId, vedtaksperiodeEtterSøknad.vedtaksperiodeId)
+        assertEquals(Vedtaksperiode.Tilstand.AVVENTER_GAP, vedtaksperiodeEtterSøknad.tilstand)
+
+        assertEquals(2, vedtaksperiodeEtterSøknad.dokumenter.size)
+        assertEquals(sykmeldingId, vedtaksperiodeEtterSøknad.dokumenter[0].dokumentId)
+        assertEquals(søknadId, vedtaksperiodeEtterSøknad.dokumenter[1].dokumentId)
     }
 
     @Language("JSON")

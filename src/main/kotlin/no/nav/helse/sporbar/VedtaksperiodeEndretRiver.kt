@@ -3,6 +3,7 @@ package no.nav.helse.sporbar
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
+import no.nav.helse.rapids_rivers.asLocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -13,7 +14,7 @@ internal class VedtaksperiodeEndretRiver(rapidsConnection: RapidsConnection, pri
     init {
         River(rapidsConnection).apply {
             validate {
-                it.requireKey("@id", "organisasjonsnummer", "fødselsnummer", "vedtaksperiodeId")
+                it.requireKey("@id", "organisasjonsnummer", "fødselsnummer", "vedtaksperiodeId", "@opprettet", "gjeldendeTilstand")
                 it.requireAny("@event_name", listOf("vedtaksperiode_endret"))
                 it.requireArray("hendelser")
             }
@@ -28,7 +29,9 @@ internal class VedtaksperiodeEndretRiver(rapidsConnection: RapidsConnection, pri
             fnr = packet["fødselsnummer"].asText(),
             orgnummer = packet["organisasjonsnummer"].asText(),
             vedtaksperiodeId = vedtaksperiodeId,
-            hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) }
+            hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) },
+            timestamp = packet["@opprettet"].asLocalDateTime(),
+            tilstand = enumValueOf(packet["gjeldendeTilstand"].asText())
         )
         log.info("Vedtaksperiode $vedtaksperiodeId upserted")
     }
