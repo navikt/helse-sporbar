@@ -10,7 +10,7 @@ private val log: Logger = LoggerFactory.getLogger("sporbar")
 
 internal class UtbetaltRiver(
     rapidsConnection: RapidsConnection,
-    private val dokumentDao: DokumentDao
+    private val vedtakDao: VedtakDao
 ) : River.PacketListener {
 
     init {
@@ -35,29 +35,14 @@ internal class UtbetaltRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
-    }
-
-    private fun JsonNode.toDokumenter() =
-        dokumentDao.finn(map { UUID.fromString(it.asText()) })
-
-    private fun JsonNode.toOppdrag() = map {
-        Vedtak.Oppdrag(
-            mottaker = it["mottaker"].asText(),
-            fagområde = it["fagområde"].asText(),
-            fagsystemId = it["fagsystemId"].asText(),
-            totalbeløp = it["totalbeløp"].asInt(),
-            utbetalingslinjer = it["utbetalingslinjer"].toUtbetalingslinjer()
+        vedtakDao.opprett(
+            fom = packet["fom"].asLocalDate(),
+            tom = packet["tom"].asLocalDate(),
+            forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
+            gjenståendeSykedager = packet["gjenståendeSykedager"].asInt(),
+            hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) }
         )
-    }
 
-    private fun JsonNode.toUtbetalingslinjer() = map {
-        Vedtak.Oppdrag.Utbetalingslinje(
-            fom = it["fom"].asLocalDate(),
-            tom = it["tom"].asLocalDate(),
-            dagsats = it["dagsats"].asInt(),
-            beløp = it["beløp"].asInt(),
-            grad = it["grad"].asDouble(),
-            sykedager = it["sykedager"].asInt()
-        )
+        log.info("Lagrer vedtak")
     }
 }

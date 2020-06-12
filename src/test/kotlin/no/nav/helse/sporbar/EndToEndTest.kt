@@ -7,9 +7,13 @@ import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.util.*
+import kotlin.streams.asSequence
 
 private const val FNR = "12020052345"
 private const val ORGNUMMER = "987654321"
@@ -28,10 +32,12 @@ internal class EndToEndTest {
     private val dataSource = HikariDataSource(hikariConfig)
     private val dokumentDao = DokumentDao(dataSource)
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
+    private val vedtakDao = VedtakDao(dataSource)
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
         VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeDao)
+        UtbetaltRiver(testRapid, vedtakDao)
 
         Flyway.configure()
             .dataSource(dataSource)
@@ -66,8 +72,14 @@ internal class EndToEndTest {
         assertEquals(Vedtaksperiode.Tilstand.AVVENTER_GAP, vedtaksperiodeEtterSøknad.tilstand)
 
         assertEquals(2, vedtaksperiodeEtterSøknad.dokumenter.size)
-        assertEquals(sykmeldingId, vedtaksperiodeEtterSøknad.dokumenter[0].dokumentId)
-        assertEquals(søknadId, vedtaksperiodeEtterSøknad.dokumenter[1].dokumentId)
+        assertEquals(sykmeldingId, vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Sykmelding }.dokumentId)
+        assertEquals(søknadId, vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Søknad }.dokumentId)
+
+        val utbetalinghendelseId = UUID.randomUUID()
+        testRapid.sendTestMessage(utbetalingMessage(utbetalinghendelseId, listOf(nySøknadHendelseId, sendtSøknadHendelseId)))
+
+        val vedtaksperiodeEtterUtbetaling = vedtaksperiodeDao.finn(FNR).first()
+        assertNotNull(vedtaksperiodeEtterUtbetaling.vedtak)
     }
 
     @Language("JSON")
@@ -126,4 +138,63 @@ internal class EndToEndTest {
     "fødselsnummer": "$FNR"
 }
 """
+
+    @Language("JSON")
+    private fun utbetalingMessage(
+        hendelseId: UUID,
+        hendelser: List<UUID>,
+        fom: LocalDate = LocalDate.of(2020, 6,1),
+        tom: LocalDate = LocalDate.of(2020,6,10),
+        tidligereBrukteSykedager: Int = 0
+    ) = """{
+    "aktørId": "aktørId",
+    "fødselsnummer": "$FNR",
+    "organisasjonsnummer": "$ORGNUMMER",
+    "hendelser": ${hendelser.map { "\"${it}\"" }},
+    "utbetalt": [
+        {
+            "mottaker": "$ORGNUMMER",
+            "fagområde": "SPREF",
+            "fagsystemId": "77ATRH3QENHB5K4XUY4LQ7HRTY",
+            "førsteSykepengedag": "",
+            "totalbeløp": 8586,
+            "utbetalingslinjer": [
+                {
+                    "fom": "$fom",
+                    "tom": "$tom",
+                    "dagsats": 1431,
+                    "beløp": 1431,
+                    "grad": 100.0,
+                    "sykedager": ${sykedager(fom, tom)}
+                }
+            ]
+        },
+        {
+            "mottaker": "$FNR",
+            "fagområde": "SP",
+            "fagsystemId": "353OZWEIBBAYZPKU6WYKTC54SE",
+            "totalbeløp": 0,
+            "utbetalingslinjer": []
+        }
+    ],
+    "fom": "$fom",
+    "tom": "$tom",
+    "forbrukteSykedager": ${tidligereBrukteSykedager + sykedager(fom, tom)},
+    "gjenståendeSykedager": ${248 - tidligereBrukteSykedager - sykedager(fom, tom)},
+    "opprettet": "2020-05-04T11:26:30.23846",
+    "system_read_count": 0,
+    "@event_name": "utbetalt",
+    "@id": "$hendelseId",
+    "@opprettet": "2020-05-04T11:27:13.521398",
+    "@forårsaket_av": {
+        "event_name": "behov",
+        "id": "cf28fbba-562e-4841-b366-be1456fdccee",
+        "opprettet": "2020-05-04T11:26:47.088455"
+    }
+}
+"""
+
+    private fun sykedager(fom: LocalDate, tom: LocalDate) =
+        fom.datesUntil(tom.plusDays(1)).asSequence()
+            .filter { it.dayOfWeek !in arrayOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) }.count()
 }

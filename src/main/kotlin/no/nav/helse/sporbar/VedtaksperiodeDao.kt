@@ -3,6 +3,7 @@ package no.nav.helse.sporbar
 import kotliquery.queryOf
 import kotliquery.sessionOf
 import org.intellij.lang.annotations.Language
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import javax.sql.DataSource
@@ -14,15 +15,24 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         val orgnummer: String,
         val dokumentId: UUID,
         val dokumentType: Dokument.Type,
-        val tilstand: Vedtaksperiode.Tilstand
+        val tilstand: Vedtaksperiode.Tilstand,
+        val fom: LocalDate?,
+        val tom: LocalDate?,
+        val forbrukteSykedager: Int?,
+        val gjenståendeSykedager: Int?
     )
 
     internal fun finn(fødselsnummer: String): List<Vedtaksperiode> {
         @Language("PostgreSQL")
-        val query = """SELECT v.*, d.*, (SELECT vt.tilstand FROM vedtak_tilstand vt WHERE vt.vedtaksperiode_id = v.id ORDER BY vt.id DESC LIMIT 1)
+        val query = """SELECT
+                           v.*,
+                           d.*,
+                           (SELECT vt.tilstand FROM vedtak_tilstand vt WHERE vt.vedtaksperiode_id = v.id ORDER BY vt.id DESC LIMIT 1),
+                           v2.*
                        FROM vedtaksperiode v
                            INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
                            INNER JOIN dokument d on vd.dokument_id = d.id
+                           LEFT OUTER JOIN vedtak v2 on v.id = v2.vedtaksperiode_id
                        WHERE v.fodselsnummer = ?
                        """
         return sessionOf(dataSource)
@@ -36,7 +46,11 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                                 orgnummer = row.string("orgnummer"),
                                 dokumentId = row.uuid("dokument_id"),
                                 dokumentType = enumValueOf(row.string("type")),
-                                tilstand = enumValueOf(row.string("tilstand"))
+                                tilstand = enumValueOf(row.string("tilstand")),
+                                fom = row.localDateOrNull("fom"),
+                                tom = row.localDateOrNull("tom"),
+                                forbrukteSykedager = row.intOrNull("forbrukte_sykedager"),
+                                gjenståendeSykedager = row.intOrNull("gjenstaende_sykedager")
                             )
                         }
                         .asList
@@ -48,8 +62,8 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                     entry.key,
                     entry.value.first().fnr,
                     entry.value.first().orgnummer,
-                    null,
-                    entry.value.map { Dokument(it.dokumentId, it.dokumentType) },
+                    entry.value.first().takeIf { it.fom != null }?.let { Vedtak(it.fom!!, it.tom!!, it.forbrukteSykedager!!, it.gjenståendeSykedager!!, emptyList()) },
+                    entry.value.distinctBy { it.dokumentId }.map { Dokument(it.dokumentId, it.dokumentType) },
                     entry.value.first().tilstand
                 )
             }
