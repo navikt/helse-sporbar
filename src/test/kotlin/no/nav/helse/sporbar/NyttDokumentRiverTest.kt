@@ -39,7 +39,7 @@ internal class NyttDokumentRiverTest {
     }
 
     @Test
-    fun `lagrer sykmelding`() {
+    fun `ny søknad hendelse`() {
         val nySøknadHendelseId = UUID.randomUUID()
         val sykmeldingId = UUID.randomUUID()
         val søknadId = UUID.randomUUID()
@@ -50,34 +50,22 @@ internal class NyttDokumentRiverTest {
         assertEquals(2, dokumenter.size)
     }
 
-//    @Test
-//    fun `skriver dokumenter til hendelse`() {
-//        val søknadHendelseId = UUID.randomUUID()
-//        val sykmelding = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Sykmelding)
-//        val søknad = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Søknad)
-//        val inntektsmelding = Hendelse(UUID.randomUUID(), UUID.randomUUID(), Dokument.Inntektsmelding)
-//
-//        testRapid.sendTestMessage(sendtSøknadMessage(sykmelding, søknad))
-//        testRapid.sendTestMessage(inntektsmeldingMessage(inntektsmelding))
-//
-//        val dokumenter = dokumentDao.finn(listOf(sykmelding.hendelseId, søknad.hendelseId, inntektsmelding.hendelseId))
-//        assertEquals(Dokumenter(sykmelding, søknad, inntektsmelding), dokumenter)
-//    }
-//
-//    @Test
-//    fun `håndterer duplikate dokumenter`() {
-//        val søknadHendelseId = UUID.randomUUID()
-//        val sykmelding = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Sykmelding)
-//        val søknad = Hendelse(UUID.randomUUID(), søknadHendelseId, Dokument.Søknad)
-//        val inntektsmelding = Hendelse(UUID.randomUUID(), UUID.randomUUID(), Dokument.Inntektsmelding)
-//
-//        testRapid.sendTestMessage(sendtSøknadArbeidsgiverMessage(sykmelding, søknad))
-//        testRapid.sendTestMessage(sendtSøknadMessage(sykmelding, søknad))
-//        testRapid.sendTestMessage(inntektsmeldingMessage(inntektsmelding))
-//
-//        val dokumenter = dokumentDao.finn(listOf(sykmelding.hendelseId, søknad.hendelseId, inntektsmelding.hendelseId))
-//        assertEquals(Dokumenter(sykmelding, søknad, inntektsmelding), dokumenter)
-//    }
+    @Test
+    fun `duplikate hendelser for ny søknad hendelse og en sendt søknad hendelse`() {
+        val nySøknadHendelseId = UUID.randomUUID()
+        val sendtSøknadHendelseId = UUID.randomUUID()
+        val sykmeldingId = UUID.randomUUID()
+        val søknadId = UUID.randomUUID()
+        testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
+        testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
+        testRapid.sendTestMessage(sendtSøknadMessage(sendtSøknadHendelseId, sykmeldingId, søknadId))
+
+        val dokumenterForNySøknad = dokumentDao.finn(listOf(nySøknadHendelseId))
+        assertEquals(2, dokumenterForNySøknad.size)
+        val dokumenterForSendtSøknad = dokumentDao.finn(listOf(sendtSøknadHendelseId))
+        assertEquals(2, dokumenterForSendtSøknad.size)
+        assertEquals(dokumenterForNySøknad.map { it.dokumentId }, dokumenterForSendtSøknad.map { it.dokumentId })
+    }
 
     private fun nySøknadMessage(
         nySøknadHendelseId: UUID,
@@ -92,26 +80,16 @@ internal class NyttDokumentRiverTest {
             "@opprettet": "2020-06-10T10:46:46.007854"
         }"""
 
-//    private fun sendtSøknadMessage(sykmelding: Hendelse, søknad: Hendelse) =
-//        """{
-//            "@event_name": "sendt_søknad_nav",
-//            "@id": "${sykmelding.hendelseId}",
-//            "id": "${søknad.dokumentId}",
-//            "sykmeldingId": "${sykmelding.dokumentId}"
-//        }"""
-//
-//    private fun sendtSøknadArbeidsgiverMessage(sykmelding: Hendelse, søknad: Hendelse) =
-//        """{
-//            "@event_name": "sendt_søknad_arbeidsgiver",
-//            "@id": "${sykmelding.hendelseId}",
-//            "id": "${søknad.dokumentId}",
-//            "sykmeldingId": "${sykmelding.dokumentId}"
-//        }"""
-//
-//    private fun inntektsmeldingMessage(hendelse: Hendelse) =
-//        """{
-//            "@event_name": "inntektsmelding",
-//            "@id": "${hendelse.hendelseId}",
-//            "inntektsmeldingId": "${hendelse.dokumentId}"
-//        }"""
+    private fun sendtSøknadMessage(
+        nySøknadHendelseId: UUID,
+        sykmeldingDokumentId: UUID,
+        søknadDokumentId: UUID
+    ) =
+        """{
+            "@event_name": "sendt_søknad_nav",
+            "@id": "$nySøknadHendelseId",
+            "id": "$søknadDokumentId",
+            "sykmeldingId": "$sykmeldingDokumentId",
+            "@opprettet": "2020-06-11T10:46:46.007854"
+        }"""
 }
