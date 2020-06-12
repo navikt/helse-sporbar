@@ -7,10 +7,20 @@ import java.util.*
 import javax.sql.DataSource
 
 internal class VedtaksperiodeDao(private val dataSource: DataSource) {
+    private class VedtaksperiodeRow(
+        val vedtaksperiodeId: UUID,
+        val fnr: String,
+        val orgnummer: String,
+        val dokumentId: UUID,
+        val dokumentType: Dokument.Type
+    )
+
     internal fun finn(fødselsnummer: String): List<Vedtaksperiode> {
         @Language("PostgreSQL")
-        val query = """SELECT *
+        val query = """SELECT v.*, d.*
                        FROM vedtaksperiode v
+                           INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
+                           INNER JOIN dokument d on vd.dokument_id = d.id
                        WHERE v.fodselsnummer = ?
                        """
         return sessionOf(dataSource)
@@ -18,15 +28,25 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                 session.run(
                     queryOf(query, fødselsnummer)
                         .map { row ->
-                            Vedtaksperiode(
+                            VedtaksperiodeRow(
                                 vedtaksperiodeId = row.uuid("vedtaksperiode_id"),
                                 fnr = row.string("fodselsnummer"),
                                 orgnummer = row.string("orgnummer"),
-                                vedtak = null, //TODO: koble på vedtak
-                                dokumenter = emptyList() //TODO: koble på vedtak_dokument
+                                dokumentId = row.uuid("dokument_id"),
+                                dokumentType = enumValueOf(row.string("type"))
                             )
                         }
                         .asList
+                )
+            }
+            .groupBy { it.vedtaksperiodeId }
+            .map { entry ->
+                Vedtaksperiode(
+                    entry.key,
+                    entry.value.first().fnr,
+                    entry.value.first().orgnummer,
+                    null,
+                    entry.value.map { Dokument(it.dokumentId, it.dokumentType) }
                 )
             }
     }
@@ -47,6 +67,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                                    INNER JOIN hendelse_dokument hd ON h.id = hd.hendelse_id
                                    INNER JOIN dokument d on hd.dokument_id = d.id
                             WHERE h.hendelse_id = ANY ((?)::uuid[]))
+                            ON CONFLICT DO NOTHING;
         """
         sessionOf(dataSource).use { session ->
             session.run(

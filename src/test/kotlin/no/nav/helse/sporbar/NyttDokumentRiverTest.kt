@@ -5,6 +5,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.flywaydb.core.Flyway
+import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -67,6 +68,7 @@ internal class NyttDokumentRiverTest {
         assertEquals(dokumenterForNySøknad.map { it.dokumentId }, dokumenterForSendtSøknad.map { it.dokumentId })
     }
 
+    @Language("JSON")
     private fun nySøknadMessage(
         nySøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
@@ -80,6 +82,7 @@ internal class NyttDokumentRiverTest {
             "@opprettet": "2020-06-10T10:46:46.007854"
         }"""
 
+    @Language("JSON")
     private fun sendtSøknadMessage(
         nySøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class VedtaksperiodeEndretRiverTest {
+internal class VedtaksperiodeEndretRiverTest {
     private val testRapid = TestRapid()
     private val embeddedPostgres = EmbeddedPostgres.builder().setPort(56789).start()
     private val hikariConfig = HikariConfig().apply {
@@ -41,14 +41,13 @@ class VedtaksperiodeEndretRiverTest {
 
     @Test
     fun test() {
-        testRapid.sendTestMessage(melding(fnr))
+        testRapid.sendTestMessage(vedtaksperiodeEndret(fnr))
         assertEquals(1, vedtaksperiodeDao.finn(fnr).size)
     }
 }
 
-
 @Language("JSON")
-private fun melding(fnr: String) = """{
+private fun vedtaksperiodeEndret(fnr: String) = """{
     "vedtaksperiodeId": "e133b521-ffe2-4ad0-bfe8-9e29e9583381",
     "organisasjonsnummer": "987654321",
     "gjeldendeTilstand": "MOTTATT_SYKMELDING_FERDIG_GAP",
