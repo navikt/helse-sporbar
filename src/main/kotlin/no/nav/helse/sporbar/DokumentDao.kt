@@ -11,22 +11,25 @@ import javax.sql.DataSource
 internal class DokumentDao(val datasource: DataSource) {
     internal fun opprett(hendelseId: UUID, opprettet: LocalDateTime, dokumentId: UUID, type: Dokument.Type) {
         @Language("PostgreSQL")
-        val hendelse = "INSERT INTO hendelse(hendelse_id, timestamp) VALUES(?,?) ON CONFLICT DO NOTHING"
-
-        @Language("PostgreSQL")
-        val dokument = "INSERT INTO dokument(dokument_id, type) VALUES(?,?) ON CONFLICT DO NOTHING"
-
-        @Language("PostgreSQL")
-        val hendelseDokument = """INSERT INTO hendelse_dokument(hendelse_id, dokument_id)
+        val query = """
+            INSERT INTO hendelse(hendelse_id, timestamp) VALUES(?,?) ON CONFLICT DO NOTHING;
+            INSERT INTO dokument(dokument_id, type) VALUES(?,?) ON CONFLICT DO NOTHING;
+            INSERT INTO hendelse_dokument(hendelse_id, dokument_id)
             VALUES(
                 (SELECT h.id FROM hendelse h WHERE h.hendelse_id = ?),
                 (SELECT d.id FROM dokument d WHERE d.dokument_id = ?))
-            ON CONFLICT DO NOTHING"""
+            ON CONFLICT DO NOTHING;"""
         sessionOf(datasource).use {
             it.transaction { session ->
-                session.run(queryOf(hendelse, hendelseId, opprettet).asUpdate)
-                session.run(queryOf(dokument, dokumentId, type.name).asUpdate)
-                session.run(queryOf(hendelseDokument, hendelseId, dokumentId).asUpdate)
+                session.run(queryOf(
+                    query,
+                    hendelseId,
+                    opprettet,
+                    dokumentId,
+                    type.name,
+                    hendelseId,
+                    dokumentId
+                ).asUpdate)
             }
         }
     }
@@ -44,20 +47,6 @@ internal class DokumentDao(val datasource: DataSource) {
                 .asList
         )
     }
-
-//    fun lagre(vedtaksperiodeId: UUID, fagsystemId: String) {
-//        @Language("PostgreSQL")
-//        val query = "INSERT INTO vedtak_utbetalingsref(vedtaksperiode_id, utbetalingsref) VALUES(?,?) ON CONFLICT DO NOTHING"
-//        sessionOf(datasource).use { session ->
-//            session.run(
-//                queryOf(
-//                    query,
-//                    vedtaksperiodeId,
-//                    fagsystemId
-//                ).asUpdate
-//            )
-//        }
-//    }
 }
 
 fun Row.uuid(columnLabel: String): UUID = UUID.fromString(string(columnLabel))
