@@ -13,9 +13,11 @@ private val log: Logger = LoggerFactory.getLogger("sporbar")
 internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val dokumentDao: DokumentDao) : River.PacketListener {
     init {
         River(rapidsConnection).apply {
-            validate { it.requireKey("@id", "@opprettet") }
-            validate { it.interestedIn("inntektsmeldingId", "id", "sykmeldingId") }
-            validate { it.requireAny("@event_name", listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver")) }
+            validate {
+                it.requireKey("@id", "@opprettet")
+                it.interestedIn("inntektsmeldingId", "id", "sykmeldingId")
+                it.requireAny("@event_name", listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver"))
+            }
         }.register(this)
     }
 

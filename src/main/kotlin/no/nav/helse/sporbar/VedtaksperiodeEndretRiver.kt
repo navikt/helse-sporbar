@@ -18,8 +18,6 @@ internal class VedtaksperiodeEndretRiver(rapidsConnection: RapidsConnection, pri
                 it.requireAny("@event_name", listOf("vedtaksperiode_endret"))
                 it.requireArray("hendelser")
             }
-
-
         }.register(this)
     }
 
