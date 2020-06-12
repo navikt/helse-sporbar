@@ -1,14 +1,12 @@
 package no.nav.helse.sporbar
 
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.*
 
 internal data class Vedtaksperiode(
     val vedtaksperiodeId: UUID,
     val fnr: String,
     val orgnummer: String,
-    val opprettet: LocalDateTime,
     val vedtak: Vedtak?,
     val dokumenter: List<Dokument>
 )

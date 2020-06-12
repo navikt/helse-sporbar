@@ -20,7 +20,7 @@ CREATE TABLE hendelse_dokument(
 CREATE TABLE vedtaksperiode
 (
     id                    SERIAL PRIMARY KEY,
-    vedtaksperiode_id UUID NOT NULL,
+    vedtaksperiode_id UUID UNIQUE NOT NULL,
     fodselsnummer         CHAR(11)  NOT NULL,
     orgnummer             CHAR(9)   NOT NULL
 );
@@ -37,11 +37,10 @@ CREATE TABLE vedtak(
 CREATE INDEX vedtak_vedtaksperiode_idx ON vedtak(vedtaksperiode_id);
 
 CREATE TABLE vedtak_dokument(
-    vedtak_id INTEGER references vedtak(id),
+    vedtaksperiode_id INTEGER references vedtaksperiode(id),
     dokument_id INTEGER references dokument(id),
-    PRIMARY KEY (vedtak_id, dokument_id)
+    PRIMARY KEY (vedtaksperiode_id, dokument_id)
 );
-
 
 CREATE TABLE vedtak_tilstand
 (

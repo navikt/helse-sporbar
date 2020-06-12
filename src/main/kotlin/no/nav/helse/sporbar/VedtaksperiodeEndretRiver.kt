@@ -9,32 +9,27 @@ import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 
-internal class VedtaksperiodeEndretRiver(rapidsConnection: RapidsConnection, private val dokumentDao: DokumentDao) : River.PacketListener {
+internal class VedtaksperiodeEndretRiver(rapidsConnection: RapidsConnection, private val vedtaksperiodeDao: VedtaksperiodeDao) : River.PacketListener {
     init {
         River(rapidsConnection).apply {
-            validate { it.requireKey("@id") }
-            validate { it.interestedIn("inntektsmeldingId", "id", "sykmeldingId") }
-            validate { it.requireAny("@event_name", listOf("inntektsmelding", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver")) }
+            validate {
+                it.requireKey("@id", "organisasjonsnummer", "fødselsnummer", "vedtaksperiodeId")
+                it.requireAny("@event_name", listOf("vedtaksperiode_endret"))
+                it.requireArray("hendelser")
+            }
+
+
         }.register(this)
     }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
-        val hendelseId = UUID.fromString(packet["@id"].textValue())
-
-        when (packet["@event_name"].textValue()) {
-            "inntektsmelding" -> {
-                val dokumentId = UUID.fromString(packet["inntektsmeldingId"].textValue())
-//                dokumentDao.opprett(Hendelse(dokumentId, hendelseId, Dokument.Inntektsmelding))
-            }
-            "sendt_søknad_nav", "sendt_søknad_arbeidsgiver" -> {
-                val sykmeldingId = UUID.fromString(packet["sykmeldingId"].textValue())
-//                dokumentDao.opprett(Hendelse(sykmeldingId, hendelseId, Dokument.Sykmelding))
-                val søknadId = UUID.fromString(packet["id"].textValue())
-//                dokumentDao.opprett(Hendelse(søknadId, hendelseId, Dokument.Søknad))
-            }
-            else -> throw IllegalStateException("Ukjent event (etter whitelist :mind_blown:)")
-        }
-
-        log.info("Dokument med hendelse $hendelseId lagret")
+        val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
+        vedtaksperiodeDao.opprett(
+            fnr = packet["fødselsnummer"].asText(),
+            orgnummer = packet["organisasjonsnummer"].asText(),
+            vedtaksperiodeId = vedtaksperiodeId,
+            hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) }
+        )
+        log.info("Vedtaksperiode $vedtaksperiodeId upserted")
     }
 }
