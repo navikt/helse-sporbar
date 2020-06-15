@@ -4,7 +4,7 @@ import kotliquery.queryOf
 import kotliquery.sessionOf
 import org.intellij.lang.annotations.Language
 import java.time.LocalDate
-import java.util.*
+import java.util.UUID
 import javax.sql.DataSource
 
 internal class VedtakDao(private val dataSource: DataSource) {
@@ -13,10 +13,12 @@ internal class VedtakDao(private val dataSource: DataSource) {
         tom: LocalDate,
         forbrukteSykedager: Int,
         gjenståendeSykedager: Int,
-        hendelseIder: List<UUID>
+        hendelseIder: List<UUID>,
+        vedtak: Vedtak
     ) {
         @Language("PostgreSQL")
-        val query = """INSERT INTO vedtak(fom, tom, forbrukte_sykedager, gjenstaende_sykedager, vedtaksperiode_id) VALUES (
+        val query =
+            """INSERT INTO vedtak(fom, tom, forbrukte_sykedager, gjenstaende_sykedager, vedtaksperiode_id) VALUES (
                        ?,
                        ?,
                        ?,
@@ -30,15 +32,54 @@ internal class VedtakDao(private val dataSource: DataSource) {
                         AND d.type = ?))
                         ON CONFLICT DO NOTHING;
         """
-        sessionOf(dataSource).use { session ->
-            session.run(
-                queryOf(
-                    query,
-                    fom, tom, forbrukteSykedager, gjenståendeSykedager,
-                    hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() },
-                    Dokument.Type.Sykmelding.name
-                ).asExecute
-            )
+
+        @Language("PostgreSQL")
+        val oppdragQuery =
+            """INSERT INTO oppdrag(vedtak_id, mottaker, fagomrade, fagsystem_id, totalbeløp) VALUES (?, ?, ?, ?, ?)
+        """
+
+        @Language("PostgreSQL")
+        val utbetalingQuery = """
+            INSERT INTO utbetaling(oppdrag_id, fom, tom, dagsats, grad, belop, sykedager) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
+        sessionOf(dataSource, true).use {
+            it.transaction { session ->
+                val vedtakId = session.run(
+                    queryOf(
+                        query,
+                        fom, tom, forbrukteSykedager, gjenståendeSykedager,
+                        hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() },
+                        Dokument.Type.Sykmelding.name
+                    ).asUpdateAndReturnGeneratedKey
+                )
+
+                vedtak.oppdrag.forEach { oppdrag ->
+                    val oppdragId = session.run(
+                        queryOf(
+                            oppdragQuery,
+                            vedtakId,
+                            oppdrag.mottaker,
+                            oppdrag.fagområde,
+                            oppdrag.fagsystemId,
+                            oppdrag.totalbeløp
+                        ).asUpdateAndReturnGeneratedKey
+                    )
+                    oppdrag.utbetalingslinjer.forEach { linje ->
+                        session.run(
+                            queryOf(
+                                utbetalingQuery,
+                                oppdragId,
+                                linje.fom,
+                                linje.tom,
+                                linje.dagsats,
+                                linje.grad,
+                                linje.beløp,
+                                linje.sykedager
+                            ).asUpdate
+                        )
+                    }
+                }
+            }
         }
     }
 }

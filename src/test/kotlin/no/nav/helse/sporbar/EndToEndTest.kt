@@ -61,14 +61,12 @@ internal class EndToEndTest {
         testRapid.sendTestMessage(vedtaksperiodeEndret(vedtaksperiodeId, "START", "MOTTATT_SYKMELDING_FERDIG_GAP", listOf(nySøknadHendelseId)))
 
         val vedtaksperiodeEtterSykmelding = vedtaksperiodeDao.finn(FNR).first()
-        assertEquals(vedtaksperiodeId, vedtaksperiodeEtterSykmelding.vedtaksperiodeId)
         assertEquals(Vedtaksperiode.Tilstand.MOTTATT_SYKMELDING_FERDIG_GAP, vedtaksperiodeEtterSykmelding.tilstand)
 
         testRapid.sendTestMessage(sendtSøknadMessage(sendtSøknadHendelseId, sykmeldingId, søknadId))
         testRapid.sendTestMessage(vedtaksperiodeEndret(vedtaksperiodeId, "MOTTATT_SYKMELDING_FERDIG_GAP", "AVVENTER_GAP", listOf(nySøknadHendelseId, sendtSøknadHendelseId)))
 
         val vedtaksperiodeEtterSøknad = vedtaksperiodeDao.finn(FNR).first()
-        assertEquals(vedtaksperiodeId, vedtaksperiodeEtterSøknad.vedtaksperiodeId)
         assertEquals(Vedtaksperiode.Tilstand.AVVENTER_GAP, vedtaksperiodeEtterSøknad.tilstand)
 
         assertEquals(2, vedtaksperiodeEtterSøknad.dokumenter.size)
@@ -80,6 +78,8 @@ internal class EndToEndTest {
 
         val vedtaksperiodeEtterUtbetaling = vedtaksperiodeDao.finn(FNR).first()
         assertNotNull(vedtaksperiodeEtterUtbetaling.vedtak)
+
+        assertEquals(2, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.size)
     }
 
     @Language("JSON")
@@ -143,8 +143,8 @@ internal class EndToEndTest {
     private fun utbetalingMessage(
         hendelseId: UUID,
         hendelser: List<UUID>,
-        fom: LocalDate = LocalDate.of(2020, 6,1),
-        tom: LocalDate = LocalDate.of(2020,6,10),
+        fom: LocalDate = LocalDate.of(2020, 6, 1),
+        tom: LocalDate = LocalDate.of(2020, 6, 10),
         tidligereBrukteSykedager: Int = 0
     ) = """{
     "aktørId": "aktørId",

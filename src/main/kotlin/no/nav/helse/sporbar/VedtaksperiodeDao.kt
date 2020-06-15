@@ -10,16 +10,25 @@ import javax.sql.DataSource
 
 internal class VedtaksperiodeDao(private val dataSource: DataSource) {
     private class VedtaksperiodeRow(
-        val vedtaksperiodeId: UUID,
+        val id: Long,
         val fnr: String,
         val orgnummer: String,
         val dokumentId: UUID,
         val dokumentType: Dokument.Type,
-        val tilstand: Vedtaksperiode.Tilstand,
-        val fom: LocalDate?,
-        val tom: LocalDate?,
-        val forbrukteSykedager: Int?,
-        val gjenståendeSykedager: Int?
+        val tilstand: Vedtaksperiode.Tilstand
+    )
+
+    private class VedtakRow(
+        val vedtakId: Long,
+        val vedtaksperiodeId: Long,
+        val fom: LocalDate,
+        val tom: LocalDate,
+        val forbrukteSykedager: Int,
+        val gjenståendeSykedager: Int,
+        val mottaker: String,
+        val fagområde: String,
+        val fagsystemId: String,
+        val totalbeløp: Int
     )
 
     internal fun finn(fødselsnummer: String): List<Vedtaksperiode> {
@@ -27,45 +36,91 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         val query = """SELECT
                            v.*,
                            d.*,
-                           (SELECT vt.tilstand FROM vedtak_tilstand vt WHERE vt.vedtaksperiode_id = v.id ORDER BY vt.id DESC LIMIT 1),
-                           v2.*
+                           (SELECT vt.tilstand FROM vedtak_tilstand vt WHERE vt.vedtaksperiode_id = v.id ORDER BY vt.id DESC LIMIT 1)
                        FROM vedtaksperiode v
                            INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
                            INNER JOIN dokument d on vd.dokument_id = d.id
-                           LEFT OUTER JOIN vedtak v2 on v.id = v2.vedtaksperiode_id
                        WHERE v.fodselsnummer = ?
+                       """
+
+        @Language("PostgreSQL")
+        val vedtakQuery = """SELECT *, v.id vedtakId
+                                 FROM vedtak v
+                                     INNER JOIN oppdrag o on v.id = o.vedtak_id
+                             WHERE vedtaksperiode_id = ANY ((?)::int[])
                        """
         return sessionOf(dataSource)
             .use { session ->
-                session.run(
+                val vedtaksperioder2 = session.run(
                     queryOf(query, fødselsnummer)
                         .map { row ->
                             VedtaksperiodeRow(
-                                vedtaksperiodeId = row.uuid("vedtaksperiode_id"),
+                                id = row.long("id"),
                                 fnr = row.string("fodselsnummer"),
                                 orgnummer = row.string("orgnummer"),
                                 dokumentId = row.uuid("dokument_id"),
                                 dokumentType = enumValueOf(row.string("type")),
-                                tilstand = enumValueOf(row.string("tilstand")),
-                                fom = row.localDateOrNull("fom"),
-                                tom = row.localDateOrNull("tom"),
-                                forbrukteSykedager = row.intOrNull("forbrukte_sykedager"),
-                                gjenståendeSykedager = row.intOrNull("gjenstaende_sykedager")
+                                tilstand = enumValueOf(row.string("tilstand"))
                             )
                         }
                         .asList
                 )
-            }
-            .groupBy { it.vedtaksperiodeId }
-            .map { entry ->
-                Vedtaksperiode(
-                    entry.key,
-                    entry.value.first().fnr,
-                    entry.value.first().orgnummer,
-                    entry.value.first().takeIf { it.fom != null }?.let { Vedtak(it.fom!!, it.tom!!, it.forbrukteSykedager!!, it.gjenståendeSykedager!!, emptyList()) },
-                    entry.value.distinctBy { it.dokumentId }.map { Dokument(it.dokumentId, it.dokumentType) },
-                    entry.value.first().tilstand
-                )
+
+                val vedtak = session.run(
+                    queryOf(
+                        vedtakQuery,
+                        vedtaksperioder2.map { it.id }.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
+                    )
+                        .map { row ->
+                            VedtakRow(
+                                vedtakId = row.long("vedtakId"),
+                                vedtaksperiodeId = row.long("vedtaksperiode_id"),
+                                fom = row.localDate("fom"),
+                                tom = row.localDate("tom"),
+                                forbrukteSykedager = row.int("forbrukte_sykedager"),
+                                gjenståendeSykedager = row.int("gjenstaende_sykedager"),
+                                mottaker = row.string("mottaker"),
+                                fagområde = row.string("fagomrade"),
+                                fagsystemId = row.string("fagsystem_id"),
+                                totalbeløp = row.int("totalbeløp")
+                            )
+                        }
+                        .asList
+                ).groupBy { it.vedtakId }
+                    .mapKeys { it.value.first().vedtaksperiodeId }
+                    .mapValues { entry ->
+                        Vedtak(
+                            fom = entry.value.first().fom,
+                            tom = entry.value.first().tom,
+                            forbrukteSykedager = entry.value.first().forbrukteSykedager,
+                            gjenståendeSykedager = entry.value.first().gjenståendeSykedager,
+                            oppdrag = entry.value.map { oppdragRow ->
+                                Vedtak.Oppdrag(
+                                    mottaker = oppdragRow.mottaker,
+                                    fagområde = oppdragRow.fagområde,
+                                    fagsystemId = oppdragRow.fagsystemId,
+                                    totalbeløp = oppdragRow.totalbeløp,
+                                    utbetalingslinjer = emptyList()
+                                )
+                            }
+                        )
+                    }
+
+                val vedtaksperioder = vedtaksperioder2
+                    .groupBy { it.id }
+                    .map { entry ->
+                        Vedtaksperiode(
+                            entry.value.first().fnr,
+                            entry.value.first().orgnummer,
+                            vedtak[entry.key],
+                            entry.value.distinctBy { it.dokumentId }.map { Dokument(it.dokumentId, it.dokumentType) },
+                            entry.value.first().tilstand
+                        )
+                    }
+
+
+
+                vedtaksperioder
             }
     }
 

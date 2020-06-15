@@ -35,7 +35,7 @@ CREATE TABLE vedtak
     tom                   DATE    NOT NULL,
     forbrukte_sykedager   INTEGER NOT NULL,
     gjenstaende_sykedager INTEGER NOT NULL,
-    vedtaksperiode_id     INTEGER references vedtaksperiode (id)
+    vedtaksperiode_id     INTEGER UNIQUE references vedtaksperiode (id)
 );
 CREATE INDEX vedtak_vedtaksperiode_idx ON vedtak (vedtaksperiode_id);
 
@@ -60,8 +60,8 @@ CREATE TABLE oppdrag
     id          SERIAL PRIMARY KEY,
     vedtak_id   INTEGER NOT NULL REFERENCES vedtak (id),
     mottaker    VARCHAR,
-    fagområde   VARCHAR,
-    fagsystemId VARCHAR,
+    fagomrade   VARCHAR,
+    fagsystem_id VARCHAR,
     totalbeløp  INTEGER
 );
 CREATE INDEX oppdrag_vedtak_id_idx ON oppdrag (vedtak_id);
