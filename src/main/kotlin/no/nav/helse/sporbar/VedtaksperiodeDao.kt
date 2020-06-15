@@ -19,17 +19,31 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
     )
 
     private class VedtakRow(
-        val vedtakId: Long,
         val vedtaksperiodeId: Long,
         val fom: LocalDate,
         val tom: LocalDate,
         val forbrukteSykedager: Int,
         val gjenståendeSykedager: Int,
-        val mottaker: String,
-        val fagområde: String,
-        val fagsystemId: String,
-        val totalbeløp: Int
-    )
+        val oppdragRow: OppdragRow
+    ) {
+        class OppdragRow(
+            val oppdragId: Long,
+            val mottaker: String,
+            val fagområde: String,
+            val fagsystemId: String,
+            val totalbeløp: Int,
+            val utbetalingRow: UtbetalingRow?
+        ) {
+            class UtbetalingRow(
+                val fom: LocalDate,
+                val tom: LocalDate,
+                val dagsats: Int,
+                val grad: Double,
+                val beløp: Int,
+                val sykedager: Int
+            )
+        }
+    }
 
     internal fun finn(fødselsnummer: String): List<Vedtaksperiode> {
         @Language("PostgreSQL")
@@ -44,14 +58,30 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                        """
 
         @Language("PostgreSQL")
-        val vedtakQuery = """SELECT *, v.id vedtakId
-                                 FROM vedtak v
-                                     INNER JOIN oppdrag o on v.id = o.vedtak_id
-                             WHERE vedtaksperiode_id = ANY ((?)::int[])
+        val vedtakQuery = """SELECT vedtak.vedtaksperiode_id,
+                                    vedtak.fom vedtakFom,
+                                    vedtak.tom vedtakTom,
+                                    vedtak.forbrukte_sykedager,
+                                    vedtak.gjenstaende_sykedager,
+                                    oppdrag.id oppdragId,
+                                    oppdrag.mottaker,
+                                    oppdrag.fagomrade,
+                                    oppdrag.fagsystem_id,
+                                    oppdrag.totalbeløp,
+                                    utbetaling.fom utbetalingFom,
+                                    utbetaling.tom utbetalingTom,
+                                    utbetaling.dagsats,
+                                    utbetaling.grad,
+                                    utbetaling.belop,
+                                    utbetaling.sykedager
+                                 FROM vedtak
+                                     INNER JOIN oppdrag on vedtak.id = oppdrag.vedtak_id
+                                     LEFT OUTER JOIN utbetaling on oppdrag.id = utbetaling.oppdrag_id
+                             WHERE vedtak.vedtaksperiode_id = ANY ((?)::int[])
                        """
         return sessionOf(dataSource)
             .use { session ->
-                val vedtaksperioder2 = session.run(
+                val vedtaksperioder = session.run(
                     queryOf(query, fødselsnummer)
                         .map { row ->
                             VedtaksperiodeRow(
@@ -69,58 +99,79 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                 val vedtak = session.run(
                     queryOf(
                         vedtakQuery,
-                        vedtaksperioder2.map { it.id }.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
+                        vedtaksperioder.map { it.id }.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
                     )
                         .map { row ->
                             VedtakRow(
-                                vedtakId = row.long("vedtakId"),
                                 vedtaksperiodeId = row.long("vedtaksperiode_id"),
-                                fom = row.localDate("fom"),
-                                tom = row.localDate("tom"),
+                                fom = row.localDate("vedtakFom"),
+                                tom = row.localDate("vedtakTom"),
                                 forbrukteSykedager = row.int("forbrukte_sykedager"),
                                 gjenståendeSykedager = row.int("gjenstaende_sykedager"),
-                                mottaker = row.string("mottaker"),
-                                fagområde = row.string("fagomrade"),
-                                fagsystemId = row.string("fagsystem_id"),
-                                totalbeløp = row.int("totalbeløp")
+                                oppdragRow = VedtakRow.OppdragRow(
+                                    oppdragId = row.long("oppdragId"),
+                                    mottaker = row.string("mottaker"),
+                                    fagområde = row.string("fagomrade"),
+                                    fagsystemId = row.string("fagsystem_id"),
+                                    totalbeløp = row.int("totalbeløp"),
+                                    utbetalingRow = row.localDateOrNull("utbetalingFom")?.let {
+                                        VedtakRow.OppdragRow.UtbetalingRow(
+                                            fom = it,
+                                            tom = row.localDate("utbetalingTom"),
+                                            dagsats = row.int("dagsats"),
+                                            grad = row.double("grad"),
+                                            beløp = row.int("belop"),
+                                            sykedager = row.int("sykedager")
+                                        )
+                                    }
+                                )
                             )
                         }
                         .asList
-                ).groupBy { it.vedtakId }
-                    .mapKeys { it.value.first().vedtaksperiodeId }
-                    .mapValues { entry ->
+                ).groupBy { it.vedtaksperiodeId }
+                    .mapValues { (_, vedtakValue) ->
                         Vedtak(
-                            fom = entry.value.first().fom,
-                            tom = entry.value.first().tom,
-                            forbrukteSykedager = entry.value.first().forbrukteSykedager,
-                            gjenståendeSykedager = entry.value.first().gjenståendeSykedager,
-                            oppdrag = entry.value.map { oppdragRow ->
-                                Vedtak.Oppdrag(
-                                    mottaker = oppdragRow.mottaker,
-                                    fagområde = oppdragRow.fagområde,
-                                    fagsystemId = oppdragRow.fagsystemId,
-                                    totalbeløp = oppdragRow.totalbeløp,
-                                    utbetalingslinjer = emptyList()
-                                )
-                            }
+                            fom = vedtakValue.first().fom,
+                            tom = vedtakValue.first().tom,
+                            forbrukteSykedager = vedtakValue.first().forbrukteSykedager,
+                            gjenståendeSykedager = vedtakValue.first().gjenståendeSykedager,
+                            oppdrag = vedtakValue
+                                .map { it.oppdragRow }
+                                .groupBy { it.oppdragId }
+                                .map { (_, oppdragValue) ->
+                                    Vedtak.Oppdrag(
+                                        mottaker = oppdragValue.first().mottaker,
+                                        fagområde = oppdragValue.first().fagområde,
+                                        fagsystemId = oppdragValue.first().fagsystemId,
+                                        totalbeløp = oppdragValue.first().totalbeløp,
+                                        utbetalingslinjer = oppdragValue
+                                            .mapNotNull { it.utbetalingRow }
+                                            .map { linjeRow ->
+                                                Vedtak.Oppdrag.Utbetalingslinje(
+                                                    fom = linjeRow.fom,
+                                                    tom = linjeRow.tom,
+                                                    dagsats = linjeRow.dagsats,
+                                                    grad = linjeRow.grad,
+                                                    beløp = linjeRow.beløp,
+                                                    sykedager = linjeRow.sykedager
+                                                )
+                                            }
+                                    )
+                                }
                         )
                     }
-
-                val vedtaksperioder = vedtaksperioder2
-                    .groupBy { it.id }
-                    .map { entry ->
-                        Vedtaksperiode(
-                            entry.value.first().fnr,
-                            entry.value.first().orgnummer,
-                            vedtak[entry.key],
-                            entry.value.distinctBy { it.dokumentId }.map { Dokument(it.dokumentId, it.dokumentType) },
-                            entry.value.first().tilstand
-                        )
-                    }
-
-
 
                 vedtaksperioder
+                    .groupBy { it.id }
+                    .map { (vedtaksperiodeId, vedtaksperiodeRows) ->
+                        Vedtaksperiode(
+                            vedtaksperiodeRows.first().fnr,
+                            vedtaksperiodeRows.first().orgnummer,
+                            vedtak[vedtaksperiodeId],
+                            vedtaksperiodeRows.distinctBy { it.dokumentId }.map { Dokument(it.dokumentId, it.dokumentType) },
+                            vedtaksperiodeRows.first().tilstand
+                        )
+                    }
             }
     }
 

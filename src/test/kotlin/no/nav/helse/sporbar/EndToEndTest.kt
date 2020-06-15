@@ -80,6 +80,8 @@ internal class EndToEndTest {
         assertNotNull(vedtaksperiodeEtterUtbetaling.vedtak)
 
         assertEquals(2, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.size)
+        assertEquals(1, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.first()?.utbetalingslinjer?.size)
+        assertEquals(0, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.last()?.utbetalingslinjer?.size)
     }
 
     @Language("JSON")
