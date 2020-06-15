@@ -12,7 +12,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.util.*
+import java.util.UUID
 import kotlin.streams.asSequence
 
 private const val FNR = "12020052345"
@@ -35,6 +35,12 @@ internal class EndToEndTest {
     private val vedtakDao = VedtakDao(dataSource)
     private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao)
 
+    private lateinit var nySøknadHendelseId: UUID
+    private lateinit var sendtSøknadHendelseId: UUID
+    private lateinit var sykmeldingId: UUID
+    private lateinit var søknadId: UUID
+    private lateinit var vedtaksperiodeId: UUID
+
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
         VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeDao, vedtaksperiodeMediator)
@@ -49,33 +55,33 @@ internal class EndToEndTest {
     @BeforeEach
     fun setup() {
         testRapid.reset()
+        nySøknadHendelseId = UUID.randomUUID()
+        sendtSøknadHendelseId = UUID.randomUUID()
+        sykmeldingId = UUID.randomUUID()
+        søknadId = UUID.randomUUID()
+        vedtaksperiodeId = UUID.randomUUID()
     }
 
     @Test
     fun `ny søknad hendelse`() {
-        val nySøknadHendelseId = UUID.randomUUID()
-        val sendtSøknadHendelseId = UUID.randomUUID()
-        val sykmeldingId = UUID.randomUUID()
-        val søknadId = UUID.randomUUID()
-        val vedtaksperiodeId = UUID.randomUUID()
-        testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
-        testRapid.sendTestMessage(vedtaksperiodeEndret(vedtaksperiodeId, "START", "MOTTATT_SYKMELDING_FERDIG_GAP", listOf(nySøknadHendelseId)))
-
+        sykmeldingSendt()
         val vedtaksperiodeEtterSykmelding = vedtaksperiodeDao.finn(FNR).first()
         assertEquals(Vedtaksperiode.Tilstand.MOTTATT_SYKMELDING_FERDIG_GAP, vedtaksperiodeEtterSykmelding.tilstand)
 
-        testRapid.sendTestMessage(sendtSøknadMessage(sendtSøknadHendelseId, sykmeldingId, søknadId))
-        testRapid.sendTestMessage(vedtaksperiodeEndret(vedtaksperiodeId, "MOTTATT_SYKMELDING_FERDIG_GAP", "AVVENTER_GAP", listOf(nySøknadHendelseId, sendtSøknadHendelseId)))
-
+        søknadSendt()
         val vedtaksperiodeEtterSøknad = vedtaksperiodeDao.finn(FNR).first()
         assertEquals(Vedtaksperiode.Tilstand.AVVENTER_GAP, vedtaksperiodeEtterSøknad.tilstand)
 
-        assertEquals(2, vedtaksperiodeEtterSøknad.dokumenter.size)
-        assertEquals(sykmeldingId, vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Sykmelding }.dokumentId)
-        assertEquals(søknadId, vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Søknad }.dokumentId)
+        assertDokumenter(
+            vedtaksperiodeEtterSøknad, listOf(
+                Dokument(sykmeldingId, Dokument.Type.Sykmelding),
+                Dokument(søknadId, Dokument.Type.Søknad)
+            )
+        )
 
-        val utbetalinghendelseId = UUID.randomUUID()
-        testRapid.sendTestMessage(utbetalingMessage(utbetalinghendelseId, listOf(nySøknadHendelseId, sendtSøknadHendelseId)))
+        testRapid.sendTestMessage(
+            utbetalingMessage(listOf(nySøknadHendelseId, sendtSøknadHendelseId))
+        )
 
         val vedtaksperiodeEtterUtbetaling = vedtaksperiodeDao.finn(FNR).first()
         assertNotNull(vedtaksperiodeEtterUtbetaling.vedtak)
@@ -83,6 +89,35 @@ internal class EndToEndTest {
         assertEquals(2, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.size)
         assertEquals(1, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.first()?.utbetalingslinjer?.size)
         assertEquals(0, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.last()?.utbetalingslinjer?.size)
+    }
+
+    private fun assertDokumenter(vedtaksperiodeEtterSøknad: Vedtaksperiode, dokumenter: List<Dokument>) {
+        assertEquals(dokumenter.size, vedtaksperiodeEtterSøknad.dokumenter.size)
+        dokumenter.forEach { expected ->
+            assertNotNull(vedtaksperiodeEtterSøknad.dokumenter.find { it.dokumentId == expected.dokumentId && it.type == expected.type })
+        }
+    }
+
+    private fun søknadSendt() {
+        testRapid.sendTestMessage(sendtSøknadMessage(sendtSøknadHendelseId, sykmeldingId, søknadId))
+        testRapid.sendTestMessage(
+            vedtaksperiodeEndret(
+                "MOTTATT_SYKMELDING_FERDIG_GAP",
+                "AVVENTER_GAP",
+                listOf(nySøknadHendelseId, sendtSøknadHendelseId)
+            )
+        )
+    }
+
+    private fun sykmeldingSendt() {
+        testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
+        testRapid.sendTestMessage(
+            vedtaksperiodeEndret(
+                "START",
+                "MOTTATT_SYKMELDING_FERDIG_GAP",
+                listOf(nySøknadHendelseId)
+            )
+        )
     }
 
     @Language("JSON")
@@ -114,7 +149,11 @@ internal class EndToEndTest {
         }"""
 
     @Language("JSON")
-    private fun vedtaksperiodeEndret(vedtaksperiodeId: UUID, forrige: String, gjeldendeTilstand: String, hendelser: List<UUID>) = """{
+    private fun vedtaksperiodeEndret(
+        forrige: String,
+        gjeldendeTilstand: String,
+        hendelser: List<UUID>
+    ) = """{
     "vedtaksperiodeId": "$vedtaksperiodeId",
     "organisasjonsnummer": "$ORGNUMMER",
     "gjeldendeTilstand": "$gjeldendeTilstand",
@@ -144,7 +183,6 @@ internal class EndToEndTest {
 
     @Language("JSON")
     private fun utbetalingMessage(
-        hendelseId: UUID,
         hendelser: List<UUID>,
         fom: LocalDate = LocalDate.of(2020, 6, 1),
         tom: LocalDate = LocalDate.of(2020, 6, 10),
@@ -187,7 +225,7 @@ internal class EndToEndTest {
     "opprettet": "2020-05-04T11:26:30.23846",
     "system_read_count": 0,
     "@event_name": "utbetalt",
-    "@id": "$hendelseId",
+    "@id": "${UUID.randomUUID()}",
     "@opprettet": "2020-05-04T11:27:13.521398",
     "@forårsaket_av": {
         "event_name": "behov",
