@@ -10,7 +10,11 @@ import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 
-internal class VedtaksperiodeEndretRiver(rapidsConnection: RapidsConnection, private val vedtaksperiodeDao: VedtaksperiodeDao) : River.PacketListener {
+internal class VedtaksperiodeEndretRiver(
+    rapidsConnection: RapidsConnection,
+    private val vedtaksperiodeDao: VedtaksperiodeDao,
+    private val vedtaksperiodeMediator: VedtaksperiodeMediator
+) : River.PacketListener {
     init {
         River(rapidsConnection).apply {
             validate {

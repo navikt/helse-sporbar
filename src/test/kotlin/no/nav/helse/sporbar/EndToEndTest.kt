@@ -33,10 +33,11 @@ internal class EndToEndTest {
     private val dokumentDao = DokumentDao(dataSource)
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     private val vedtakDao = VedtakDao(dataSource)
+    private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao)
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
-        VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeDao)
+        VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeDao, vedtaksperiodeMediator)
         UtbetaltRiver(testRapid, vedtakDao)
 
         Flyway.configure()

@@ -23,23 +23,11 @@ buildscript {
 
 dependencies {
     implementation("com.github.navikt:rapids-and-rivers:1.e22c895")
-    implementation("io.ktor:ktor-jackson:$ktorVersion")
-    implementation("com.ibm.mq:com.ibm.mq.allclient:9.1.4.0")
-    implementation("io.ktor:ktor-auth-jwt:$ktorVersion") {
-        exclude(group = "junit")
-    }
-
     implementation("com.zaxxer:HikariCP:3.4.2")
     implementation("no.nav:vault-jdbc:1.3.7")
     implementation("org.flywaydb:flyway-core:6.2.4")
     implementation("com.github.seratch:kotliquery:1.3.1")
 
-    testImplementation("io.mockk:mockk:$mockkVersion")
-    testImplementation("com.github.tomakehurst:wiremock:$wireMockVersion") {
-        exclude(group = "junit")
-    }
-    testImplementation("no.nav:kafka-embedded-env:2.3.0")
-    testImplementation("org.awaitility:awaitility:4.0.1")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("com.opentable.components:otj-pg-embedded:0.13.3")

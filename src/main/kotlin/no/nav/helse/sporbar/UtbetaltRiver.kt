@@ -39,39 +39,38 @@ internal class UtbetaltRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
-        val vedtak = Vedtak(
-            fom = packet["fom"].asLocalDate(),
-            tom = packet["tom"].asLocalDate(),
-            forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
-            gjenståendeSykedager = packet["gjenståendeSykedager"].asInt(),
-            oppdrag = packet["utbetalt"].map { oppdrag ->
-                Vedtak.Oppdrag(
-                    mottaker = oppdrag["mottaker"].asText(),
-                    fagområde = oppdrag["fagområde"].asText(),
-                    fagsystemId = oppdrag["fagsystemId"].asText(),
-                    totalbeløp = oppdrag["totalbeløp"].asInt(),
-                    utbetalingslinjer = oppdrag["utbetalingslinjer"].map { utbetalingslinje ->
-                        Vedtak.Oppdrag.Utbetalingslinje(
-                            fom = utbetalingslinje["fom"].asLocalDate(),
-                            tom = utbetalingslinje["tom"].asLocalDate(),
-                            dagsats = utbetalingslinje["dagsats"].asInt(),
-                            beløp = utbetalingslinje["beløp"].asInt(),
-                            grad = utbetalingslinje["grad"].asDouble(),
-                            sykedager = utbetalingslinje["sykedager"].asInt()
-                        )
-                    }
-                )
-            }
-        )
         vedtakDao.opprett(
             fom = packet["fom"].asLocalDate(),
             tom = packet["tom"].asLocalDate(),
             forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
             gjenståendeSykedager = packet["gjenståendeSykedager"].asInt(),
             hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) },
-            vedtak = vedtak
+            vedtak = Vedtak(
+                fom = packet["fom"].asLocalDate(),
+                tom = packet["tom"].asLocalDate(),
+                forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
+                gjenståendeSykedager = packet["gjenståendeSykedager"].asInt(),
+                oppdrag = packet["utbetalt"].map { oppdrag ->
+                    Vedtak.Oppdrag(
+                        mottaker = oppdrag["mottaker"].asText(),
+                        fagområde = oppdrag["fagområde"].asText(),
+                        fagsystemId = oppdrag["fagsystemId"].asText(),
+                        totalbeløp = oppdrag["totalbeløp"].asInt(),
+                        utbetalingslinjer = oppdrag["utbetalingslinjer"].map { utbetalingslinje ->
+                            Vedtak.Oppdrag.Utbetalingslinje(
+                                fom = utbetalingslinje["fom"].asLocalDate(),
+                                tom = utbetalingslinje["tom"].asLocalDate(),
+                                dagsats = utbetalingslinje["dagsats"].asInt(),
+                                beløp = utbetalingslinje["beløp"].asInt(),
+                                grad = utbetalingslinje["grad"].asDouble(),
+                                sykedager = utbetalingslinje["sykedager"].asInt()
+                            )
+                        }
+                    )
+                }
+            )
         )
 
-        log.info("Lagrer vedtak")
+        log.info("Lagrer vedtak på vedtaksperiode fra utbetalthendelse: ${packet["@id"].asText()}")
     }
 }
