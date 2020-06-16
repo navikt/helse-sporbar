@@ -23,6 +23,7 @@ buildscript {
 
 dependencies {
     implementation("com.github.navikt:rapids-and-rivers:1.e22c895")
+    implementation("io.ktor:ktor-client-jackson:$ktorVersion")
     implementation("com.zaxxer:HikariCP:3.4.2")
     implementation("no.nav:vault-jdbc:1.3.7")
     implementation("org.flywaydb:flyway-core:6.2.4")
@@ -32,6 +33,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("com.opentable.components:otj-pg-embedded:0.13.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
+    testImplementation("io.mockk:mockk:1.9.3")
 }
 
 val githubUser: String by project

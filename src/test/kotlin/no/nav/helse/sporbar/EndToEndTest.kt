@@ -3,7 +3,9 @@ package no.nav.helse.sporbar
 import com.opentable.db.postgres.embedded.EmbeddedPostgres
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.mockk.mockk
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
+import org.apache.kafka.clients.producer.KafkaProducer
 import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -12,10 +14,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.util.*
+import java.util.UUID
 import kotlin.streams.asSequence
-import kotlin.system.measureNanoTime
-import kotlin.time.measureTime
 
 private const val FNR = "12020052345"
 private const val ORGNUMMER = "987654321"
@@ -35,10 +35,12 @@ internal class EndToEndTest {
     private val dokumentDao = DokumentDao(dataSource)
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     private val vedtakDao = VedtakDao(dataSource)
+    private val producer = mockk<KafkaProducer<String, VedtaksperiodeDto>>()
+    private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao, producer)
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
-        VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeDao)
+        VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeDao, vedtaksperiodeMediator)
         UtbetaltRiver(testRapid, vedtakDao)
 
         Flyway.configure()
@@ -60,29 +62,51 @@ internal class EndToEndTest {
         val søknadId = UUID.randomUUID()
         val vedtaksperiodeId = UUID.randomUUID()
         testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
-        testRapid.sendTestMessage(vedtaksperiodeEndret(vedtaksperiodeId, "START", "MOTTATT_SYKMELDING_FERDIG_GAP", listOf(nySøknadHendelseId)))
+        testRapid.sendTestMessage(
+            vedtaksperiodeEndret(
+                vedtaksperiodeId,
+                "START",
+                "MOTTATT_SYKMELDING_FERDIG_GAP",
+                listOf(nySøknadHendelseId)
+            )
+        )
 
-        val vedtaksperiodeEtterSykmelding = vedtaksperiodeDao.finn(FNR).first()
+        val vedtaksperiodeEtterSykmelding = vedtaksperiodeDao.finn(vedtaksperiodeId)
         assertEquals(Vedtaksperiode.Tilstand.MOTTATT_SYKMELDING_FERDIG_GAP, vedtaksperiodeEtterSykmelding.tilstand)
 
         testRapid.sendTestMessage(sendtSøknadMessage(sendtSøknadHendelseId, sykmeldingId, søknadId))
-        testRapid.sendTestMessage(vedtaksperiodeEndret(vedtaksperiodeId, "MOTTATT_SYKMELDING_FERDIG_GAP", "AVVENTER_GAP", listOf(nySøknadHendelseId, sendtSøknadHendelseId)))
+        testRapid.sendTestMessage(
+            vedtaksperiodeEndret(
+                vedtaksperiodeId,
+                "MOTTATT_SYKMELDING_FERDIG_GAP",
+                "AVVENTER_GAP",
+                listOf(nySøknadHendelseId, sendtSøknadHendelseId)
+            )
+        )
 
-        val vedtaksperiodeEtterSøknad = vedtaksperiodeDao.finn(FNR).first()
+        val vedtaksperiodeEtterSøknad = vedtaksperiodeDao.finn(vedtaksperiodeId)
         assertEquals(Vedtaksperiode.Tilstand.AVVENTER_GAP, vedtaksperiodeEtterSøknad.tilstand)
 
         assertEquals(2, vedtaksperiodeEtterSøknad.dokumenter.size)
-        assertEquals(sykmeldingId, vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Sykmelding }.dokumentId)
-        assertEquals(søknadId, vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Søknad }.dokumentId)
+        assertEquals(
+            sykmeldingId,
+            vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Sykmelding }.dokumentId
+        )
+        assertEquals(
+            søknadId,
+            vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Søknad }.dokumentId
+        )
 
         val utbetalinghendelseId = UUID.randomUUID()
-        measureNanoTime {
-            testRapid.sendTestMessage(utbetalingMessage(utbetalinghendelseId, listOf(nySøknadHendelseId, sendtSøknadHendelseId)))
-        }.also {
-            println("Time used: ${it / 1_000}")
-        }
+        testRapid.sendTestMessage(
+            utbetalingMessage(
+                utbetalinghendelseId,
+                listOf(nySøknadHendelseId, sendtSøknadHendelseId)
+            )
+        )
 
-        val vedtaksperiodeEtterUtbetaling = vedtaksperiodeDao.finn(FNR).first()
+
+        val vedtaksperiodeEtterUtbetaling = vedtaksperiodeDao.finn(vedtaksperiodeId)
         assertNotNull(vedtaksperiodeEtterUtbetaling.vedtak)
 
         assertEquals(2, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.size)
@@ -119,7 +143,12 @@ internal class EndToEndTest {
         }"""
 
     @Language("JSON")
-    private fun vedtaksperiodeEndret(vedtaksperiodeId: UUID, forrige: String, gjeldendeTilstand: String, hendelser: List<UUID>) = """{
+    private fun vedtaksperiodeEndret(
+        vedtaksperiodeId: UUID,
+        forrige: String,
+        gjeldendeTilstand: String,
+        hendelser: List<UUID>
+    ) = """{
     "vedtaksperiodeId": "$vedtaksperiodeId",
     "organisasjonsnummer": "$ORGNUMMER",
     "gjeldendeTilstand": "$gjeldendeTilstand",

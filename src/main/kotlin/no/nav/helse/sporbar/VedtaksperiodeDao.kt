@@ -45,7 +45,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         }
     }
 
-    internal fun finn(fødselsnummer: String): List<Vedtaksperiode> {
+    internal fun finn(vedtaksperiodeId: UUID): Vedtaksperiode {
         @Language("PostgreSQL")
         val query = """SELECT
                            v.*,
@@ -54,7 +54,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                        FROM vedtaksperiode v
                            INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
                            INNER JOIN dokument d on vd.dokument_id = d.id
-                       WHERE v.fodselsnummer = ?
+                       WHERE v.vedtaksperiode_id = :vedtaksperiode_id
                        """
 
         @Language("PostgreSQL")
@@ -82,7 +82,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         return sessionOf(dataSource)
             .use { session ->
                 val vedtaksperioder = session.run(
-                    queryOf(query, fødselsnummer)
+                    queryOf(query, mapOf("vedtaksperiode_id" to vedtaksperiodeId))
                         .map { row ->
                             VedtaksperiodeRow(
                                 id = row.long("id"),
@@ -172,7 +172,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                             vedtaksperiodeRows.first().tilstand
                         )
                     }
-            }
+            }.first()
     }
 
     internal fun opprett(
