@@ -5,6 +5,7 @@ internal data class VedtaksperiodeDto(
     val orgnummer: String,
     val vedtak: Vedtak?,
     val dokumenter: List<Dokument>,
+    val manglendeDokumenter: List<Dokument.Type>,
     val tilstand: TilstandDto
 ) {
     internal enum class TilstandDto {

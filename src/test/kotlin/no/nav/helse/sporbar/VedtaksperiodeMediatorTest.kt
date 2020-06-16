@@ -70,5 +70,6 @@ internal class VedtaksperiodeMediatorTest {
         verify { producer.send(capture(slot)) }
 
         assertEquals(VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon, slot.captured.value().tilstand)
+        assertEquals(1, slot.captured.value().manglendeDokumenter.size)
     }
 }
