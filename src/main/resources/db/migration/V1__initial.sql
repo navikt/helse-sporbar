@@ -57,12 +57,12 @@ CREATE INDEX vedtak_tilstand_vedtaksperiode_idx ON vedtak_tilstand (vedtaksperio
 
 CREATE TABLE oppdrag
 (
-    id          SERIAL PRIMARY KEY,
-    vedtak_id   INTEGER NOT NULL REFERENCES vedtak (id),
-    mottaker    VARCHAR,
-    fagomrade   VARCHAR,
+    id           SERIAL PRIMARY KEY,
+    vedtak_id    INTEGER NOT NULL REFERENCES vedtak (id),
+    mottaker     VARCHAR,
+    fagomrade    VARCHAR,
     fagsystem_id VARCHAR,
-    totalbeløp  INTEGER
+    totalbelop   INTEGER
 );
 CREATE INDEX oppdrag_vedtak_id_idx ON oppdrag (vedtak_id);
 

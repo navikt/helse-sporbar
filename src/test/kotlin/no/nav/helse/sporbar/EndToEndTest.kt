@@ -14,6 +14,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.*
 import kotlin.streams.asSequence
+import kotlin.system.measureNanoTime
+import kotlin.time.measureTime
 
 private const val FNR = "12020052345"
 private const val ORGNUMMER = "987654321"
@@ -74,7 +76,11 @@ internal class EndToEndTest {
         assertEquals(søknadId, vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Søknad }.dokumentId)
 
         val utbetalinghendelseId = UUID.randomUUID()
-        testRapid.sendTestMessage(utbetalingMessage(utbetalinghendelseId, listOf(nySøknadHendelseId, sendtSøknadHendelseId)))
+        measureNanoTime {
+            testRapid.sendTestMessage(utbetalingMessage(utbetalinghendelseId, listOf(nySøknadHendelseId, sendtSøknadHendelseId)))
+        }.also {
+            println("Time used: ${it / 1_000}")
+        }
 
         val vedtaksperiodeEtterUtbetaling = vedtaksperiodeDao.finn(FNR).first()
         assertNotNull(vedtaksperiodeEtterUtbetaling.vedtak)
