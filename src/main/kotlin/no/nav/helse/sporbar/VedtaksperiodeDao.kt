@@ -67,7 +67,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                                     oppdrag.mottaker,
                                     oppdrag.fagomrade,
                                     oppdrag.fagsystem_id,
-                                    oppdrag.totalbeløp,
+                                    oppdrag.totalbelop,
                                     utbetaling.fom utbetalingFom,
                                     utbetaling.tom utbetalingTom,
                                     utbetaling.dagsats,
@@ -113,7 +113,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                                     mottaker = row.string("mottaker"),
                                     fagområde = row.string("fagomrade"),
                                     fagsystemId = row.string("fagsystem_id"),
-                                    totalbeløp = row.int("totalbeløp"),
+                                    totalbeløp = row.int("totalbelop"),
                                     utbetalingRow = row.localDateOrNull("utbetalingFom")?.let {
                                         VedtakRow.OppdragRow.UtbetalingRow(
                                             fom = it,
