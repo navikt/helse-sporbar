@@ -3,13 +3,15 @@ package no.nav.helse.sporbar
 import com.opentable.db.postgres.embedded.EmbeddedPostgres
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.mockk.CapturingSlot
 import io.mockk.mockk
+import io.mockk.verify
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerRecord
 import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.DayOfWeek
@@ -35,12 +37,19 @@ internal class EndToEndTest {
     private val dokumentDao = DokumentDao(dataSource)
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     private val vedtakDao = VedtakDao(dataSource)
-    private val producer = mockk<KafkaProducer<String, VedtaksperiodeDto>>()
+    private val producer = mockk<KafkaProducer<String, VedtaksperiodeDto>>(relaxed = true)
     private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao, producer)
+
+    private lateinit var sykmeldingDokumentId: UUID
+    private lateinit var søknadDokumentId: UUID
+    private lateinit var nySøknadHendelseId: UUID
+    private lateinit var sendtSøknadHendelseId: UUID
+    private lateinit var inntektsmeldingHendelseId: UUID
+    private lateinit var vedtaksperiodeId: UUID
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
-        VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeDao, vedtaksperiodeMediator)
+        VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeMediator)
         UtbetaltRiver(testRapid, vedtakDao)
 
         Flyway.configure()
@@ -52,74 +61,62 @@ internal class EndToEndTest {
     @BeforeEach
     fun setup() {
         testRapid.reset()
+        sykmeldingDokumentId = UUID.randomUUID()
+        søknadDokumentId = UUID.randomUUID()
+        vedtaksperiodeId = UUID.randomUUID()
+        nySøknadHendelseId = UUID.randomUUID()
+        sendtSøknadHendelseId = UUID.randomUUID()
+        inntektsmeldingHendelseId = UUID.randomUUID()
     }
 
     @Test
-    fun `ny søknad hendelse`() {
-        val nySøknadHendelseId = UUID.randomUUID()
-        val sendtSøknadHendelseId = UUID.randomUUID()
-        val sykmeldingId = UUID.randomUUID()
-        val søknadId = UUID.randomUUID()
-        val vedtaksperiodeId = UUID.randomUUID()
-        testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
+    fun `mottar sykmelding (ny søknad)`() {
+        val slot = CapturingSlot<ProducerRecord<String, VedtaksperiodeDto>>()
+
+        sykmeldingSendt()
+
+        verify(exactly = 1) { producer.send(capture(slot)) }
+        val vedtaksperiodeDto = slot.captured.value()
+        assertEquals(VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon, vedtaksperiodeDto.tilstand)
+        assertEquals(2, vedtaksperiodeDto.dokumenter.size)
+    }
+
+    private fun sykmeldingSendt() {
+        testRapid.sendTestMessage(nySøknadMessage())
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
-                vedtaksperiodeId,
                 "START",
                 "MOTTATT_SYKMELDING_FERDIG_GAP",
                 listOf(nySøknadHendelseId)
             )
         )
+    }
 
-        val vedtaksperiodeEtterSykmelding = vedtaksperiodeDao.finn(vedtaksperiodeId)
-        assertEquals(Vedtaksperiode.Tilstand.MOTTATT_SYKMELDING_FERDIG_GAP, vedtaksperiodeEtterSykmelding.tilstand)
+    @Test
+    fun `ny søknad hendelse`() {
+        val slot = CapturingSlot<ProducerRecord<String, VedtaksperiodeDto>>()
+        sykmeldingSendt()
+        søknadSendt()
 
-        testRapid.sendTestMessage(sendtSøknadMessage(sendtSøknadHendelseId, sykmeldingId, søknadId))
+        verify { producer.send(capture(slot)) }
+        val vedtaksperiodeDto = slot.captured.value()
+        assertEquals(VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon, vedtaksperiodeDto.tilstand)
+        assertEquals(2, vedtaksperiodeDto.dokumenter.size)
+    }
+
+    private fun søknadSendt() {
+        testRapid.sendTestMessage(sendtSøknadMessage())
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
-                vedtaksperiodeId,
                 "MOTTATT_SYKMELDING_FERDIG_GAP",
                 "AVVENTER_GAP",
                 listOf(nySøknadHendelseId, sendtSøknadHendelseId)
             )
         )
-
-        val vedtaksperiodeEtterSøknad = vedtaksperiodeDao.finn(vedtaksperiodeId)
-        assertEquals(Vedtaksperiode.Tilstand.AVVENTER_GAP, vedtaksperiodeEtterSøknad.tilstand)
-
-        assertEquals(2, vedtaksperiodeEtterSøknad.dokumenter.size)
-        assertEquals(
-            sykmeldingId,
-            vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Sykmelding }.dokumentId
-        )
-        assertEquals(
-            søknadId,
-            vedtaksperiodeEtterSøknad.dokumenter.first { it.type == Dokument.Type.Søknad }.dokumentId
-        )
-
-        val utbetalinghendelseId = UUID.randomUUID()
-        testRapid.sendTestMessage(
-            utbetalingMessage(
-                utbetalinghendelseId,
-                listOf(nySøknadHendelseId, sendtSøknadHendelseId)
-            )
-        )
-
-
-        val vedtaksperiodeEtterUtbetaling = vedtaksperiodeDao.finn(vedtaksperiodeId)
-        assertNotNull(vedtaksperiodeEtterUtbetaling.vedtak)
-
-        assertEquals(2, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.size)
-        assertEquals(1, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.first()?.utbetalingslinjer?.size)
-        assertEquals(0, vedtaksperiodeEtterUtbetaling.vedtak?.oppdrag?.last()?.utbetalingslinjer?.size)
     }
 
     @Language("JSON")
-    private fun nySøknadMessage(
-        nySøknadHendelseId: UUID,
-        sykmeldingDokumentId: UUID,
-        søknadDokumentId: UUID
-    ) =
+    private fun nySøknadMessage() =
         """{
             "@event_name": "ny_søknad",
             "@id": "$nySøknadHendelseId",
@@ -129,11 +126,7 @@ internal class EndToEndTest {
         }"""
 
     @Language("JSON")
-    private fun sendtSøknadMessage(
-        nySøknadHendelseId: UUID,
-        sykmeldingDokumentId: UUID,
-        søknadDokumentId: UUID
-    ) =
+    private fun sendtSøknadMessage() =
         """{
             "@event_name": "sendt_søknad_nav",
             "@id": "$nySøknadHendelseId",
@@ -144,7 +137,6 @@ internal class EndToEndTest {
 
     @Language("JSON")
     private fun vedtaksperiodeEndret(
-        vedtaksperiodeId: UUID,
         forrige: String,
         gjeldendeTilstand: String,
         hendelser: List<UUID>

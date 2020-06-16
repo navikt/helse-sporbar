@@ -6,19 +6,26 @@ import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.time.LocalDateTime
+import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 
 internal class VedtaksperiodeEndretRiver(
     rapidsConnection: RapidsConnection,
-    private val vedtaksperiodeDao: VedtaksperiodeDao,
     private val vedtaksperiodeMediator: VedtaksperiodeMediator
 ) : River.PacketListener {
     init {
         River(rapidsConnection).apply {
             validate {
-                it.requireKey("@id", "organisasjonsnummer", "fødselsnummer", "vedtaksperiodeId", "@opprettet", "gjeldendeTilstand")
+                it.requireKey(
+                    "@id",
+                    "organisasjonsnummer",
+                    "fødselsnummer",
+                    "vedtaksperiodeId",
+                    "@opprettet",
+                    "gjeldendeTilstand"
+                )
                 it.requireAny("@event_name", listOf("vedtaksperiode_endret"))
                 it.requireArray("hendelser")
             }
@@ -27,14 +34,25 @@ internal class VedtaksperiodeEndretRiver(
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
         val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
-        vedtaksperiodeDao.opprett(
-            fnr = packet["fødselsnummer"].asText(),
-            orgnummer = packet["organisasjonsnummer"].asText(),
-            vedtaksperiodeId = vedtaksperiodeId,
-            hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) },
-            timestamp = packet["@opprettet"].asLocalDateTime(),
-            tilstand = enumValueOf(packet["gjeldendeTilstand"].asText())
+        vedtaksperiodeMediator.vedtaksperiodeEndret(
+            VedtaksperiodeEndret(
+                fnr = packet["fødselsnummer"].asText(),
+                orgnummer = packet["organisasjonsnummer"].asText(),
+                vedtaksperiodeId = vedtaksperiodeId,
+                hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) },
+                timestamp = packet["@opprettet"].asLocalDateTime(),
+                tilstand = enumValueOf(packet["gjeldendeTilstand"].asText())
+            )
         )
         log.info("Vedtaksperiode $vedtaksperiodeId upserted")
     }
 }
+
+internal data class VedtaksperiodeEndret(
+    val fnr: String,
+    val orgnummer: String,
+    val vedtaksperiodeId: UUID,
+    val hendelseIder: List<UUID>,
+    val timestamp: LocalDateTime,
+    val tilstand: Vedtaksperiode.Tilstand
+)
