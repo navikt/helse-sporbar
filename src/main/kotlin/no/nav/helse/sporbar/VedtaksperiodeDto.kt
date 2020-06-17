@@ -9,6 +9,11 @@ internal data class VedtaksperiodeDto(
     val tilstand: TilstandDto
 ) {
     internal enum class TilstandDto {
-        AvventerDokumentasjon, UnderBehandling
+        AvventerTidligerePeriode,
+        AvventerDokumentasjon,
+        UnderBehandling,
+        AvsluttetInnenforArbeidsgiverperioden,
+        Ferdigbehandlet,
+        ManuellBehandling
     }
 }
