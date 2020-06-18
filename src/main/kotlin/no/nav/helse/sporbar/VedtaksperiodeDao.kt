@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar
 
+import kotliquery.Row
 import kotliquery.Session
 import kotliquery.queryOf
 import kotliquery.sessionOf
@@ -51,45 +52,46 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
      */
     internal fun finn(hendelseIder: List<UUID>): Vedtaksperiode {
         @Language("PostgreSQL")
-        val query = """SELECT v.*, d.dokument_id, type, tilstand FROM vedtaksperiode v
-            INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
+        val finnVedtaksperiodeQuery = """SELECT v.*, d.dokument_id, type, tilstand FROM vedtaksperiode v
+             INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
              INNER JOIN hendelse_dokument hd on vd.dokument_id = hd.dokument_id
-            INNER JOIN dokument d on vd.dokument_id = d.id
-            INNER JOIN hendelse h on hd.hendelse_id = h.id
-            INNER JOIN vedtak_tilstand vt on v.id = vt.vedtaksperiode_id
-            WHERE h.hendelse_id = ANY ((?)::uuid[]) AND d.type = 'Søknad'"""
+             INNER JOIN dokument d on vd.dokument_id = d.id
+             INNER JOIN hendelse h on hd.hendelse_id = h.id
+             INNER JOIN vedtak_tilstand vt on v.id = vt.vedtaksperiode_id
+             WHERE h.hendelse_id = ANY ((?)::uuid[]) AND d.type = 'Søknad'"""
+
         sessionOf(dataSource).use { session ->
-            val rows = session.run(queryOf(
-                query,
+            val vedtaksperiodeRow = session.run(queryOf(
+                finnVedtaksperiodeQuery,
                 hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
-            ).map { row ->
-                VedtaksperiodeRow(
-                    id = row.long("id"),
-                    fnr = row.string("fodselsnummer"),
-                    orgnummer = row.string("orgnummer"),
-                    dokumentId = row.uuid("dokument_id"),
-                    dokumentType = enumValueOf(row.string("type")),
-                    tilstand = enumValueOf(row.string("tilstand"))
-                )
-            }.asList
-            )
+            ).map { row -> vedtaksperiodeRow(row) }.asList
+            ).first()
 
             @Language("PostgreSQL")
             val dokumentQuery =
-                "SELECT d.dokument_id, type FROM vedtak_dokument vd INNER JOIN vedtaksperiode v on v.id = vd.vedtaksperiode_id INNER JOIN dokument d on vd.dokument_id = d.id WHERE v.id = ?"
-            val dokumenter = session.run(queryOf(dokumentQuery, rows.first().id).map {
-                Dokument(
-                    it.uuid("dokument_id"),
-                    enumValueOf(it.string("type"))
-                )
-            }.asList)
-            val vedtak = finnVedtakz(session, rows).values.first()
+                """
+                    SELECT d.dokument_id, type FROM vedtak_dokument vd
+                    INNER JOIN vedtaksperiode v on v.id = vd.vedtaksperiode_id
+                    INNER JOIN dokument d on vd.dokument_id = d.id
+                    WHERE v.id = ?
+                """
+            val dokumenter = session.run(
+                queryOf(dokumentQuery, vedtaksperiodeRow.id)
+                    .map {
+                        Dokument(
+                            it.uuid("dokument_id"),
+                            enumValueOf(it.string("type"))
+                        )
+                    }.asList
+            )
+
+            val vedtak = finnVedtak(session, listOf(vedtaksperiodeRow))[vedtaksperiodeRow.id]
             return Vedtaksperiode(
-                fnr = rows.first().fnr,
-                orgnummer = rows.first().orgnummer,
+                fnr = vedtaksperiodeRow.fnr,
+                orgnummer = vedtaksperiodeRow.orgnummer,
                 utbetaling = vedtak,
                 dokumenter = dokumenter,
-                tilstand = rows.first().tilstand
+                tilstand = vedtaksperiodeRow.tilstand
             )
         }
     }
@@ -111,20 +113,11 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
             .use { session ->
                 val vedtaksperioder = session.run(
                     queryOf(query, mapOf("vedtaksperiode_id" to vedtaksperiodeId))
-                        .map { row ->
-                            VedtaksperiodeRow(
-                                id = row.long("id"),
-                                fnr = row.string("fodselsnummer"),
-                                orgnummer = row.string("orgnummer"),
-                                dokumentId = row.uuid("dokument_id"),
-                                dokumentType = enumValueOf(row.string("type")),
-                                tilstand = enumValueOf(row.string("tilstand"))
-                            )
-                        }
+                        .map { row -> vedtaksperiodeRow(row) }
                         .asList
                 )
 
-                val vedtak = finnVedtakz(session, vedtaksperioder)
+                val vedtak = finnVedtak(session, vedtaksperioder)
 
                 vedtaksperioder
                     .groupBy { it.id }
@@ -141,7 +134,18 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
             }.first()
     }
 
-    private fun finnVedtakz(
+    private fun vedtaksperiodeRow(row: Row): VedtaksperiodeRow {
+        return VedtaksperiodeRow(
+            id = row.long("id"),
+            fnr = row.string("fodselsnummer"),
+            orgnummer = row.string("orgnummer"),
+            dokumentId = row.uuid("dokument_id"),
+            dokumentType = enumValueOf(row.string("type")),
+            tilstand = enumValueOf(row.string("tilstand"))
+        )
+    }
+
+    private fun finnVedtak(
         session: Session,
         vedtaksperioder: List<VedtaksperiodeRow>
     ): Map<Long, Utbetaling> {

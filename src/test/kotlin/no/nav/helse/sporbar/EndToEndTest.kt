@@ -12,6 +12,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.DayOfWeek
@@ -83,16 +84,6 @@ internal class EndToEndTest {
         assertEquals(2, vedtaksperiodeDto.dokumenter.size)
     }
 
-    private fun sykmeldingSendt() {
-        testRapid.sendTestMessage(nySøknadMessage())
-        testRapid.sendTestMessage(
-            vedtaksperiodeEndret(
-                "START",
-                "MOTTATT_SYKMELDING_FERDIG_GAP",
-                listOf(nySøknadHendelseId)
-            )
-        )
-    }
 
     @Test
     fun `ny søknad hendelse`() {
@@ -116,47 +107,164 @@ internal class EndToEndTest {
 
         verify(exactly = 5) { producer.send(capture(slot)) }
         assertEquals(3, slot.captured.value().dokumenter.size)
-
     }
 
-    private fun søknadSendt() {
-        testRapid.sendTestMessage(sendtSøknadMessage())
+    @Test
+    fun `påfølgende utbetaling`() {
+        val slot = CapturingSlot<ProducerRecord<String, VedtaksperiodeDto>>()
+        val førsteSykmeldingDokumentId: UUID = UUID.randomUUID()
+        val førsteSøknadDokumentId: UUID = UUID.randomUUID()
+        val førsteInntektsmeldingDokumentId: UUID = UUID.randomUUID()
+        val førsteNySøknadHendelseId: UUID = UUID.randomUUID()
+        val førsteSendtSøknadHendelseId: UUID = UUID.randomUUID()
+        val førsteInntektsmeldingHendelseId: UUID = UUID.randomUUID()
+        val førsteVedtaksperiodeId: UUID = UUID.randomUUID()
+
+        val andreSykmeldingDokumentId: UUID = UUID.randomUUID()
+        val andreSøknadDokumentId: UUID = UUID.randomUUID()
+        val andreNySøknadHendelseId: UUID = UUID.randomUUID()
+        val andreSendtSøknadHendelseId: UUID = UUID.randomUUID()
+        val andreVedtaksperiodeId: UUID = UUID.randomUUID()
+
+        sykmeldingSendt(
+            sykmeldingDokumentId = førsteSykmeldingDokumentId,
+            nySøknadHendelseId = førsteNySøknadHendelseId,
+            søknadDokumentId = førsteSøknadDokumentId,
+            vedtaksperiodeId = førsteVedtaksperiodeId,
+            vedtakHendelseIder = listOf(førsteNySøknadHendelseId)
+        )
+        søknadSendt(
+            sykmeldingDokumentId = førsteSykmeldingDokumentId,
+            sendtSøknadHendelseId = førsteSendtSøknadHendelseId,
+            søknadDokumentId = førsteSøknadDokumentId,
+            vedtaksperiodeId = førsteVedtaksperiodeId,
+            vedtakHendelseIder = listOf(førsteNySøknadHendelseId, førsteSendtSøknadHendelseId)
+        )
+        inntektsmeldingSendt(
+            inntektsmeldingHendelseId = førsteInntektsmeldingHendelseId,
+            inntektsmeldingDokumentId = førsteInntektsmeldingDokumentId,
+            vedtaksperiodeId = førsteVedtaksperiodeId,
+            vedtakHendelseIder = listOf(førsteNySøknadHendelseId, førsteSendtSøknadHendelseId, førsteInntektsmeldingHendelseId)
+        )
+        utbetalt(
+            vedtaksperiodeId = førsteVedtaksperiodeId,
+            vedtakHendelseIder = listOf(førsteNySøknadHendelseId, førsteSendtSøknadHendelseId, førsteInntektsmeldingHendelseId)
+        )
+
+        verify { producer.send(capture(slot)) }
+        assertTrue(slot.captured.value().dokumenter.map { it.dokumentId }.contains(førsteSøknadDokumentId))
+        assertEquals(2, slot.captured.value().vedtak?.utbetalinger?.size)
+
+        sykmeldingSendt(
+            sykmeldingDokumentId = andreSykmeldingDokumentId,
+            nySøknadHendelseId = andreNySøknadHendelseId,
+            søknadDokumentId = andreSøknadDokumentId,
+            vedtaksperiodeId = andreVedtaksperiodeId,
+            vedtakHendelseIder = listOf(andreNySøknadHendelseId)
+        )
+        søknadSendt(
+            sykmeldingDokumentId = andreSykmeldingDokumentId,
+            sendtSøknadHendelseId = andreSendtSøknadHendelseId,
+            søknadDokumentId = andreSøknadDokumentId,
+            vedtaksperiodeId = andreVedtaksperiodeId,
+            vedtakHendelseIder = listOf(andreNySøknadHendelseId, andreSendtSøknadHendelseId)
+        )
+        utbetalt(
+            vedtaksperiodeId = andreVedtaksperiodeId,
+            vedtakHendelseIder = listOf(andreNySøknadHendelseId, andreSendtSøknadHendelseId)
+        )
+
+        verify { producer.send(capture(slot)) }
+        assertTrue(slot.captured.value().dokumenter.map { it.dokumentId }.contains(andreSøknadDokumentId))
+        assertEquals(2, slot.captured.value().vedtak?.utbetalinger?.size)
+    }
+
+    private fun sykmeldingSendt(
+        sykmeldingDokumentId: UUID? = null,
+        nySøknadHendelseId: UUID? = null,
+        søknadDokumentId: UUID? = null,
+        vedtaksperiodeId: UUID? = null,
+        vedtakHendelseIder: List<UUID> = listOf(this.nySøknadHendelseId)
+    ) {
+        testRapid.sendTestMessage(nySøknadMessage(
+            nySøknadHendelseId = nySøknadHendelseId ?: this.nySøknadHendelseId,
+            søknadDokumentId = søknadDokumentId ?: this.søknadDokumentId,
+            sykmeldingDokumentId = sykmeldingDokumentId ?: this.sykmeldingDokumentId
+        ))
+        testRapid.sendTestMessage(
+            vedtaksperiodeEndret(
+                "START",
+                "MOTTATT_SYKMELDING_FERDIG_GAP",
+                vedtaksperiodeId ?: this.vedtaksperiodeId,
+                vedtakHendelseIder
+            )
+        )
+    }
+    private fun søknadSendt(
+        sykmeldingDokumentId: UUID? = null,
+        sendtSøknadHendelseId: UUID? = null,
+        søknadDokumentId: UUID? = null,
+        vedtaksperiodeId: UUID? = null,
+        vedtakHendelseIder: List<UUID> = listOf(this.nySøknadHendelseId, this.sendtSøknadHendelseId)
+    ) {
+        testRapid.sendTestMessage(sendtSøknadMessage(
+            sendtSøknadHendelseId = sendtSøknadHendelseId ?: this.sendtSøknadHendelseId,
+            søknadDokumentId = søknadDokumentId ?: this.søknadDokumentId,
+            sykmeldingDokumentId = sykmeldingDokumentId ?: this.sykmeldingDokumentId
+        ))
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "MOTTATT_SYKMELDING_FERDIG_GAP",
                 "AVVENTER_GAP",
-                listOf(nySøknadHendelseId, sendtSøknadHendelseId)
+                vedtaksperiodeId ?: this.vedtaksperiodeId,
+                vedtakHendelseIder
             )
         )
     }
 
-    private fun inntektsmeldingSendt() {
-        testRapid.sendTestMessage(inntektsmeldingMessage())
+    private fun inntektsmeldingSendt(
+        inntektsmeldingHendelseId: UUID? = null,
+        inntektsmeldingDokumentId: UUID? = null,
+        vedtaksperiodeId: UUID? = null,
+        vedtakHendelseIder: List<UUID> = listOf(this.nySøknadHendelseId, this.inntektsmeldingHendelseId)
+    ) {
+        testRapid.sendTestMessage(inntektsmeldingMessage(
+            inntektsmeldingHendelseId = inntektsmeldingHendelseId ?: this.inntektsmeldingHendelseId,
+            inntektsmeldingDokumentId = inntektsmeldingDokumentId ?: this.inntektsmeldingDokumentId
+        ))
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "AVVENTER_GAP",
                 "AVVENTER_VILKÅRSPRØVING_GAP",
-                listOf(inntektsmeldingHendelseId, nySøknadHendelseId, sendtSøknadHendelseId)
+                vedtaksperiodeId ?: this.vedtaksperiodeId,
+                vedtakHendelseIder
             )
         )
     }
 
-    private fun utbetalt() {
+    private fun utbetalt(
+        vedtaksperiodeId: UUID? = null,
+        vedtakHendelseIder: List<UUID> = listOf(nySøknadHendelseId, sendtSøknadHendelseId, inntektsmeldingHendelseId)) {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "TIL_UTBETALING",
                 "AVSLUTTET",
-                listOf(inntektsmeldingHendelseId, nySøknadHendelseId, sendtSøknadHendelseId)
+                vedtaksperiodeId ?: this.vedtaksperiodeId,
+                vedtakHendelseIder
             )
         )
         testRapid.sendTestMessage(utbetalingMessage(
-            hendelser = listOf(nySøknadHendelseId, sendtSøknadHendelseId, inntektsmeldingHendelseId)
+            hendelser = vedtakHendelseIder
         ))
 
     }
 
     @Language("JSON")
-    private fun nySøknadMessage() =
+    private fun nySøknadMessage(
+        nySøknadHendelseId: UUID,
+        sykmeldingDokumentId: UUID,
+        søknadDokumentId: UUID
+    ) =
         """{
             "@event_name": "ny_søknad",
             "@id": "$nySøknadHendelseId",
@@ -166,20 +274,27 @@ internal class EndToEndTest {
         }"""
 
     @Language("JSON")
-    private fun sendtSøknadMessage() =
+    private fun sendtSøknadMessage(
+        sendtSøknadHendelseId: UUID,
+        sykmeldingDokumentId: UUID,
+        søknadDokumentId: UUID
+    ) =
         """{
             "@event_name": "sendt_søknad_nav",
-            "@id": "$nySøknadHendelseId",
+            "@id": "$sendtSøknadHendelseId",
             "id": "$søknadDokumentId",
             "sykmeldingId": "$sykmeldingDokumentId",
             "@opprettet": "2020-06-11T10:46:46.007854"
         }"""
 
     @Language("JSON")
-    private fun inntektsmeldingMessage() =
+    private fun inntektsmeldingMessage(
+        inntektsmeldingHendelseId: UUID,
+        inntektsmeldingDokumentId: UUID
+    ) =
         """{
             "@event_name": "inntektsmelding",
-            "@id": "${inntektsmeldingHendelseId}",
+            "@id": "$inntektsmeldingHendelseId",
             "inntektsmeldingId": "$inntektsmeldingDokumentId",
             "@opprettet": "2020-06-11T10:46:46.007854"
         }"""
@@ -188,6 +303,7 @@ internal class EndToEndTest {
     private fun vedtaksperiodeEndret(
         forrige: String,
         gjeldendeTilstand: String,
+        vedtaksperiodeId: UUID,
         hendelser: List<UUID>
     ) = """{
     "vedtaksperiodeId": "$vedtaksperiodeId",
@@ -275,3 +391,13 @@ internal class EndToEndTest {
         fom.datesUntil(tom.plusDays(1)).asSequence()
             .filter { it.dayOfWeek !in arrayOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) }.count()
 }
+
+data class IdSett(
+    val sykmeldingDokumentId: UUID = UUID.randomUUID(),
+    val søknadDokumentId: UUID = UUID.randomUUID(),
+    val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
+    val nySøknadHendelseId: UUID = UUID.randomUUID(),
+    val sendtSøknadHendelseId: UUID = UUID.randomUUID(),
+    val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
+    val vedtaksperiodeId: UUID = UUID.randomUUID()
+)
