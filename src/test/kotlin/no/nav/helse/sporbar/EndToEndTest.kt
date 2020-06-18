@@ -41,13 +41,7 @@ internal class EndToEndTest {
     private val producer = mockk<KafkaProducer<String, VedtaksperiodeDto>>(relaxed = true)
     private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao, vedtakDao, producer)
 
-    private lateinit var sykmeldingDokumentId: UUID
-    private lateinit var søknadDokumentId: UUID
-    private lateinit var inntektsmeldingDokumentId: UUID
-    private lateinit var nySøknadHendelseId: UUID
-    private lateinit var sendtSøknadHendelseId: UUID
-    private lateinit var inntektsmeldingHendelseId: UUID
-    private lateinit var vedtaksperiodeId: UUID
+    private lateinit var idSett: IdSett
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
@@ -63,13 +57,7 @@ internal class EndToEndTest {
     @BeforeEach
     fun setup() {
         testRapid.reset()
-        sykmeldingDokumentId = UUID.randomUUID()
-        søknadDokumentId = UUID.randomUUID()
-        inntektsmeldingDokumentId = UUID.randomUUID()
-        vedtaksperiodeId = UUID.randomUUID()
-        nySøknadHendelseId = UUID.randomUUID()
-        sendtSøknadHendelseId = UUID.randomUUID()
-        inntektsmeldingHendelseId = UUID.randomUUID()
+        idSett = IdSett()
     }
 
     @Test
@@ -112,144 +100,90 @@ internal class EndToEndTest {
     @Test
     fun `påfølgende utbetaling`() {
         val slot = CapturingSlot<ProducerRecord<String, VedtaksperiodeDto>>()
-        val førsteSykmeldingDokumentId: UUID = UUID.randomUUID()
-        val førsteSøknadDokumentId: UUID = UUID.randomUUID()
-        val førsteInntektsmeldingDokumentId: UUID = UUID.randomUUID()
-        val førsteNySøknadHendelseId: UUID = UUID.randomUUID()
-        val førsteSendtSøknadHendelseId: UUID = UUID.randomUUID()
-        val førsteInntektsmeldingHendelseId: UUID = UUID.randomUUID()
-        val førsteVedtaksperiodeId: UUID = UUID.randomUUID()
+        val idSett1 = IdSett()
+        val idSett2 = IdSett()
 
-        val andreSykmeldingDokumentId: UUID = UUID.randomUUID()
-        val andreSøknadDokumentId: UUID = UUID.randomUUID()
-        val andreNySøknadHendelseId: UUID = UUID.randomUUID()
-        val andreSendtSøknadHendelseId: UUID = UUID.randomUUID()
-        val andreVedtaksperiodeId: UUID = UUID.randomUUID()
-
-        sykmeldingSendt(
-            sykmeldingDokumentId = førsteSykmeldingDokumentId,
-            nySøknadHendelseId = førsteNySøknadHendelseId,
-            søknadDokumentId = førsteSøknadDokumentId,
-            vedtaksperiodeId = førsteVedtaksperiodeId,
-            vedtakHendelseIder = listOf(førsteNySøknadHendelseId)
-        )
-        søknadSendt(
-            sykmeldingDokumentId = førsteSykmeldingDokumentId,
-            sendtSøknadHendelseId = førsteSendtSøknadHendelseId,
-            søknadDokumentId = førsteSøknadDokumentId,
-            vedtaksperiodeId = førsteVedtaksperiodeId,
-            vedtakHendelseIder = listOf(førsteNySøknadHendelseId, førsteSendtSøknadHendelseId)
-        )
-        inntektsmeldingSendt(
-            inntektsmeldingHendelseId = førsteInntektsmeldingHendelseId,
-            inntektsmeldingDokumentId = førsteInntektsmeldingDokumentId,
-            vedtaksperiodeId = førsteVedtaksperiodeId,
-            vedtakHendelseIder = listOf(førsteNySøknadHendelseId, førsteSendtSøknadHendelseId, førsteInntektsmeldingHendelseId)
-        )
-        utbetalt(
-            vedtaksperiodeId = førsteVedtaksperiodeId,
-            vedtakHendelseIder = listOf(førsteNySøknadHendelseId, førsteSendtSøknadHendelseId, førsteInntektsmeldingHendelseId)
-        )
+        sykmeldingSendt(idSett1)
+        søknadSendt(idSett1)
+        inntektsmeldingSendt(idSett1)
+        utbetalt(idSett1)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.captured.value().dokumenter.map { it.dokumentId }.contains(førsteSøknadDokumentId))
+        assertTrue(slot.captured.value().dokumenter.map { it.dokumentId }.contains(idSett1.søknadDokumentId))
         assertEquals(2, slot.captured.value().vedtak?.utbetalinger?.size)
 
-        sykmeldingSendt(
-            sykmeldingDokumentId = andreSykmeldingDokumentId,
-            nySøknadHendelseId = andreNySøknadHendelseId,
-            søknadDokumentId = andreSøknadDokumentId,
-            vedtaksperiodeId = andreVedtaksperiodeId,
-            vedtakHendelseIder = listOf(andreNySøknadHendelseId)
-        )
-        søknadSendt(
-            sykmeldingDokumentId = andreSykmeldingDokumentId,
-            sendtSøknadHendelseId = andreSendtSøknadHendelseId,
-            søknadDokumentId = andreSøknadDokumentId,
-            vedtaksperiodeId = andreVedtaksperiodeId,
-            vedtakHendelseIder = listOf(andreNySøknadHendelseId, andreSendtSøknadHendelseId)
-        )
-        utbetalt(
-            vedtaksperiodeId = andreVedtaksperiodeId,
-            vedtakHendelseIder = listOf(andreNySøknadHendelseId, andreSendtSøknadHendelseId)
-        )
+        sykmeldingSendt(idSett2)
+        søknadSendt(idSett2)
+        utbetalt(idSett2)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.captured.value().dokumenter.map { it.dokumentId }.contains(andreSøknadDokumentId))
+        assertTrue(slot.captured.value().dokumenter.map { it.dokumentId }.contains(idSett2.søknadDokumentId))
         assertEquals(2, slot.captured.value().vedtak?.utbetalinger?.size)
     }
 
     private fun sykmeldingSendt(
-        sykmeldingDokumentId: UUID? = null,
-        nySøknadHendelseId: UUID? = null,
-        søknadDokumentId: UUID? = null,
-        vedtaksperiodeId: UUID? = null,
-        vedtakHendelseIder: List<UUID> = listOf(this.nySøknadHendelseId)
+        idSett: IdSett = this.idSett,
+        vedtakHendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId)
     ) {
         testRapid.sendTestMessage(nySøknadMessage(
-            nySøknadHendelseId = nySøknadHendelseId ?: this.nySøknadHendelseId,
-            søknadDokumentId = søknadDokumentId ?: this.søknadDokumentId,
-            sykmeldingDokumentId = sykmeldingDokumentId ?: this.sykmeldingDokumentId
+            nySøknadHendelseId = idSett.nySøknadHendelseId,
+            søknadDokumentId = idSett.søknadDokumentId,
+            sykmeldingDokumentId = idSett.sykmeldingDokumentId
         ))
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "START",
                 "MOTTATT_SYKMELDING_FERDIG_GAP",
-                vedtaksperiodeId ?: this.vedtaksperiodeId,
+                idSett.vedtaksperiodeId,
                 vedtakHendelseIder
             )
         )
     }
     private fun søknadSendt(
-        sykmeldingDokumentId: UUID? = null,
-        sendtSøknadHendelseId: UUID? = null,
-        søknadDokumentId: UUID? = null,
-        vedtaksperiodeId: UUID? = null,
-        vedtakHendelseIder: List<UUID> = listOf(this.nySøknadHendelseId, this.sendtSøknadHendelseId)
+        idSett: IdSett = this.idSett,
+        vedtakHendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.sendtSøknadHendelseId)
     ) {
         testRapid.sendTestMessage(sendtSøknadMessage(
-            sendtSøknadHendelseId = sendtSøknadHendelseId ?: this.sendtSøknadHendelseId,
-            søknadDokumentId = søknadDokumentId ?: this.søknadDokumentId,
-            sykmeldingDokumentId = sykmeldingDokumentId ?: this.sykmeldingDokumentId
+            sendtSøknadHendelseId = idSett.sendtSøknadHendelseId,
+            søknadDokumentId = idSett.søknadDokumentId,
+            sykmeldingDokumentId = idSett.sykmeldingDokumentId
         ))
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "MOTTATT_SYKMELDING_FERDIG_GAP",
                 "AVVENTER_GAP",
-                vedtaksperiodeId ?: this.vedtaksperiodeId,
+                idSett.vedtaksperiodeId,
                 vedtakHendelseIder
             )
         )
     }
 
     private fun inntektsmeldingSendt(
-        inntektsmeldingHendelseId: UUID? = null,
-        inntektsmeldingDokumentId: UUID? = null,
-        vedtaksperiodeId: UUID? = null,
-        vedtakHendelseIder: List<UUID> = listOf(this.nySøknadHendelseId, this.inntektsmeldingHendelseId)
+        idSett: IdSett = this.idSett,
+        vedtakHendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.inntektsmeldingHendelseId)
     ) {
         testRapid.sendTestMessage(inntektsmeldingMessage(
-            inntektsmeldingHendelseId = inntektsmeldingHendelseId ?: this.inntektsmeldingHendelseId,
-            inntektsmeldingDokumentId = inntektsmeldingDokumentId ?: this.inntektsmeldingDokumentId
+            inntektsmeldingHendelseId = idSett.inntektsmeldingHendelseId,
+            inntektsmeldingDokumentId = idSett.inntektsmeldingDokumentId
         ))
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "AVVENTER_GAP",
                 "AVVENTER_VILKÅRSPRØVING_GAP",
-                vedtaksperiodeId ?: this.vedtaksperiodeId,
+                idSett.vedtaksperiodeId,
                 vedtakHendelseIder
             )
         )
     }
 
     private fun utbetalt(
-        vedtaksperiodeId: UUID? = null,
-        vedtakHendelseIder: List<UUID> = listOf(nySøknadHendelseId, sendtSøknadHendelseId, inntektsmeldingHendelseId)) {
+        idSett: IdSett = this.idSett,
+        vedtakHendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.sendtSøknadHendelseId, idSett.inntektsmeldingHendelseId)) {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "TIL_UTBETALING",
                 "AVSLUTTET",
-                vedtaksperiodeId ?: this.vedtaksperiodeId,
+                idSett.vedtaksperiodeId,
                 vedtakHendelseIder
             )
         )
