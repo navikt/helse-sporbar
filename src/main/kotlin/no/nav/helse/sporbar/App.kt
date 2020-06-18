@@ -22,10 +22,14 @@ fun launchApplication(env: Environment) {
             ).toProducerConfig()
         )
     val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
-    val mediator = VedtaksperiodeMediator(vedtaksperiodeDao, producer)
+    val vedtakDao = VedtakDao(dataSource)
+    val mediator = VedtaksperiodeMediator(vedtaksperiodeDao, vedtakDao, producer)
 
     RapidApplication.Builder(RapidApplication.RapidApplicationConfig.fromEnv(env.raw))
         .build().apply {
+            NyttDokumentRiver(this, dokumentDao)
+            VedtaksperiodeEndretRiver(this, mediator)
+            UtbetaltRiver(this, mediator)
             start()
         }
 }
