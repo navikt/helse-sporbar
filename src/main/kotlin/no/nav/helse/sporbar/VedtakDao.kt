@@ -65,7 +65,7 @@ internal class VedtakDao(private val dataSource: DataSource) {
                             "forbrukte_sykedager" to forbrukteSykedager,
                             "gjenstaende_sykedager" to gjenståendeSykedager,
                             "hendelseIder" to hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() },
-                            "dokumentType" to Dokument.Type.Sykmelding.name
+                            "dokumentType" to Dokument.Type.Søknad.name
                         )
                     ).asUpdateAndReturnGeneratedKey
                 )

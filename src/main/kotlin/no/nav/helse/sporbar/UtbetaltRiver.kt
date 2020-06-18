@@ -14,7 +14,7 @@ private val log: Logger = LoggerFactory.getLogger("sporbar")
 
 internal class UtbetaltRiver(
     rapidsConnection: RapidsConnection,
-    private val vedtakDao: VedtakDao
+    private val vedtaksperiodeMediator: VedtaksperiodeMediator
 ) : River.PacketListener {
 
     init {
@@ -39,7 +39,7 @@ internal class UtbetaltRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
-        vedtakDao.opprett(
+        vedtaksperiodeMediator.utbetaling(
             fom = packet["fom"].asLocalDate(),
             tom = packet["tom"].asLocalDate(),
             forbrukteSykedager = packet["forbrukteSykedager"].asInt(),

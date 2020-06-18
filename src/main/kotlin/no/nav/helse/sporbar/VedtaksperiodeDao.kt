@@ -1,11 +1,12 @@
 package no.nav.helse.sporbar
 
+import kotliquery.Session
 import kotliquery.queryOf
 import kotliquery.sessionOf
 import org.intellij.lang.annotations.Language
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import javax.sql.DataSource
 
 internal class VedtaksperiodeDao(private val dataSource: DataSource) {
@@ -45,6 +46,54 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         }
     }
 
+    /*
+        Denne kan erstattes i sin helhet om vi kobler vedtaksperiodeId på utbetalingseventet
+     */
+    internal fun finn(hendelseIder: List<UUID>): Vedtaksperiode {
+        @Language("PostgreSQL")
+        val query = """SELECT v.*, d.dokument_id, type, tilstand FROM vedtaksperiode v
+            INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
+             INNER JOIN hendelse_dokument hd on vd.dokument_id = hd.dokument_id
+            INNER JOIN dokument d on vd.dokument_id = d.id
+            INNER JOIN hendelse h on hd.hendelse_id = h.id
+            INNER JOIN vedtak_tilstand vt on v.id = vt.vedtaksperiode_id
+            WHERE h.hendelse_id = ANY ((?)::uuid[]) AND d.type = 'Søknad'"""
+        sessionOf(dataSource).use { session ->
+            val rows = session.run(queryOf(
+                query,
+                hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
+            ).map { row ->
+                VedtaksperiodeRow(
+                    id = row.long("id"),
+                    fnr = row.string("fodselsnummer"),
+                    orgnummer = row.string("orgnummer"),
+                    dokumentId = row.uuid("dokument_id"),
+                    dokumentType = enumValueOf(row.string("type")),
+                    tilstand = enumValueOf(row.string("tilstand"))
+                )
+            }.asList
+            )
+
+            @Language("PostgreSQL")
+            val dokumentQuery =
+                "SELECT d.dokument_id, type FROM vedtak_dokument vd INNER JOIN vedtaksperiode v on v.id = vd.vedtaksperiode_id INNER JOIN dokument d on vd.dokument_id = d.id WHERE v.id = ?"
+            val dokumenter = session.run(queryOf(dokumentQuery, rows.first().id).map {
+                Dokument(
+                    it.uuid("dokument_id"),
+                    enumValueOf(it.string("type"))
+                )
+            }.asList)
+            val vedtak = finnVedtakz(session, rows).values.first()
+            return Vedtaksperiode(
+                fnr = rows.first().fnr,
+                orgnummer = rows.first().orgnummer,
+                vedtak = vedtak,
+                dokumenter = dokumenter,
+                tilstand = rows.first().tilstand
+            )
+        }
+    }
+
     internal fun finn(vedtaksperiodeId: UUID): Vedtaksperiode {
         @Language("PostgreSQL")
         val query = """SELECT
@@ -57,6 +106,45 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                        WHERE v.vedtaksperiode_id = :vedtaksperiode_id
                        """
 
+
+        return sessionOf(dataSource)
+            .use { session ->
+                val vedtaksperioder = session.run(
+                    queryOf(query, mapOf("vedtaksperiode_id" to vedtaksperiodeId))
+                        .map { row ->
+                            VedtaksperiodeRow(
+                                id = row.long("id"),
+                                fnr = row.string("fodselsnummer"),
+                                orgnummer = row.string("orgnummer"),
+                                dokumentId = row.uuid("dokument_id"),
+                                dokumentType = enumValueOf(row.string("type")),
+                                tilstand = enumValueOf(row.string("tilstand"))
+                            )
+                        }
+                        .asList
+                )
+
+                val vedtak = finnVedtakz(session, vedtaksperioder)
+
+                vedtaksperioder
+                    .groupBy { it.id }
+                    .map { (vedtaksperiodeId, vedtaksperiodeRows) ->
+                        Vedtaksperiode(
+                            vedtaksperiodeRows.first().fnr,
+                            vedtaksperiodeRows.first().orgnummer,
+                            vedtak[vedtaksperiodeId],
+                            vedtaksperiodeRows.distinctBy { it.dokumentId }
+                                .map { Dokument(it.dokumentId, it.dokumentType) },
+                            vedtaksperiodeRows.first().tilstand
+                        )
+                    }
+            }.first()
+    }
+
+    private fun finnVedtakz(
+        session: Session,
+        vedtaksperioder: List<VedtaksperiodeRow>
+    ): Map<Long, Vedtak> {
         @Language("PostgreSQL")
         val vedtakQuery = """SELECT vedtak.vedtaksperiode_id,
                                     vedtak.fom vedtakFom,
@@ -79,100 +167,72 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                                      LEFT OUTER JOIN utbetaling on oppdrag.id = utbetaling.oppdrag_id
                              WHERE vedtak.vedtaksperiode_id = ANY ((?)::int[])
                        """
-        return sessionOf(dataSource)
-            .use { session ->
-                val vedtaksperioder = session.run(
-                    queryOf(query, mapOf("vedtaksperiode_id" to vedtaksperiodeId))
-                        .map { row ->
-                            VedtaksperiodeRow(
-                                id = row.long("id"),
-                                fnr = row.string("fodselsnummer"),
-                                orgnummer = row.string("orgnummer"),
-                                dokumentId = row.uuid("dokument_id"),
-                                dokumentType = enumValueOf(row.string("type")),
-                                tilstand = enumValueOf(row.string("tilstand"))
-                            )
-                        }
-                        .asList
-                )
-
-                val vedtak = session.run(
-                    queryOf(
-                        vedtakQuery,
-                        vedtaksperioder.map { it.id }.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
+        val vedtak = session.run(
+            queryOf(
+                vedtakQuery,
+                vedtaksperioder.map { it.id }
+                    .joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
+            )
+                .map { row ->
+                    VedtakRow(
+                        vedtaksperiodeId = row.long("vedtaksperiode_id"),
+                        fom = row.localDate("vedtakFom"),
+                        tom = row.localDate("vedtakTom"),
+                        forbrukteSykedager = row.int("forbrukte_sykedager"),
+                        gjenståendeSykedager = row.int("gjenstaende_sykedager"),
+                        oppdragRow = VedtakRow.OppdragRow(
+                            oppdragId = row.long("oppdragId"),
+                            mottaker = row.string("mottaker"),
+                            fagområde = row.string("fagomrade"),
+                            fagsystemId = row.string("fagsystem_id"),
+                            totalbeløp = row.int("totalbelop"),
+                            utbetalingRow = row.localDateOrNull("utbetalingFom")?.let {
+                                VedtakRow.OppdragRow.UtbetalingRow(
+                                    fom = it,
+                                    tom = row.localDate("utbetalingTom"),
+                                    dagsats = row.int("dagsats"),
+                                    grad = row.double("grad"),
+                                    beløp = row.int("belop"),
+                                    sykedager = row.int("sykedager")
+                                )
+                            }
+                        )
                     )
-                        .map { row ->
-                            VedtakRow(
-                                vedtaksperiodeId = row.long("vedtaksperiode_id"),
-                                fom = row.localDate("vedtakFom"),
-                                tom = row.localDate("vedtakTom"),
-                                forbrukteSykedager = row.int("forbrukte_sykedager"),
-                                gjenståendeSykedager = row.int("gjenstaende_sykedager"),
-                                oppdragRow = VedtakRow.OppdragRow(
-                                    oppdragId = row.long("oppdragId"),
-                                    mottaker = row.string("mottaker"),
-                                    fagområde = row.string("fagomrade"),
-                                    fagsystemId = row.string("fagsystem_id"),
-                                    totalbeløp = row.int("totalbelop"),
-                                    utbetalingRow = row.localDateOrNull("utbetalingFom")?.let {
-                                        VedtakRow.OppdragRow.UtbetalingRow(
-                                            fom = it,
-                                            tom = row.localDate("utbetalingTom"),
-                                            dagsats = row.int("dagsats"),
-                                            grad = row.double("grad"),
-                                            beløp = row.int("belop"),
-                                            sykedager = row.int("sykedager")
+                }
+                .asList
+        ).groupBy { it.vedtaksperiodeId }
+            .mapValues { (_, vedtakValue) ->
+                Vedtak(
+                    fom = vedtakValue.first().fom,
+                    tom = vedtakValue.first().tom,
+                    forbrukteSykedager = vedtakValue.first().forbrukteSykedager,
+                    gjenståendeSykedager = vedtakValue.first().gjenståendeSykedager,
+                    oppdrag = vedtakValue
+                        .map { it.oppdragRow }
+                        .groupBy { it.oppdragId }
+                        .map { (_, oppdragValue) ->
+                            Vedtak.Oppdrag(
+                                mottaker = oppdragValue.first().mottaker,
+                                fagområde = oppdragValue.first().fagområde,
+                                fagsystemId = oppdragValue.first().fagsystemId,
+                                totalbeløp = oppdragValue.first().totalbeløp,
+                                utbetalingslinjer = oppdragValue
+                                    .mapNotNull { it.utbetalingRow }
+                                    .map { linjeRow ->
+                                        Vedtak.Oppdrag.Utbetalingslinje(
+                                            fom = linjeRow.fom,
+                                            tom = linjeRow.tom,
+                                            dagsats = linjeRow.dagsats,
+                                            grad = linjeRow.grad,
+                                            beløp = linjeRow.beløp,
+                                            sykedager = linjeRow.sykedager
                                         )
                                     }
-                                )
                             )
                         }
-                        .asList
-                ).groupBy { it.vedtaksperiodeId }
-                    .mapValues { (_, vedtakValue) ->
-                        Vedtak(
-                            fom = vedtakValue.first().fom,
-                            tom = vedtakValue.first().tom,
-                            forbrukteSykedager = vedtakValue.first().forbrukteSykedager,
-                            gjenståendeSykedager = vedtakValue.first().gjenståendeSykedager,
-                            oppdrag = vedtakValue
-                                .map { it.oppdragRow }
-                                .groupBy { it.oppdragId }
-                                .map { (_, oppdragValue) ->
-                                    Vedtak.Oppdrag(
-                                        mottaker = oppdragValue.first().mottaker,
-                                        fagområde = oppdragValue.first().fagområde,
-                                        fagsystemId = oppdragValue.first().fagsystemId,
-                                        totalbeløp = oppdragValue.first().totalbeløp,
-                                        utbetalingslinjer = oppdragValue
-                                            .mapNotNull { it.utbetalingRow }
-                                            .map { linjeRow ->
-                                                Vedtak.Oppdrag.Utbetalingslinje(
-                                                    fom = linjeRow.fom,
-                                                    tom = linjeRow.tom,
-                                                    dagsats = linjeRow.dagsats,
-                                                    grad = linjeRow.grad,
-                                                    beløp = linjeRow.beløp,
-                                                    sykedager = linjeRow.sykedager
-                                                )
-                                            }
-                                    )
-                                }
-                        )
-                    }
-
-                vedtaksperioder
-                    .groupBy { it.id }
-                    .map { (vedtaksperiodeId, vedtaksperiodeRows) ->
-                        Vedtaksperiode(
-                            vedtaksperiodeRows.first().fnr,
-                            vedtaksperiodeRows.first().orgnummer,
-                            vedtak[vedtaksperiodeId],
-                            vedtaksperiodeRows.distinctBy { it.dokumentId }.map { Dokument(it.dokumentId, it.dokumentType) },
-                            vedtaksperiodeRows.first().tilstand
-                        )
-                    }
-            }.first()
+                )
+            }
+        return vedtak
     }
 
     internal fun opprett(
@@ -184,7 +244,8 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         tilstand: Vedtaksperiode.Tilstand
     ) {
         @Language("PostgreSQL")
-        val query = """INSERT INTO vedtaksperiode(vedtaksperiode_id, fodselsnummer, orgnummer) VALUES (?, ?, ?) ON CONFLICT DO NOTHING;
+        val query =
+            """INSERT INTO vedtaksperiode(vedtaksperiode_id, fodselsnummer, orgnummer) VALUES (?, ?, ?) ON CONFLICT DO NOTHING;
                        INSERT INTO vedtak_tilstand(vedtaksperiode_id, sist_endret, tilstand) VALUES ((SELECT id from vedtaksperiode WHERE vedtaksperiode_id = ?), ?, ?);
                        INSERT INTO vedtak_dokument(vedtaksperiode_id, dokument_id)
                            (SELECT

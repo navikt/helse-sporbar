@@ -38,10 +38,11 @@ internal class EndToEndTest {
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     private val vedtakDao = VedtakDao(dataSource)
     private val producer = mockk<KafkaProducer<String, VedtaksperiodeDto>>(relaxed = true)
-    private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao, producer)
+    private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao, vedtakDao, producer)
 
     private lateinit var sykmeldingDokumentId: UUID
     private lateinit var søknadDokumentId: UUID
+    private lateinit var inntektsmeldingDokumentId: UUID
     private lateinit var nySøknadHendelseId: UUID
     private lateinit var sendtSøknadHendelseId: UUID
     private lateinit var inntektsmeldingHendelseId: UUID
@@ -50,7 +51,7 @@ internal class EndToEndTest {
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
         VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeMediator)
-        UtbetaltRiver(testRapid, vedtakDao)
+        UtbetaltRiver(testRapid, vedtaksperiodeMediator)
 
         Flyway.configure()
             .dataSource(dataSource)
@@ -63,6 +64,7 @@ internal class EndToEndTest {
         testRapid.reset()
         sykmeldingDokumentId = UUID.randomUUID()
         søknadDokumentId = UUID.randomUUID()
+        inntektsmeldingDokumentId = UUID.randomUUID()
         vedtaksperiodeId = UUID.randomUUID()
         nySøknadHendelseId = UUID.randomUUID()
         sendtSøknadHendelseId = UUID.randomUUID()
@@ -104,6 +106,19 @@ internal class EndToEndTest {
         assertEquals(2, vedtaksperiodeDto.dokumenter.size)
     }
 
+    @Test
+    fun `utbetaling`() {
+        val slot = CapturingSlot<ProducerRecord<String, VedtaksperiodeDto>>()
+        sykmeldingSendt()
+        søknadSendt()
+        inntektsmeldingSendt()
+        utbetalt()
+
+        verify(exactly = 5) { producer.send(capture(slot)) }
+        assertEquals(3, slot.captured.value().dokumenter.size)
+
+    }
+
     private fun søknadSendt() {
         testRapid.sendTestMessage(sendtSøknadMessage())
         testRapid.sendTestMessage(
@@ -113,6 +128,31 @@ internal class EndToEndTest {
                 listOf(nySøknadHendelseId, sendtSøknadHendelseId)
             )
         )
+    }
+
+    private fun inntektsmeldingSendt() {
+        testRapid.sendTestMessage(inntektsmeldingMessage())
+        testRapid.sendTestMessage(
+            vedtaksperiodeEndret(
+                "AVVENTER_GAP",
+                "AVVENTER_VILKÅRSPRØVING_GAP",
+                listOf(inntektsmeldingHendelseId, nySøknadHendelseId, sendtSøknadHendelseId)
+            )
+        )
+    }
+
+    private fun utbetalt() {
+        testRapid.sendTestMessage(
+            vedtaksperiodeEndret(
+                "TIL_UTBETALING",
+                "AVSLUTTET",
+                listOf(inntektsmeldingHendelseId, nySøknadHendelseId, sendtSøknadHendelseId)
+            )
+        )
+        testRapid.sendTestMessage(utbetalingMessage(
+            hendelser = listOf(nySøknadHendelseId, sendtSøknadHendelseId, inntektsmeldingHendelseId)
+        ))
+
     }
 
     @Language("JSON")
@@ -132,6 +172,15 @@ internal class EndToEndTest {
             "@id": "$nySøknadHendelseId",
             "id": "$søknadDokumentId",
             "sykmeldingId": "$sykmeldingDokumentId",
+            "@opprettet": "2020-06-11T10:46:46.007854"
+        }"""
+
+    @Language("JSON")
+    private fun inntektsmeldingMessage() =
+        """{
+            "@event_name": "inntektsmelding",
+            "@id": "${inntektsmeldingHendelseId}",
+            "inntektsmeldingId": "$inntektsmeldingDokumentId",
             "@opprettet": "2020-06-11T10:46:46.007854"
         }"""
 
@@ -170,7 +219,6 @@ internal class EndToEndTest {
 
     @Language("JSON")
     private fun utbetalingMessage(
-        hendelseId: UUID,
         hendelser: List<UUID>,
         fom: LocalDate = LocalDate.of(2020, 6, 1),
         tom: LocalDate = LocalDate.of(2020, 6, 10),
@@ -213,7 +261,7 @@ internal class EndToEndTest {
     "opprettet": "2020-05-04T11:26:30.23846",
     "system_read_count": 0,
     "@event_name": "utbetalt",
-    "@id": "$hendelseId",
+    "@id": "${UUID.randomUUID()}",
     "@opprettet": "2020-05-04T11:27:13.521398",
     "@forårsaket_av": {
         "event_name": "behov",

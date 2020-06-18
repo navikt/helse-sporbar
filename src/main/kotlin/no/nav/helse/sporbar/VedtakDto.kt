@@ -2,21 +2,20 @@ package no.nav.helse.sporbar
 
 import java.time.LocalDate
 
-data class Vedtak(
+data class VedtakDto(
     val fom: LocalDate,
     val tom: LocalDate,
     val forbrukteSykedager: Int,
     val gjenståendeSykedager: Int,
-    val oppdrag: List<Oppdrag> //Oppdrag kan kanskje hete en utbetaling
+    val utbetalinger: List<UtbetalingDto>
 ) {
-    data class Oppdrag(
+    data class UtbetalingDto(
         val mottaker: String,
         val fagområde: String,
-        val fagsystemId: String, //TODO: Denne skal kanskje bort? Vi vil ikke at noen binder seg til den..
         val totalbeløp: Int,
-        val utbetalingslinjer: List<Utbetalingslinje>
+        val utbetalingslinjer: List<UtbetalingslinjeDto>
     ) {
-        data class Utbetalingslinje(
+        data class UtbetalingslinjeDto(
             val fom: LocalDate,
             val tom: LocalDate,
             val dagsats: Int,

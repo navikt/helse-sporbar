@@ -17,8 +17,9 @@ private const val ORGNUMMER = ""
 internal class VedtaksperiodeMediatorTest {
 
     private val vedtaksperiodeDao = mockk<VedtaksperiodeDao>(relaxed = true)
+    private val vedtakDao = mockk<VedtakDao>(relaxed = true)
     private val producer = mockk<KafkaProducer<String, VedtaksperiodeDto>>(relaxed = true)
-    private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao, producer)
+    private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao, vedtakDao, producer)
 
     private val sykmeldingDokument = Dokument(UUID.randomUUID(), Dokument.Type.Sykmelding)
     private val søknadDokument = Dokument(UUID.randomUUID(), Dokument.Type.Søknad)
