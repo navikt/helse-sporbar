@@ -352,12 +352,12 @@ internal class VedtaksperiodeMediatorTest {
         vedtaksperiodeId: UUID,
         dokumenter: List<Dokument>,
         tilstand: Vedtaksperiode.Tilstand,
-        vedtak: Vedtak? = null
+        utbetaling: Utbetaling? = null
     ) {
         every { vedtaksperiodeDao.finn(vedtaksperiodeId) } returns Vedtaksperiode(
             fnr = FNR,
             orgnummer = ORGNUMMER,
-            vedtak = vedtak,
+            utbetaling = utbetaling,
             dokumenter = dokumenter,
             tilstand = tilstand
         )
@@ -368,13 +368,13 @@ internal class VedtaksperiodeMediatorTest {
     fun sendEvent(
         event: VedtaksperiodeEndret,
         eksisterendeDokumenter: List<Dokument>,
-        eksisterendeVedtak: Vedtak? = null
+        eksisterendeUtbetaling: Utbetaling? = null
     ) {
         prepareMock(
             vedtaksperiodeId = event.vedtaksperiodeId,
             dokumenter = eksisterendeDokumenter,
             tilstand = event.tilstand,
-            vedtak = eksisterendeVedtak
+            utbetaling = eksisterendeUtbetaling
         )
         vedtaksperiodeMediator.vedtaksperiodeEndret(event)
     }

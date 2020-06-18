@@ -6,8 +6,6 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
-import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 
@@ -37,21 +35,13 @@ internal class VedtaksperiodeMediator(
         log.info("Publiserte vedtaksendring på vedtaksperiode: ${vedtaksperiodeEndret.vedtaksperiodeId}")
     }
 
-    internal fun utbetaling(
-        fom: LocalDate,
-        tom: LocalDate,
-        forbrukteSykedager: Int,
-        gjenståendeSykedager: Int,
-        hendelseIder: List<UUID>,
-        vedtak: Vedtak
-    ) {
-
-        vedtakDao.opprett(fom, tom, forbrukteSykedager, gjenståendeSykedager, hendelseIder, vedtak)
+    internal fun utbetaling(utbetaling: Utbetaling) {
+        vedtakDao.opprett(utbetaling)
         producer.send(
             ProducerRecord(
                 "topic",
                 "fnr",
-                Oversetter.oversett(vedtaksperiodeDao.finn(hendelseIder))
+                Oversetter.oversett(vedtaksperiodeDao.finn(utbetaling.hendelseIder))
             )
         )
         log.info("Publiserte vedtaksendring på vedtaksperiode: id") //TODO: Finn id fra vedtak
@@ -63,19 +53,19 @@ internal class VedtaksperiodeMediator(
             return VedtaksperiodeDto(
                 fnr = vedtaksperiode.fnr,
                 orgnummer = vedtaksperiode.orgnummer,
-                vedtak = vedtaksperiode.vedtak?.let { oversett(vedtaksperiode.vedtak) },
+                vedtak = vedtaksperiode.utbetaling?.let { oversett(vedtaksperiode.utbetaling) },
                 dokumenter = vedtaksperiode.dokumenter,
                 manglendeDokumenter = situasjon.manglendeDokumenter(),
                 tilstand = situasjon.tilstandDto
             )
         }
 
-        private fun oversett(vedtak: Vedtak) = VedtakDto(
-            fom = vedtak.fom,
-            tom = vedtak.tom,
-            forbrukteSykedager = vedtak.forbrukteSykedager,
-            gjenståendeSykedager = vedtak.gjenståendeSykedager,
-            utbetalinger = vedtak.oppdrag.map { oppdrag ->
+        private fun oversett(utbetaling: Utbetaling) = VedtakDto(
+            fom = utbetaling.fom,
+            tom = utbetaling.tom,
+            forbrukteSykedager = utbetaling.forbrukteSykedager,
+            gjenståendeSykedager = utbetaling.gjenståendeSykedager,
+            utbetalinger = utbetaling.oppdrag.map { oppdrag ->
                 VedtakDto.UtbetalingDto(
                     mottaker = oppdrag.mottaker,
                     fagområde = oppdrag.fagområde,

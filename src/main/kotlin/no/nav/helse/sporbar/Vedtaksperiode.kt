@@ -3,7 +3,7 @@ package no.nav.helse.sporbar
 internal data class Vedtaksperiode(
     val fnr: String,
     val orgnummer: String,
-    val vedtak: Vedtak?,
+    val utbetaling: Utbetaling?,
     val dokumenter: List<Dokument>,
     val tilstand: Tilstand
 ) {

@@ -1,18 +1,20 @@
 package no.nav.helse.sporbar
 
 import java.time.LocalDate
+import java.util.UUID
 
-data class Vedtak(
+data class Utbetaling(
     val fom: LocalDate,
     val tom: LocalDate,
     val forbrukteSykedager: Int,
     val gjenståendeSykedager: Int,
-    val oppdrag: List<Oppdrag> //Oppdrag kan kanskje hete en utbetaling
+    val hendelseIder: List<UUID>,
+    val oppdrag: List<Oppdrag>
 ) {
     data class Oppdrag(
         val mottaker: String,
         val fagområde: String,
-        val fagsystemId: String, //TODO: Denne skal kanskje bort? Vi vil ikke at noen binder seg til den..
+        val fagsystemId: String,
         val totalbeløp: Int,
         val utbetalingslinjer: List<Utbetalingslinje>
     ) {

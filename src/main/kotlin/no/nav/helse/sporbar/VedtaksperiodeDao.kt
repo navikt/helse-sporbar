@@ -87,7 +87,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
             return Vedtaksperiode(
                 fnr = rows.first().fnr,
                 orgnummer = rows.first().orgnummer,
-                vedtak = vedtak,
+                utbetaling = vedtak,
                 dokumenter = dokumenter,
                 tilstand = rows.first().tilstand
             )
@@ -144,7 +144,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
     private fun finnVedtakz(
         session: Session,
         vedtaksperioder: List<VedtaksperiodeRow>
-    ): Map<Long, Vedtak> {
+    ): Map<Long, Utbetaling> {
         @Language("PostgreSQL")
         val vedtakQuery = """SELECT vedtak.vedtaksperiode_id,
                                     vedtak.fom vedtakFom,
@@ -202,16 +202,17 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                 .asList
         ).groupBy { it.vedtaksperiodeId }
             .mapValues { (_, vedtakValue) ->
-                Vedtak(
+                Utbetaling(
                     fom = vedtakValue.first().fom,
                     tom = vedtakValue.first().tom,
                     forbrukteSykedager = vedtakValue.first().forbrukteSykedager,
                     gjenståendeSykedager = vedtakValue.first().gjenståendeSykedager,
+                    hendelseIder = emptyList(),
                     oppdrag = vedtakValue
                         .map { it.oppdragRow }
                         .groupBy { it.oppdragId }
                         .map { (_, oppdragValue) ->
-                            Vedtak.Oppdrag(
+                            Utbetaling.Oppdrag(
                                 mottaker = oppdragValue.first().mottaker,
                                 fagområde = oppdragValue.first().fagområde,
                                 fagsystemId = oppdragValue.first().fagsystemId,
@@ -219,7 +220,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                                 utbetalingslinjer = oppdragValue
                                     .mapNotNull { it.utbetalingRow }
                                     .map { linjeRow ->
-                                        Vedtak.Oppdrag.Utbetalingslinje(
+                                        Utbetaling.Oppdrag.Utbetalingslinje(
                                             fom = linjeRow.fom,
                                             tom = linjeRow.tom,
                                             dagsats = linjeRow.dagsats,

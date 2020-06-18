@@ -3,18 +3,11 @@ package no.nav.helse.sporbar
 import kotliquery.queryOf
 import kotliquery.sessionOf
 import org.intellij.lang.annotations.Language
-import java.time.LocalDate
-import java.util.*
 import javax.sql.DataSource
 
 internal class VedtakDao(private val dataSource: DataSource) {
     internal fun opprett(
-        fom: LocalDate,
-        tom: LocalDate,
-        forbrukteSykedager: Int,
-        gjenståendeSykedager: Int,
-        hendelseIder: List<UUID>,
-        vedtak: Vedtak
+        utbetaling: Utbetaling
     ) {
         @Language("PostgreSQL")
         val query =
@@ -60,17 +53,17 @@ internal class VedtakDao(private val dataSource: DataSource) {
                     queryOf(
                         query,
                         mapOf(
-                            "fom" to fom,
-                            "tom" to tom,
-                            "forbrukte_sykedager" to forbrukteSykedager,
-                            "gjenstaende_sykedager" to gjenståendeSykedager,
-                            "hendelseIder" to hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() },
+                            "fom" to utbetaling.fom,
+                            "tom" to utbetaling.tom,
+                            "forbrukte_sykedager" to utbetaling.forbrukteSykedager,
+                            "gjenstaende_sykedager" to utbetaling.gjenståendeSykedager,
+                            "hendelseIder" to utbetaling.hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() },
                             "dokumentType" to Dokument.Type.Søknad.name
                         )
                     ).asUpdateAndReturnGeneratedKey
                 )
 
-                vedtak.oppdrag.forEach { oppdrag ->
+                utbetaling.oppdrag.forEach { oppdrag ->
                     val oppdragId = session.run(
                         queryOf(
                             oppdragQuery,

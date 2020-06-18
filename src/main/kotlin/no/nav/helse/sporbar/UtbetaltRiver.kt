@@ -40,24 +40,20 @@ internal class UtbetaltRiver(
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
         vedtaksperiodeMediator.utbetaling(
-            fom = packet["fom"].asLocalDate(),
-            tom = packet["tom"].asLocalDate(),
-            forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
-            gjenståendeSykedager = packet["gjenståendeSykedager"].asInt(),
-            hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) },
-            vedtak = Vedtak(
+            utbetaling = Utbetaling(
                 fom = packet["fom"].asLocalDate(),
                 tom = packet["tom"].asLocalDate(),
                 forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
                 gjenståendeSykedager = packet["gjenståendeSykedager"].asInt(),
+                hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) },
                 oppdrag = packet["utbetalt"].map { oppdrag ->
-                    Vedtak.Oppdrag(
+                    Utbetaling.Oppdrag(
                         mottaker = oppdrag["mottaker"].asText(),
                         fagområde = oppdrag["fagområde"].asText(),
                         fagsystemId = oppdrag["fagsystemId"].asText(),
                         totalbeløp = oppdrag["totalbeløp"].asInt(),
                         utbetalingslinjer = oppdrag["utbetalingslinjer"].map { utbetalingslinje ->
-                            Vedtak.Oppdrag.Utbetalingslinje(
+                            Utbetaling.Oppdrag.Utbetalingslinje(
                                 fom = utbetalingslinje["fom"].asLocalDate(),
                                 tom = utbetalingslinje["tom"].asLocalDate(),
                                 dagsats = utbetalingslinje["dagsats"].asInt(),
