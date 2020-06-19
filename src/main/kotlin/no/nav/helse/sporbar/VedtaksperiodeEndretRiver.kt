@@ -34,8 +34,14 @@ internal class VedtaksperiodeEndretRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
+        val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
+        if (packet["organisasjonsnummer"].asText().length > 9) {
+            log.warn("mottok vedtaksperiode_endret på vedtaksperiode:$vedtaksperiodeId med orgnummer lenger en 9 tegn!")
+            sikkerLog.warn("orgnummer lenger enn 9 tegn: \n${packet.toJson()}")
+            return
+        }
+
         try {
-            val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
             vedtaksperiodeMediator.vedtaksperiodeEndret(
                 VedtaksperiodeEndret(
                     fnr = packet["fødselsnummer"].asText(),
@@ -48,7 +54,7 @@ internal class VedtaksperiodeEndretRiver(
             )
             log.info("Vedtaksperiode $vedtaksperiodeId upserted")
         } catch (e: Exception) {
-            sikkerLog.error("Feil ved behandling av melding: {}", packet.toJson(), e)
+            sikkerLog.error("Feil ved behandling av melding: \n${packet.toJson()}", e)
             throw e
         }
     }
