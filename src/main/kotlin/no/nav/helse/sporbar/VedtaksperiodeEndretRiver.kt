@@ -1,9 +1,6 @@
 package no.nav.helse.sporbar
 
-import no.nav.helse.rapids_rivers.JsonMessage
-import no.nav.helse.rapids_rivers.RapidsConnection
-import no.nav.helse.rapids_rivers.River
-import no.nav.helse.rapids_rivers.asLocalDateTime
+import no.nav.helse.rapids_rivers.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
@@ -21,27 +18,27 @@ internal class VedtaksperiodeEndretRiver(
             validate {
                 it.requireKey(
                     "@id",
-                    "organisasjonsnummer",
                     "fødselsnummer",
                     "vedtaksperiodeId",
                     "@opprettet",
                     "gjeldendeTilstand"
                 )
+                it.require("organisasjonsnummer") { orgnummer ->
+                    require(orgnummer.asText().length == 9)
+                }
                 it.requireAny("@event_name", listOf("vedtaksperiode_endret"))
                 it.requireArray("hendelser")
             }
         }.register(this)
     }
 
-    override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
-        val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
-        if (packet["organisasjonsnummer"].asText().length > 9) {
-            log.warn("mottok vedtaksperiode_endret på vedtaksperiode:$vedtaksperiodeId med orgnummer lenger en 9 tegn!")
-            sikkerLog.warn("orgnummer lenger enn 9 tegn: \n${packet.toJson()}")
-            return
-        }
+    override fun onError(problems: MessageProblems, context: RapidsConnection.MessageContext) {
 
+    }
+
+    override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
         try {
+            val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
             vedtaksperiodeMediator.vedtaksperiodeEndret(
                 VedtaksperiodeEndret(
                     fnr = packet["fødselsnummer"].asText(),
