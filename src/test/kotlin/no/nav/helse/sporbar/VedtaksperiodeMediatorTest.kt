@@ -359,7 +359,8 @@ internal class VedtaksperiodeMediatorTest {
             orgnummer = ORGNUMMER,
             utbetaling = utbetaling,
             dokumenter = dokumenter,
-            tilstand = tilstand
+            tilstand = tilstand,
+            vedtaksperiodeId = vedtaksperiodeId
         )
     }
 

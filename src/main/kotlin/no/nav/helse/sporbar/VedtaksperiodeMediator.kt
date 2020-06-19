@@ -26,8 +26,8 @@ internal class VedtaksperiodeMediator(
 
         producer.send(
             ProducerRecord(
-                "topic",
-                "fnr",
+                "aapen-helse-sporbar",
+                vedtaksperiodeEndret.fnr,
                 Oversetter.oversett(vedtaksperiodeDao.finn(vedtaksperiodeEndret.vedtaksperiodeId))
             )
         )
@@ -35,16 +35,17 @@ internal class VedtaksperiodeMediator(
         log.info("Publiserte vedtaksendring på vedtaksperiode: ${vedtaksperiodeEndret.vedtaksperiodeId}")
     }
 
-    internal fun utbetaling(utbetaling: Utbetaling) {
+    internal fun utbetaling(utbetaling: Utbetaling, fødselsnummer: String) {
         vedtakDao.opprett(utbetaling)
+        val vedtaksperiode = vedtaksperiodeDao.finn(utbetaling.hendelseIder)
         producer.send(
             ProducerRecord(
-                "topic",
-                "fnr",
-                Oversetter.oversett(vedtaksperiodeDao.finn(utbetaling.hendelseIder))
+                "aapen-helse-sporbar",
+                fødselsnummer,
+                Oversetter.oversett(vedtaksperiode)
             )
         )
-        log.info("Publiserte vedtaksendring på vedtaksperiode: id") //TODO: Finn id fra vedtak
+        log.info("Publiserte vedtaksendring på vedtaksperiode: ${vedtaksperiode.vedtaksperiodeId}")
     }
 
     private object Oversetter {

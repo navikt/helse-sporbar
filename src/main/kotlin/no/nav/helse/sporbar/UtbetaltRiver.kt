@@ -40,6 +40,7 @@ internal class UtbetaltRiver(
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
         vedtaksperiodeMediator.utbetaling(
+            fødselsnummer = packet["fødselsnummer"].asText(),
             utbetaling = Utbetaling(
                 fom = packet["fom"].asLocalDate(),
                 tom = packet["tom"].asLocalDate(),

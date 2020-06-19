@@ -17,7 +17,8 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         val orgnummer: String,
         val dokumentId: UUID,
         val dokumentType: Dokument.Type,
-        val tilstand: Vedtaksperiode.Tilstand
+        val tilstand: Vedtaksperiode.Tilstand,
+        val vedtaksperiodeId: UUID
     )
 
     private class VedtakRow(
@@ -91,7 +92,8 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                 orgnummer = vedtaksperiodeRow.orgnummer,
                 utbetaling = vedtak,
                 dokumenter = dokumenter,
-                tilstand = vedtaksperiodeRow.tilstand
+                tilstand = vedtaksperiodeRow.tilstand,
+                vedtaksperiodeId = vedtaksperiodeRow.vedtaksperiodeId
             )
         }
     }
@@ -123,12 +125,13 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                     .groupBy { it.id }
                     .map { (vedtaksperiodeId, vedtaksperiodeRows) ->
                         Vedtaksperiode(
-                            vedtaksperiodeRows.first().fnr,
-                            vedtaksperiodeRows.first().orgnummer,
-                            vedtak[vedtaksperiodeId],
-                            vedtaksperiodeRows.distinctBy { it.dokumentId }
+                            fnr = vedtaksperiodeRows.first().fnr,
+                            orgnummer = vedtaksperiodeRows.first().orgnummer,
+                            utbetaling = vedtak[vedtaksperiodeId],
+                            dokumenter = vedtaksperiodeRows.distinctBy { it.dokumentId }
                                 .map { Dokument(it.dokumentId, it.dokumentType) },
-                            vedtaksperiodeRows.first().tilstand
+                            tilstand = vedtaksperiodeRows.first().tilstand,
+                            vedtaksperiodeId = vedtaksperiodeRows.first().vedtaksperiodeId
                         )
                     }
             }.first()
@@ -141,7 +144,8 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
             orgnummer = row.string("orgnummer"),
             dokumentId = row.uuid("dokument_id"),
             dokumentType = enumValueOf(row.string("type")),
-            tilstand = enumValueOf(row.string("tilstand"))
+            tilstand = enumValueOf(row.string("tilstand")),
+            vedtaksperiodeId = row.uuid("vedtaksperiode_id")
         )
     }
 
