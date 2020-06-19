@@ -93,7 +93,7 @@ internal class VedtaksperiodeMediator(
             Tilstand.AVSLUTTET -> Situasjon.Ferdigbehandlet
             Tilstand.AVSLUTTET_UTEN_UTBETALING -> Situasjon.IngenUtbetaling
             Tilstand.AVSLUTTET_UTEN_UTBETALING_MED_INNTEKTSMELDING -> Situasjon.IngenUtbetaling
-            Tilstand.START -> Situasjon.AvventerSøknadOgInntektsmelding //TODO: Dette skal ikke skje
+            Tilstand.START -> error("Ingen vedtaksperiodeEndret-event vi ha START som gjeldende tilstand")
             Tilstand.AVVENTER_SØKNAD_FERDIG_GAP -> Situasjon.AvventerSøknad
             Tilstand.AVVENTER_VILKÅRSPRØVING_ARBEIDSGIVERSØKNAD -> Situasjon.IngenUtbetaling
             Tilstand.AVVENTER_INNTEKTSMELDING_FERDIG_GAP -> Situasjon.AvventerInntektsmelding
