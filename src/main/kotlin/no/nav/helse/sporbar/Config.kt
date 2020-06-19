@@ -5,7 +5,16 @@ import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.config.SaslConfigs
 import org.apache.kafka.common.serialization.StringSerializer
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.Properties
+
+private val serviceuserBasePath = Paths.get("/var/run/secrets/nais.io/service_user")
+
+fun readServiceUserCredentials() = ServiceUser(
+    username = Files.readString(serviceuserBasePath.resolve("username")),
+    password = Files.readString(serviceuserBasePath.resolve("password"))
+)
 
 class Environment(
     val raw: Map<String, String>,
@@ -20,9 +29,7 @@ class Environment(
             port = raw.getValue("DATABASE_PORT").toInt(),
             vaultMountPath = raw.getValue("DATABASE_VAULT_MOUNT_PATH")
         ),
-        //TODO: Wire opp serviceuser
-        serviceUser = ServiceUser(raw.getValue("user"), raw.getValue("pass"))
-
+        serviceUser = readServiceUserCredentials()
     )
 
     class DB(
@@ -44,7 +51,7 @@ fun loadBaseConfig(kafkaBootstrapServers: String, serviceUser: ServiceUser): Pro
 fun Properties.toProducerConfig(): Properties = Properties().also {
     it.putAll(this)
     it[ProducerConfig.ACKS_CONFIG] = "all"
-    it[ProducerConfig.CLIENT_ID_CONFIG] = "spre-oppgaver-v1"
+    it[ProducerConfig.CLIENT_ID_CONFIG] = "aapen-helse-sporbar"
     it[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
     it[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = JacksonSerializer::class.java
 }

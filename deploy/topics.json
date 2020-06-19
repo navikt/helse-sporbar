@@ -1,0 +1,31 @@
+{
+    "topics": [
+        {
+            "configEntries": {},
+            "members": [
+                {
+                    "member": "srvsporbar",
+                    "role": "PRODUCER"
+                },
+                {
+                    "member": "srvsporbar",
+                    "role": "CONSUMER"
+                },
+                {
+                    "member": "N143409",
+                    "role": "MANAGER"
+                },
+                {
+                    "member": "S151890",
+                    "role": "MANAGER"
+                },
+                {
+                    "member": "R154509",
+                    "role": "MANAGER"
+                }
+            ],
+            "numPartitions": 3,
+            "topicName": "aapen-helse-sporbar"
+        }
+    ]
+}
