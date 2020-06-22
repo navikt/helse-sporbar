@@ -98,7 +98,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         }
     }
 
-    internal fun finn(vedtaksperiodeId: UUID): Vedtaksperiode {
+    internal fun finn(vedtaksperiodeId: UUID): Vedtaksperiode? {
         @Language("PostgreSQL")
         val query = """SELECT
                            v.*,
@@ -134,7 +134,7 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                             vedtaksperiodeId = vedtaksperiodeRows.first().vedtaksperiodeId
                         )
                     }
-            }.first()
+            }.firstOrNull()
     }
 
     private fun vedtaksperiodeRow(row: Row): VedtaksperiodeRow {

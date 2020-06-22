@@ -24,11 +24,17 @@ internal class VedtaksperiodeMediator(
             tilstand = vedtaksperiodeEndret.tilstand
         )
 
+        val maybeVedtaksperiode = vedtaksperiodeDao.finn(vedtaksperiodeEndret.vedtaksperiodeId)
+        if (maybeVedtaksperiode == null) {
+            log.warn("Fant ikke vedtaksperiode:${vedtaksperiodeEndret.vedtaksperiodeId} vi fikk oppdatering på.")
+            return
+        }
+
         producer.send(
             ProducerRecord(
                 "aapen-helse-sporbar",
                 vedtaksperiodeEndret.fnr,
-                Oversetter.oversett(vedtaksperiodeDao.finn(vedtaksperiodeEndret.vedtaksperiodeId))
+                Oversetter.oversett(maybeVedtaksperiode)
             )
         )
 
