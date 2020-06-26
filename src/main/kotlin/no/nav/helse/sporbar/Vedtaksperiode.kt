@@ -5,7 +5,6 @@ import java.util.UUID
 internal data class Vedtaksperiode(
     val fnr: String,
     val orgnummer: String,
-    val utbetaling: Utbetaling?,
     val dokumenter: List<Dokument>,
     val tilstand: Tilstand,
     val vedtaksperiodeId: UUID

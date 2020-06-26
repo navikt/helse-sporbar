@@ -7,7 +7,8 @@ data class VedtakDto(
     val tom: LocalDate,
     val forbrukteSykedager: Int,
     val gjenståendeSykedager: Int,
-    val utbetalinger: List<UtbetalingDto>
+    val utbetalinger: List<UtbetalingDto>,
+    val dokumenter: List<Dokument>
 ) {
     data class UtbetalingDto(
         val mottaker: String,

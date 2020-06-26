@@ -1,5 +1,7 @@
 package no.nav.helse.sporbar
 
+import com.fasterxml.jackson.databind.JsonNode
+import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.sporbar.Vedtaksperiode.Tilstand
 import no.nav.helse.sporbar.VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -12,7 +14,8 @@ private val log: Logger = LoggerFactory.getLogger("sporbar")
 internal class VedtaksperiodeMediator(
     private val vedtaksperiodeDao: VedtaksperiodeDao,
     private val vedtakDao: VedtakDao,
-    private val producer: KafkaProducer<String, VedtaksperiodeDto>
+    private val dokumentDao: DokumentDao,
+    private val producer: KafkaProducer<String, Melding>
 ) {
     internal fun vedtaksperiodeEndret(vedtaksperiodeEndret: VedtaksperiodeEndret) {
         vedtaksperiodeDao.opprett(
@@ -34,7 +37,10 @@ internal class VedtaksperiodeMediator(
             ProducerRecord(
                 "aapen-helse-sporbar",
                 vedtaksperiodeEndret.fnr,
-                Oversetter.oversett(maybeVedtaksperiode)
+                Melding(
+                    type = Melding.Type.Behandlingstilstand,
+                    data = objectMapper.valueToTree(Oversetter.oversett(maybeVedtaksperiode))
+                )
             )
         )
 
@@ -43,15 +49,19 @@ internal class VedtaksperiodeMediator(
 
     internal fun utbetaling(utbetaling: Utbetaling, fødselsnummer: String) {
         vedtakDao.opprett(utbetaling)
-        val vedtaksperiode = vedtaksperiodeDao.finn(utbetaling.hendelseIder)
+        val dokumenter = dokumentDao.finn(utbetaling.hendelseIder)
         producer.send(
             ProducerRecord(
                 "aapen-helse-sporbar",
                 fødselsnummer,
-                Oversetter.oversett(vedtaksperiode)
+                Melding(
+                    type = Melding.Type.Vedtak,
+                    data = objectMapper.valueToTree(Oversetter.oversett(utbetaling, dokumenter))
+                )
             )
         )
-        log.info("Publiserte vedtaksendring på vedtaksperiode: ${vedtaksperiode.vedtaksperiodeId}")
+
+        log.info("Publiserte utbetalinger for {}", keyValue("søknader", dokumenter.map { it.dokumentId }))
     }
 
     private object Oversetter {
@@ -60,14 +70,13 @@ internal class VedtaksperiodeMediator(
             return VedtaksperiodeDto(
                 fnr = vedtaksperiode.fnr,
                 orgnummer = vedtaksperiode.orgnummer,
-                vedtak = vedtaksperiode.utbetaling?.let { oversett(vedtaksperiode.utbetaling) },
                 dokumenter = vedtaksperiode.dokumenter,
                 manglendeDokumenter = situasjon.manglendeDokumenter(),
                 tilstand = situasjon.tilstandDto
             )
         }
 
-        private fun oversett(utbetaling: Utbetaling) = VedtakDto(
+        fun oversett(utbetaling: Utbetaling, dokumenter: List<Dokument>) = VedtakDto(
             fom = utbetaling.fom,
             tom = utbetaling.tom,
             forbrukteSykedager = utbetaling.forbrukteSykedager,
@@ -88,7 +97,8 @@ internal class VedtaksperiodeMediator(
                         )
                     }
                 )
-            }
+            },
+            dokumenter = dokumenter
         )
 
         private fun oversett(tilstand: Tilstand) = when (tilstand) {

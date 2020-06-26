@@ -48,56 +48,6 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
         }
     }
 
-    /*
-        Denne kan erstattes i sin helhet om vi kobler vedtaksperiodeId på utbetalingseventet
-     */
-    internal fun finn(hendelseIder: List<UUID>): Vedtaksperiode {
-        @Language("PostgreSQL")
-        val finnVedtaksperiodeQuery = """SELECT v.*, d.dokument_id, type, tilstand FROM vedtaksperiode v
-             INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
-             INNER JOIN hendelse_dokument hd on vd.dokument_id = hd.dokument_id
-             INNER JOIN dokument d on vd.dokument_id = d.id
-             INNER JOIN hendelse h on hd.hendelse_id = h.id
-             INNER JOIN vedtak_tilstand vt on v.id = vt.vedtaksperiode_id
-             WHERE h.hendelse_id = ANY ((?)::uuid[]) AND d.type = 'Søknad'"""
-
-        sessionOf(dataSource).use { session ->
-            val vedtaksperiodeRow = session.run(queryOf(
-                finnVedtaksperiodeQuery,
-                hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
-            ).map { row -> vedtaksperiodeRow(row) }.asList
-            ).first()
-
-            @Language("PostgreSQL")
-            val dokumentQuery =
-                """
-                    SELECT d.dokument_id, type FROM vedtak_dokument vd
-                    INNER JOIN vedtaksperiode v on v.id = vd.vedtaksperiode_id
-                    INNER JOIN dokument d on vd.dokument_id = d.id
-                    WHERE v.id = ?
-                """
-            val dokumenter = session.run(
-                queryOf(dokumentQuery, vedtaksperiodeRow.id)
-                    .map {
-                        Dokument(
-                            it.uuid("dokument_id"),
-                            enumValueOf(it.string("type"))
-                        )
-                    }.asList
-            )
-
-            val vedtak = finnVedtak(session, listOf(vedtaksperiodeRow))[vedtaksperiodeRow.id]
-            return Vedtaksperiode(
-                fnr = vedtaksperiodeRow.fnr,
-                orgnummer = vedtaksperiodeRow.orgnummer,
-                utbetaling = vedtak,
-                dokumenter = dokumenter,
-                tilstand = vedtaksperiodeRow.tilstand,
-                vedtaksperiodeId = vedtaksperiodeRow.vedtaksperiodeId
-            )
-        }
-    }
-
     internal fun finn(vedtaksperiodeId: UUID): Vedtaksperiode? {
         @Language("PostgreSQL")
         val query = """SELECT
@@ -105,8 +55,9 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                            d.*,
                            (SELECT vt.tilstand FROM vedtak_tilstand vt WHERE vt.vedtaksperiode_id = v.id ORDER BY vt.id DESC LIMIT 1)
                        FROM vedtaksperiode v
-                           INNER JOIN vedtak_dokument vd on v.id = vd.vedtaksperiode_id
-                           INNER JOIN dokument d on vd.dokument_id = d.id
+                           INNER JOIN vedtaksperiode_hendelse vh on v.id = vh.vedtaksperiode_id
+                           INNER JOIN hendelse_dokument hd ON vh.hendelse_id = hd.hendelse_id
+                           INNER JOIN dokument d on hd.dokument_id = d.id
                        WHERE v.vedtaksperiode_id = :vedtaksperiode_id
                        """
 
@@ -119,15 +70,12 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
                         .asList
                 )
 
-                val vedtak = finnVedtak(session, vedtaksperioder)
-
                 vedtaksperioder
                     .groupBy { it.id }
-                    .map { (vedtaksperiodeId, vedtaksperiodeRows) ->
+                    .map { (_, vedtaksperiodeRows) ->
                         Vedtaksperiode(
                             fnr = vedtaksperiodeRows.first().fnr,
                             orgnummer = vedtaksperiodeRows.first().orgnummer,
-                            utbetaling = vedtak[vedtaksperiodeId],
                             dokumenter = vedtaksperiodeRows.distinctBy { it.dokumentId }
                                 .map { Dokument(it.dokumentId, it.dokumentType) },
                             tilstand = vedtaksperiodeRows.first().tilstand,
@@ -254,26 +202,32 @@ internal class VedtaksperiodeDao(private val dataSource: DataSource) {
     ) {
         @Language("PostgreSQL")
         val query =
-            """INSERT INTO vedtaksperiode(vedtaksperiode_id, fodselsnummer, orgnummer) VALUES (?, ?, ?) ON CONFLICT DO NOTHING;
-                       INSERT INTO vedtak_tilstand(vedtaksperiode_id, sist_endret, tilstand) VALUES ((SELECT id from vedtaksperiode WHERE vedtaksperiode_id = ?), ?, ?);
-                       INSERT INTO vedtak_dokument(vedtaksperiode_id, dokument_id)
+            """INSERT INTO vedtaksperiode(vedtaksperiode_id, fodselsnummer, orgnummer) VALUES (:vedtaksperiode_id, :fodselsnummer, :orgnummer) ON CONFLICT DO NOTHING;
+                       INSERT INTO vedtak_tilstand(vedtaksperiode_id, sist_endret, tilstand) VALUES ((SELECT id from vedtaksperiode WHERE vedtaksperiode_id = :vedtaksperiode_id), :sist_endret, :tilstand);
+                       INSERT INTO vedtaksperiode_hendelse(vedtaksperiode_id, hendelse_id)
                            (SELECT
-                                   (SELECT id from vedtaksperiode WHERE vedtaksperiode_id = ?),
-                                   d.id
+                                   (SELECT id from vedtaksperiode WHERE vedtaksperiode_id = :vedtaksperiode_id),
+                                   h.id
                             FROM hendelse h
-                                   INNER JOIN hendelse_dokument hd ON h.id = hd.hendelse_id
-                                   INNER JOIN dokument d on hd.dokument_id = d.id
-                            WHERE h.hendelse_id = ANY ((?)::uuid[]))
+                            WHERE h.hendelse_id = ANY ((:hendelse_ider)::uuid[]))
                             ON CONFLICT DO NOTHING;
         """
         sessionOf(dataSource).use { session ->
             session.run(
                 queryOf(
                     query,
-                    vedtaksperiodeId, fnr, orgnummer,
-                    vedtaksperiodeId, timestamp, tilstand.name,
-                    vedtaksperiodeId,
-                    hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
+                    mapOf(
+                        "vedtaksperiode_id" to vedtaksperiodeId,
+                        "fodselsnummer" to fnr,
+                        "orgnummer" to orgnummer,
+                        "sist_endret" to timestamp,
+                        "tilstand" to tilstand.name,
+                        "hendelse_ider" to hendelseIder.joinToString(
+                            prefix = "{",
+                            postfix = "}",
+                            separator = ","
+                        ) { it.toString() }
+                    )
                 ).asExecute
             )
         }

@@ -11,20 +11,21 @@ internal class VedtakDao(private val dataSource: DataSource) {
     ) {
         @Language("PostgreSQL")
         val query =
-            """INSERT INTO vedtak(fom, tom, forbrukte_sykedager, gjenstaende_sykedager, vedtaksperiode_id) VALUES (
+            """INSERT INTO vedtak(fom, tom, forbrukte_sykedager, gjenstaende_sykedager) VALUES (
                        :fom,
                        :tom,
                        :forbrukte_sykedager,
-                       :gjenstaende_sykedager,
-                       (SELECT distinct vd.vedtaksperiode_id
-                        FROM hendelse h
-                               INNER JOIN hendelse_dokument hd ON h.id = hd.hendelse_id
-                               INNER JOIN dokument d on hd.dokument_id = d.id
-                               INNER JOIN vedtak_dokument vd on d.id = vd.dokument_id
-                        WHERE h.hendelse_id = ANY ((:hendelseIder)::uuid[])
-                        AND d.type = :dokumentType))
+                       :gjenstaende_sykedager)
                         ON CONFLICT DO NOTHING;
         """
+
+        @Language("PostgreSQL")
+        val vedtakHendelseQuery =
+            """INSERT INTO vedtak_hendelse(vedtak_id, hendelse_id)
+                           (SELECT :vedtak_id, h.id
+                            FROM hendelse h
+                            WHERE h.hendelse_id = ANY ((:hendelse_ider)::uuid[]))
+                            ON CONFLICT DO NOTHING;"""
 
         @Language("PostgreSQL")
         val oppdragQuery =
@@ -56,11 +57,19 @@ internal class VedtakDao(private val dataSource: DataSource) {
                             "fom" to utbetaling.fom,
                             "tom" to utbetaling.tom,
                             "forbrukte_sykedager" to utbetaling.forbrukteSykedager,
-                            "gjenstaende_sykedager" to utbetaling.gjenståendeSykedager,
-                            "hendelseIder" to utbetaling.hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() },
-                            "dokumentType" to Dokument.Type.Søknad.name
+                            "gjenstaende_sykedager" to utbetaling.gjenståendeSykedager
                         )
                     ).asUpdateAndReturnGeneratedKey
+                )
+
+                session.run(
+                    queryOf(
+                        vedtakHendelseQuery,
+                        mapOf(
+                            "vedtak_id" to vedtakId,
+                            "hendelse_ider" to utbetaling.hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
+                        )
+                    ).asUpdate
                 )
 
                 utbetaling.oppdrag.forEach { oppdrag ->

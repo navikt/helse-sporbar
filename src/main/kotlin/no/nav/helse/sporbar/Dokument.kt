@@ -1,9 +1,9 @@
 package no.nav.helse.sporbar
 
-import java.util.*
+import java.util.UUID
 
-internal class Dokument(internal val dokumentId: UUID, internal val type: Type) {
-    internal enum class Type {
+class Dokument(val dokumentId: UUID, val type: Type) {
+    enum class Type {
         Sykmelding, Søknad, Inntektsmelding
     }
 }

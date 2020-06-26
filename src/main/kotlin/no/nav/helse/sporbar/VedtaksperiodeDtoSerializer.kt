@@ -1,14 +1,8 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.JsonNode
 import org.apache.kafka.common.serialization.Serializer
 
-private val objectMapper = jacksonObjectMapper()
-    .registerModule(JavaTimeModule())
-    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-
-internal class VedtaksperiodeDtoSerializer : Serializer<VedtaksperiodeDto> {
-    override fun serialize(topic: String, data: VedtaksperiodeDto): ByteArray = objectMapper.writeValueAsBytes(data)
+internal class VedtaksperiodeDtoSerializer : Serializer<JsonNode> {
+    override fun serialize(topic: String, data: JsonNode): ByteArray = objectMapper.writeValueAsBytes(data)
 }

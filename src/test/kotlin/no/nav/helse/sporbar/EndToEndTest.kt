@@ -12,6 +12,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,8 +39,13 @@ internal class EndToEndTest {
     private val dokumentDao = DokumentDao(dataSource)
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     private val vedtakDao = VedtakDao(dataSource)
-    private val producer = mockk<KafkaProducer<String, VedtaksperiodeDto>>(relaxed = true)
-    private val vedtaksperiodeMediator = VedtaksperiodeMediator(vedtaksperiodeDao, vedtakDao, producer)
+    private val producer = mockk<KafkaProducer<String, Melding>>(relaxed = true)
+    private val vedtaksperiodeMediator = VedtaksperiodeMediator(
+        vedtaksperiodeDao = vedtaksperiodeDao,
+        vedtakDao = vedtakDao,
+        dokumentDao = dokumentDao,
+        producer = producer
+    )
 
     private lateinit var idSett: IdSett
 
@@ -62,44 +68,50 @@ internal class EndToEndTest {
 
     @Test
     fun `mottar sykmelding (ny søknad)`() {
-        val slot = CapturingSlot<ProducerRecord<String, VedtaksperiodeDto>>()
+        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
 
         sykmeldingSendt()
 
         verify(exactly = 1) { producer.send(capture(slot)) }
         val vedtaksperiodeDto = slot.captured.value()
-        assertEquals(VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon, vedtaksperiodeDto.tilstand)
-        assertEquals(2, vedtaksperiodeDto.dokumenter.size)
+        assertEquals(
+            VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
+            VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto.data["tilstand"].asText())
+        )
+        assertEquals(2, vedtaksperiodeDto.data["dokumenter"].size())
     }
 
 
     @Test
     fun `ny søknad hendelse`() {
-        val slot = CapturingSlot<ProducerRecord<String, VedtaksperiodeDto>>()
+        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
         sykmeldingSendt()
         søknadSendt()
 
         verify { producer.send(capture(slot)) }
         val vedtaksperiodeDto = slot.captured.value()
-        assertEquals(VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon, vedtaksperiodeDto.tilstand)
-        assertEquals(2, vedtaksperiodeDto.dokumenter.size)
+        assertEquals(
+            VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
+            VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto.data["tilstand"].asText())
+        )
+        assertEquals(2, vedtaksperiodeDto.data["dokumenter"].size())
     }
 
     @Test
     fun `utbetaling`() {
-        val slot = CapturingSlot<ProducerRecord<String, VedtaksperiodeDto>>()
+        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
         sykmeldingSendt()
         søknadSendt()
         inntektsmeldingSendt()
         utbetalt()
 
         verify(exactly = 5) { producer.send(capture(slot)) }
-        assertEquals(3, slot.captured.value().dokumenter.size)
+        assertEquals(3, slot.captured.value().data["dokumenter"].size())
     }
 
     @Test
     fun `påfølgende utbetaling`() {
-        val slot = CapturingSlot<ProducerRecord<String, VedtaksperiodeDto>>()
+        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
         val idSett1 = IdSett()
         val idSett2 = IdSett()
 
@@ -109,27 +121,51 @@ internal class EndToEndTest {
         utbetalt(idSett1)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.captured.value().dokumenter.map { it.dokumentId }.contains(idSett1.søknadDokumentId))
-        assertEquals(2, slot.captured.value().vedtak?.utbetalinger?.size)
+        assertTrue(slot.captured.value().data["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+            .contains(idSett1.søknadDokumentId))
 
         sykmeldingSendt(idSett2)
         søknadSendt(idSett2)
         utbetalt(idSett2)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.captured.value().dokumenter.map { it.dokumentId }.contains(idSett2.søknadDokumentId))
-        assertEquals(2, slot.captured.value().vedtak?.utbetalinger?.size)
+        assertTrue(slot.captured.value().data["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+            .contains(idSett2.søknadDokumentId))
+    }
+
+    @Test
+    fun `flere dokumenter knyttet til samme vedtak`() {
+        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val idSett1 = IdSett()
+        val idSett2 = IdSett()
+
+        sykmeldingSendt(idSett1)
+        søknadSendt(idSett1)
+        inntektsmeldingSendt(idSett1)
+        søknadSendt(idSett2)
+
+        utbetalt(idSett1, listOf(
+            idSett1.nySøknadHendelseId,
+            idSett1.sendtSøknadHendelseId,
+            idSett1.inntektsmeldingHendelseId,
+            idSett2.sendtSøknadHendelseId
+        ))
+
+        verify { producer.send(capture(slot)) }
+        assertEquals(5, slot.captured.value().data["dokumenter"].size())
     }
 
     private fun sykmeldingSendt(
         idSett: IdSett = this.idSett,
         vedtakHendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId)
     ) {
-        testRapid.sendTestMessage(nySøknadMessage(
-            nySøknadHendelseId = idSett.nySøknadHendelseId,
-            søknadDokumentId = idSett.søknadDokumentId,
-            sykmeldingDokumentId = idSett.sykmeldingDokumentId
-        ))
+        testRapid.sendTestMessage(
+            nySøknadMessage(
+                nySøknadHendelseId = idSett.nySøknadHendelseId,
+                søknadDokumentId = idSett.søknadDokumentId,
+                sykmeldingDokumentId = idSett.sykmeldingDokumentId
+            )
+        )
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "START",
@@ -139,15 +175,18 @@ internal class EndToEndTest {
             )
         )
     }
+
     private fun søknadSendt(
         idSett: IdSett = this.idSett,
         vedtakHendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.sendtSøknadHendelseId)
     ) {
-        testRapid.sendTestMessage(sendtSøknadMessage(
-            sendtSøknadHendelseId = idSett.sendtSøknadHendelseId,
-            søknadDokumentId = idSett.søknadDokumentId,
-            sykmeldingDokumentId = idSett.sykmeldingDokumentId
-        ))
+        testRapid.sendTestMessage(
+            sendtSøknadMessage(
+                sendtSøknadHendelseId = idSett.sendtSøknadHendelseId,
+                søknadDokumentId = idSett.søknadDokumentId,
+                sykmeldingDokumentId = idSett.sykmeldingDokumentId
+            )
+        )
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "MOTTATT_SYKMELDING_FERDIG_GAP",
@@ -162,10 +201,12 @@ internal class EndToEndTest {
         idSett: IdSett = this.idSett,
         vedtakHendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.inntektsmeldingHendelseId)
     ) {
-        testRapid.sendTestMessage(inntektsmeldingMessage(
-            inntektsmeldingHendelseId = idSett.inntektsmeldingHendelseId,
-            inntektsmeldingDokumentId = idSett.inntektsmeldingDokumentId
-        ))
+        testRapid.sendTestMessage(
+            inntektsmeldingMessage(
+                inntektsmeldingHendelseId = idSett.inntektsmeldingHendelseId,
+                inntektsmeldingDokumentId = idSett.inntektsmeldingDokumentId
+            )
+        )
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "AVVENTER_GAP",
@@ -178,7 +219,12 @@ internal class EndToEndTest {
 
     private fun utbetalt(
         idSett: IdSett = this.idSett,
-        vedtakHendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.sendtSøknadHendelseId, idSett.inntektsmeldingHendelseId)) {
+        vedtakHendelseIder: List<UUID> = listOf(
+            idSett.nySøknadHendelseId,
+            idSett.sendtSøknadHendelseId,
+            idSett.inntektsmeldingHendelseId
+        )
+    ) {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "TIL_UTBETALING",
@@ -187,9 +233,11 @@ internal class EndToEndTest {
                 vedtakHendelseIder
             )
         )
-        testRapid.sendTestMessage(utbetalingMessage(
-            hendelser = vedtakHendelseIder
-        ))
+        testRapid.sendTestMessage(
+            utbetalingMessage(
+                hendelser = vedtakHendelseIder
+            )
+        )
 
     }
 
