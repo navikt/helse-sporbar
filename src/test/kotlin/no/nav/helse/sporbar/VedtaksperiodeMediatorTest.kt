@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar
 
+import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
@@ -19,7 +20,7 @@ internal class VedtaksperiodeMediatorTest {
     private val vedtaksperiodeDao = mockk<VedtaksperiodeDao>(relaxed = true)
     private val vedtakDao = mockk<VedtakDao>(relaxed = true)
     private val dokumentDao = mockk<DokumentDao>(relaxed = true)
-    private val producer = mockk<KafkaProducer<String, Melding>>(relaxed = true)
+    private val producer = mockk<KafkaProducer<String, JsonNode>>(relaxed = true)
     private val vedtaksperiodeMediator = VedtaksperiodeMediator(
         vedtaksperiodeDao = vedtaksperiodeDao,
         vedtakDao = vedtakDao,
@@ -38,13 +39,13 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
-        assertEquals(2, slot.captured.value().data["manglendeDokumenter"].size())
+        assertEquals(2, slot.captured.value()["manglendeDokumenter"].size())
     }
 
     @Test
@@ -54,14 +55,14 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
-        assertEquals(1, slot.captured.value().data["manglendeDokumenter"].size())
+        assertEquals(1, slot.captured.value()["manglendeDokumenter"].size())
     }
 
     @Test
@@ -71,12 +72,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -87,12 +88,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -103,12 +104,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -119,12 +120,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -135,12 +136,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -151,12 +152,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvsluttetInnenforArbeidsgiverperioden,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -167,12 +168,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -183,12 +184,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -199,12 +200,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -215,12 +216,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -231,12 +232,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -247,12 +248,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.Ferdigbehandlet,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -263,12 +264,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvsluttetInnenforArbeidsgiverperioden,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -279,12 +280,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvsluttetInnenforArbeidsgiverperioden,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -295,12 +296,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -311,12 +312,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -327,12 +328,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -343,12 +344,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -359,12 +360,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -375,12 +376,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -391,12 +392,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 
@@ -407,12 +408,12 @@ internal class VedtaksperiodeMediatorTest {
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         verify { producer.send(capture(slot)) }
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.ManuellBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value().data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
 

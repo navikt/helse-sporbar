@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.opentable.db.postgres.embedded.EmbeddedPostgres
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -39,7 +40,7 @@ internal class EndToEndTest {
     private val dokumentDao = DokumentDao(dataSource)
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     private val vedtakDao = VedtakDao(dataSource)
-    private val producer = mockk<KafkaProducer<String, Melding>>(relaxed = true)
+    private val producer = mockk<KafkaProducer<String, JsonNode>>(relaxed = true)
     private val vedtaksperiodeMediator = VedtaksperiodeMediator(
         vedtaksperiodeDao = vedtaksperiodeDao,
         vedtakDao = vedtakDao,
@@ -68,7 +69,7 @@ internal class EndToEndTest {
 
     @Test
     fun `mottar sykmelding (ny søknad)`() {
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
 
         sykmeldingSendt()
 
@@ -76,15 +77,15 @@ internal class EndToEndTest {
         val vedtaksperiodeDto = slot.captured.value()
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto.data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto["tilstand"].asText())
         )
-        assertEquals(2, vedtaksperiodeDto.data["dokumenter"].size())
+        assertEquals(2, vedtaksperiodeDto["dokumenter"].size())
     }
 
 
     @Test
     fun `ny søknad hendelse`() {
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         sykmeldingSendt()
         søknadSendt()
 
@@ -92,26 +93,26 @@ internal class EndToEndTest {
         val vedtaksperiodeDto = slot.captured.value()
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto.data["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto["tilstand"].asText())
         )
-        assertEquals(2, vedtaksperiodeDto.data["dokumenter"].size())
+        assertEquals(2, vedtaksperiodeDto["dokumenter"].size())
     }
 
     @Test
     fun `utbetaling`() {
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         sykmeldingSendt()
         søknadSendt()
         inntektsmeldingSendt()
         utbetalt()
 
         verify(exactly = 5) { producer.send(capture(slot)) }
-        assertEquals(3, slot.captured.value().data["dokumenter"].size())
+        assertEquals(3, slot.captured.value()["dokumenter"].size())
     }
 
     @Test
     fun `påfølgende utbetaling`() {
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         val idSett1 = IdSett()
         val idSett2 = IdSett()
 
@@ -121,7 +122,7 @@ internal class EndToEndTest {
         utbetalt(idSett1)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.captured.value().data["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+        assertTrue(slot.captured.value()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett1.søknadDokumentId))
 
         sykmeldingSendt(idSett2)
@@ -129,13 +130,13 @@ internal class EndToEndTest {
         utbetalt(idSett2)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.captured.value().data["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+        assertTrue(slot.captured.value()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett2.søknadDokumentId))
     }
 
     @Test
     fun `flere dokumenter knyttet til samme vedtak`() {
-        val slot = CapturingSlot<ProducerRecord<String, Melding>>()
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         val idSett1 = IdSett()
         val idSett2 = IdSett()
 
@@ -152,7 +153,7 @@ internal class EndToEndTest {
         ))
 
         verify { producer.send(capture(slot)) }
-        assertEquals(5, slot.captured.value().data["dokumenter"].size())
+        assertEquals(5, slot.captured.value()["dokumenter"].size())
     }
 
     private fun sykmeldingSendt(

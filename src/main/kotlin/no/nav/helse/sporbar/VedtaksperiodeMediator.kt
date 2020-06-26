@@ -6,6 +6,8 @@ import no.nav.helse.sporbar.Vedtaksperiode.Tilstand
 import no.nav.helse.sporbar.VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.header.internals.RecordHeader
+import org.apache.kafka.common.header.internals.RecordHeaders
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -15,7 +17,7 @@ internal class VedtaksperiodeMediator(
     private val vedtaksperiodeDao: VedtaksperiodeDao,
     private val vedtakDao: VedtakDao,
     private val dokumentDao: DokumentDao,
-    private val producer: KafkaProducer<String, Melding>
+    private val producer: KafkaProducer<String, JsonNode>
 ) {
     internal fun vedtaksperiodeEndret(vedtaksperiodeEndret: VedtaksperiodeEndret) {
         vedtaksperiodeDao.opprett(
@@ -36,11 +38,10 @@ internal class VedtaksperiodeMediator(
         producer.send(
             ProducerRecord(
                 "aapen-helse-sporbar",
+                null,
                 vedtaksperiodeEndret.fnr,
-                Melding(
-                    type = Melding.Type.Behandlingstilstand,
-                    data = objectMapper.valueToTree(Oversetter.oversett(maybeVedtaksperiode))
-                )
+                objectMapper.valueToTree(Oversetter.oversett(maybeVedtaksperiode)),
+                listOf(RecordHeader("type", Meldingstype.Behandlingstilstand.name.toByteArray()))
             )
         )
 
@@ -53,11 +54,10 @@ internal class VedtaksperiodeMediator(
         producer.send(
             ProducerRecord(
                 "aapen-helse-sporbar",
+                null,
                 fødselsnummer,
-                Melding(
-                    type = Melding.Type.Vedtak,
-                    data = objectMapper.valueToTree(Oversetter.oversett(utbetaling, dokumenter))
-                )
+                objectMapper.valueToTree(Oversetter.oversett(utbetaling, dokumenter)),
+                listOf(RecordHeader("type", Meldingstype.Vedtak.name.toByteArray()))
             )
         )
 

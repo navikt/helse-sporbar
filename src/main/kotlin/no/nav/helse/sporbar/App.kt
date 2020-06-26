@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -23,7 +24,7 @@ fun launchApplication(env: Environment) {
 
     val dokumentDao = DokumentDao(dataSource)
     val producer =
-        KafkaProducer<String, Melding>(
+        KafkaProducer<String, JsonNode>(
             loadBaseConfig(
                 env.raw.getValue("KAFKA_BOOTSTRAP_SERVERS"),
                 env.serviceUser
