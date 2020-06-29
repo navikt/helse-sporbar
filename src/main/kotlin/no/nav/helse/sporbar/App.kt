@@ -18,7 +18,7 @@ fun main() {
     val env = Environment(System.getenv())
     try {
         launchApplication(env)
-    } catch (e : Exception) {
+    } catch (e: Exception) {
         log.error("Feil under kjøring", e)
         throw e
     }
