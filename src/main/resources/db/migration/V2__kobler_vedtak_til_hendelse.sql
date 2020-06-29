@@ -1,21 +1,12 @@
-DELETE
-FROM utbetaling;
-DELETE
-FROM oppdrag;
-DELETE
-FROM vedtak_tilstand;
-DELETE
-FROM vedtak_dokument;
-DELETE
-FROM vedtak;
-DELETE
-FROM vedtaksperiode;
-DELETE
-FROM hendelse_dokument;
-DELETE
-FROM dokument;
-DELETE
-FROM hendelse;
+TRUNCATE utbetaling;
+TRUNCATE oppdrag;
+TRUNCATE vedtak_tilstand;
+TRUNCATE vedtak_dokument;
+TRUNCATE vedtak;
+TRUNCATE vedtaksperiode;
+TRUNCATE hendelse_dokument;
+TRUNCATE dokument;
+TRUNCATE hendelse;
 
 ALTER TABLE vedtak
     DROP COLUMN vedtaksperiode_id;
