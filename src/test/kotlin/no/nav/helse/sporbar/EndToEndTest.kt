@@ -13,7 +13,6 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -145,12 +144,14 @@ internal class EndToEndTest {
         inntektsmeldingSendt(idSett1)
         søknadSendt(idSett2)
 
-        utbetalt(idSett1, listOf(
-            idSett1.nySøknadHendelseId,
-            idSett1.sendtSøknadHendelseId,
-            idSett1.inntektsmeldingHendelseId,
-            idSett2.sendtSøknadHendelseId
-        ))
+        utbetalt(
+            idSett1, listOf(
+                idSett1.nySøknadHendelseId,
+                idSett1.sendtSøknadHendelseId,
+                idSett1.inntektsmeldingHendelseId,
+                idSett2.sendtSøknadHendelseId
+            )
+        )
 
         verify { producer.send(capture(slot)) }
         assertEquals(5, slot.captured.value()["dokumenter"].size())
