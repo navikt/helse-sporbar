@@ -1,10 +1,14 @@
 package no.nav.helse.sporbar
 
-import no.nav.helse.rapids_rivers.*
+import no.nav.helse.rapids_rivers.JsonMessage
+import no.nav.helse.rapids_rivers.MessageProblems
+import no.nav.helse.rapids_rivers.RapidsConnection
+import no.nav.helse.rapids_rivers.River
+import no.nav.helse.rapids_rivers.asLocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")

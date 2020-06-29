@@ -6,12 +6,13 @@ import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
 
-internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val dokumentDao: DokumentDao) : River.PacketListener {
+internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val dokumentDao: DokumentDao) :
+    River.PacketListener {
     init {
         River(rapidsConnection).apply {
             validate {
@@ -20,7 +21,10 @@ internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val
                 it.interestedIn("inntektsmeldingId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("id") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("sykmeldingId") { id -> UUID.fromString(id.asText()) }
-                it.requireAny("@event_name", listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver"))
+                it.requireAny(
+                    "@event_name",
+                    listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver")
+                )
             }
         }.register(this)
     }

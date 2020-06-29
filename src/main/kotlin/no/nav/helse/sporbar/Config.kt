@@ -6,7 +6,7 @@ import org.apache.kafka.common.config.SaslConfigs
 import org.apache.kafka.common.serialization.StringSerializer
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.*
+import java.util.Properties
 
 private val serviceuserBasePath = Paths.get("/var/run/secrets/nais.io/service_user")
 

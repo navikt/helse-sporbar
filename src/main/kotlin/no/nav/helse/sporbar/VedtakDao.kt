@@ -67,7 +67,11 @@ internal class VedtakDao(private val dataSource: DataSource) {
                         vedtakHendelseQuery,
                         mapOf(
                             "vedtak_id" to vedtakId,
-                            "hendelse_ider" to utbetaling.hendelseIder.joinToString(prefix = "{", postfix = "}", separator = ",") { it.toString() }
+                            "hendelse_ider" to utbetaling.hendelseIder.joinToString(
+                                prefix = "{",
+                                postfix = "}",
+                                separator = ","
+                            ) { it.toString() }
                         )
                     ).asUpdate
                 )

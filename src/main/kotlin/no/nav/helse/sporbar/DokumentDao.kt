@@ -5,7 +5,7 @@ import kotliquery.queryOf
 import kotliquery.sessionOf
 import org.intellij.lang.annotations.Language
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import javax.sql.DataSource
 
 internal class DokumentDao(val datasource: DataSource) {
@@ -21,15 +21,17 @@ internal class DokumentDao(val datasource: DataSource) {
             ON CONFLICT DO NOTHING;"""
         sessionOf(datasource).use {
             it.transaction { session ->
-                session.run(queryOf(
-                    query,
-                    hendelseId,
-                    opprettet,
-                    dokumentId,
-                    type.name,
-                    hendelseId,
-                    dokumentId
-                ).asUpdate)
+                session.run(
+                    queryOf(
+                        query,
+                        hendelseId,
+                        opprettet,
+                        dokumentId,
+                        type.name,
+                        hendelseId,
+                        dokumentId
+                    ).asUpdate
+                )
             }
         }
     }
