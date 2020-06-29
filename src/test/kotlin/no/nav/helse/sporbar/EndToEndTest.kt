@@ -1,21 +1,20 @@
 package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.opentable.db.postgres.embedded.EmbeddedPostgres
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import io.mockk.CapturingSlot
+import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.UUID
@@ -24,18 +23,10 @@ import kotlin.streams.asSequence
 private const val FNR = "12020052345"
 private const val ORGNUMMER = "987654321"
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class EndToEndTest {
     private val testRapid = TestRapid()
-    private val embeddedPostgres = EmbeddedPostgres.builder().setPort(56789).start()
-    private val hikariConfig = HikariConfig().apply {
-        this.jdbcUrl = embeddedPostgres.getJdbcUrl("postgres", "postgres")
-        maximumPoolSize = 3
-        minimumIdle = 1
-        idleTimeout = 10001
-        connectionTimeout = 1000
-        maxLifetime = 30001
-    }
-    private val dataSource = HikariDataSource(hikariConfig)
+    private val dataSource = setUpDatasopurceWithFlyway()
     private val dokumentDao = DokumentDao(dataSource)
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     private val vedtakDao = VedtakDao(dataSource)
@@ -53,17 +44,18 @@ internal class EndToEndTest {
         NyttDokumentRiver(testRapid, dokumentDao)
         VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeMediator)
         UtbetaltRiver(testRapid, vedtaksperiodeMediator)
+    }
 
-        Flyway.configure()
-            .dataSource(dataSource)
-            .load()
-            .migrate()
+    @AfterAll
+    fun cleanUp() {
+        dataSource.close()
     }
 
     @BeforeEach
     fun setup() {
         testRapid.reset()
         idSett = IdSett()
+        clearAllMocks()
     }
 
     @Test

@@ -1,38 +1,28 @@
 package no.nav.helse.sporbar
 
-import com.opentable.db.postgres.embedded.EmbeddedPostgres
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
-import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import java.util.UUID
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class NyttDokumentRiverTest {
     private val testRapid = TestRapid()
-    private val embeddedPostgres = EmbeddedPostgres.builder().setPort(56789).start()
-    private val hikariConfig = HikariConfig().apply {
-        this.jdbcUrl = embeddedPostgres.getJdbcUrl("postgres", "postgres")
-        maximumPoolSize = 3
-        minimumIdle = 1
-        idleTimeout = 10001
-        connectionTimeout = 1000
-        maxLifetime = 30001
-    }
-    private val dataSource = HikariDataSource(hikariConfig)
+    private val dataSource = setUpDatasopurceWithFlyway()
     private val dokumentDao = DokumentDao(dataSource)
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
+    }
 
-        Flyway.configure()
-            .dataSource(dataSource)
-            .load()
-            .migrate()
+    @AfterAll
+    fun cleanUp() {
+        dataSource.close()
     }
 
     @BeforeEach

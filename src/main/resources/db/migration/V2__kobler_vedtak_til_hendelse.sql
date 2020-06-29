@@ -1,12 +1,4 @@
-TRUNCATE utbetaling;
-TRUNCATE oppdrag;
-TRUNCATE vedtak_tilstand;
-TRUNCATE vedtak_dokument;
-TRUNCATE vedtak;
-TRUNCATE vedtaksperiode;
-TRUNCATE hendelse_dokument;
-TRUNCATE dokument;
-TRUNCATE hendelse;
+TRUNCATE utbetaling, oppdrag, vedtak_tilstand, vedtak_dokument, vedtak, vedtaksperiode, hendelse_dokument, dokument, hendelse;
 
 ALTER TABLE vedtak
     DROP COLUMN vedtaksperiode_id;
