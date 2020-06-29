@@ -7,14 +7,21 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import no.nav.helse.rapids_rivers.RapidApplication
 import org.apache.kafka.clients.producer.KafkaProducer
+import org.slf4j.LoggerFactory
 
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .registerModule(JavaTimeModule())
     .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 
 fun main() {
+    val log = LoggerFactory.getLogger("sporbar")
     val env = Environment(System.getenv())
-    launchApplication(env)
+    try {
+        launchApplication(env)
+    } catch (e : Exception) {
+        log.error("Feil under kjøring", e)
+        throw e
+    }
 }
 
 fun launchApplication(env: Environment) {
