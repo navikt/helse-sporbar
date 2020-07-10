@@ -1,5 +1,5 @@
-Sporbar [![Actions Status](https://github.com/navikt/helse-sporbar/workflows/master/badge.svg)](https://github.com/navikt/helse-sporbar/actions)
-=============
+# Sporbar
+![Bygg og deploy](https://github.com/navikt/helse-sporbar/workflows/Bygg%20og%20deploy/badge.svg)
 
 Sporbar tolker interne hendelser og tilbyr et API for innsyn i saksbehandling
 
