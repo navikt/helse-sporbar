@@ -60,7 +60,7 @@ internal class VedtaksperiodeMediator(
             )
         )
 
-        log.info("Publiserte utbetalinger for {}", keyValue("søknader", dokumenter.map { it.dokumentId }))
+        log.info("Publiserte utbetalinger for {}", keyValue("dokumenter", dokumenter.map { it.dokumentId }))
     }
 
     private object Oversetter {
