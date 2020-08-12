@@ -11,6 +11,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
+private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 
 internal class VedtaksperiodeMediator(
     private val vedtaksperiodeDao: VedtaksperiodeDao,
@@ -50,16 +51,18 @@ internal class VedtaksperiodeMediator(
     internal fun utbetaling(utbetaling: Utbetaling, fødselsnummer: String) {
         vedtakDao.opprett(utbetaling)
         val dokumenter = dokumentDao.finn(utbetaling.hendelseIder)
+        val vedtak = objectMapper.valueToTree<JsonNode>(Oversetter.oversett(utbetaling, dokumenter))
         producer.send(
             ProducerRecord(
                 "aapen-helse-sporbar",
                 null,
                 fødselsnummer,
-                objectMapper.valueToTree(Oversetter.oversett(utbetaling, dokumenter)),
+                vedtak,
                 listOf(RecordHeader("type", Meldingstype.Vedtak.name.toByteArray()))
             )
         )
 
+        sikkerLogg.info("Publiserer {}", keyValue("vedtak", vedtak))
         log.info("Publiserte utbetalinger for {}", keyValue("dokumenter", dokumenter.map { it.dokumentId }))
     }
 
