@@ -7,6 +7,7 @@ data class VedtakDto(
     val tom: LocalDate,
     val forbrukteSykedager: Int,
     val gjenståendeSykedager: Int,
+    val automatiskBehandling: Boolean,
     val utbetalinger: List<UtbetalingDto>,
     val dokumenter: List<Dokument>
 ) {

@@ -1,0 +1,2 @@
+ALTER TABLE vedtak
+    ADD COLUMN automatisk_behandling BOOLEAN NOT NULL DEFAULT FALSE;

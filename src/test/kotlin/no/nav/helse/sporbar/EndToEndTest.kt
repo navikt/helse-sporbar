@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.util.UUID
+import java.util.*
 import kotlin.streams.asSequence
 
 private const val FNR = "12020052345"
@@ -102,6 +102,18 @@ internal class EndToEndTest {
     }
 
     @Test
+    fun `automatiske utbetalinger blir merket i vedtak-event`() {
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        sykmeldingSendt()
+        søknadSendt()
+        inntektsmeldingSendt()
+        utbetalt(automatiskBehandling = true)
+
+        verify(exactly = 5) { producer.send(capture(slot)) }
+        assertTrue(slot.captured.value()["automatiskBehandling"].asBoolean())
+    }
+
+    @Test
     fun `påfølgende utbetaling`() {
         val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         val idSett1 = IdSett()
@@ -138,11 +150,11 @@ internal class EndToEndTest {
 
         utbetalt(
             idSett1, listOf(
-                idSett1.nySøknadHendelseId,
-                idSett1.sendtSøknadHendelseId,
-                idSett1.inntektsmeldingHendelseId,
-                idSett2.sendtSøknadHendelseId
-            )
+            idSett1.nySøknadHendelseId,
+            idSett1.sendtSøknadHendelseId,
+            idSett1.inntektsmeldingHendelseId,
+            idSett2.sendtSøknadHendelseId
+        ), false
         )
 
         verify { producer.send(capture(slot)) }
@@ -217,7 +229,8 @@ internal class EndToEndTest {
             idSett.nySøknadHendelseId,
             idSett.sendtSøknadHendelseId,
             idSett.inntektsmeldingHendelseId
-        )
+        ),
+        automatiskBehandling: Boolean = false
     ) {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
@@ -229,7 +242,8 @@ internal class EndToEndTest {
         )
         testRapid.sendTestMessage(
             utbetalingMessage(
-                hendelser = vedtakHendelseIder
+                hendelser = vedtakHendelseIder,
+                automatiskBehandling = automatiskBehandling
             )
         )
 
@@ -314,7 +328,8 @@ internal class EndToEndTest {
         hendelser: List<UUID>,
         fom: LocalDate = LocalDate.of(2020, 6, 1),
         tom: LocalDate = LocalDate.of(2020, 6, 10),
-        tidligereBrukteSykedager: Int = 0
+        tidligereBrukteSykedager: Int = 0,
+        automatiskBehandling: Boolean
     ) = """{
     "aktørId": "aktørId",
     "fødselsnummer": "$FNR",
@@ -350,6 +365,7 @@ internal class EndToEndTest {
     "tom": "$tom",
     "forbrukteSykedager": ${tidligereBrukteSykedager + sykedager(fom, tom)},
     "gjenståendeSykedager": ${248 - tidligereBrukteSykedager - sykedager(fom, tom)},
+    "automatiskBehandling": $automatiskBehandling,
     "opprettet": "2020-05-04T11:26:30.23846",
     "system_read_count": 0,
     "@event_name": "utbetalt",

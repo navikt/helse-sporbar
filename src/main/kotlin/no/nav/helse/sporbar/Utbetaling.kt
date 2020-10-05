@@ -8,6 +8,7 @@ data class Utbetaling(
     val tom: LocalDate,
     val forbrukteSykedager: Int,
     val gjenståendeSykedager: Int,
+    val automatiskBehandling: Boolean,
     val hendelseIder: List<UUID>,
     val oppdrag: List<Oppdrag>
 ) {
