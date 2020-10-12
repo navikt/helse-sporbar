@@ -6,6 +6,7 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.asLocalDateTime
+import no.nav.helse.rapids_rivers.asOptionalLocalDate
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -35,6 +36,7 @@ internal class UtbetaltRiver(
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
                 it.require("@opprettet", JsonNode::asLocalDateTime)
+                it.interestedIn("maksdato", JsonNode::asLocalDate)
             }
         }.register(this)
     }
@@ -48,6 +50,7 @@ internal class UtbetaltRiver(
                 forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
                 gjenståendeSykedager = packet["gjenståendeSykedager"].asInt(),
                 automatiskBehandling = packet["automatiskBehandling"].asBoolean(),
+                maksdato = packet["maksdato"].asOptionalLocalDate(),
                 hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) },
                 oppdrag = packet["utbetalt"].map { oppdrag ->
                     Utbetaling.Oppdrag(

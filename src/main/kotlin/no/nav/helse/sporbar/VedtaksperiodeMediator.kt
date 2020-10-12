@@ -84,6 +84,7 @@ internal class VedtaksperiodeMediator(
             forbrukteSykedager = utbetaling.forbrukteSykedager,
             gjenståendeSykedager = utbetaling.gjenståendeSykedager,
             automatiskBehandling = utbetaling.automatiskBehandling,
+            maksdato = utbetaling.maksdato,
             utbetalinger = utbetaling.oppdrag.map { oppdrag ->
                 VedtakDto.UtbetalingDto(
                     mottaker = oppdrag.mottaker,

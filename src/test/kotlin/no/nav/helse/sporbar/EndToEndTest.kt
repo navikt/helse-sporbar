@@ -5,19 +5,25 @@ import io.mockk.CapturingSlot
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
+import kotliquery.queryOf
+import kotliquery.sessionOf
+import no.nav.helse.rapids_rivers.asLocalDate
+import no.nav.helse.rapids_rivers.isMissingOrNull
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.util.*
+import java.util.UUID
 import kotlin.streams.asSequence
 
 private const val FNR = "12020052345"
@@ -56,6 +62,19 @@ internal class EndToEndTest {
         testRapid.reset()
         idSett = IdSett()
         clearAllMocks()
+        resetDatabase()
+
+    }
+
+    private fun resetDatabase() {
+        Flyway
+            .configure()
+            .dataSource(dataSource)
+            .load()
+            .also {
+                it.clean()
+                it.migrate()
+            }
     }
 
     @Test
@@ -114,6 +133,35 @@ internal class EndToEndTest {
     }
 
     @Test
+    fun `tar med maksdato i utgående event`() {
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val maksdato = LocalDate.of(2019, 1, 1)
+        sykmeldingSendt()
+        søknadSendt()
+        inntektsmeldingSendt()
+        utbetalt(maksdato = maksdato)
+
+        verify(exactly = 5) { producer.send(capture(slot)) }
+        assertEquals(maksdato, slot.captured.value()["maksdato"].asLocalDate())
+        val utbetaling = requireNotNull(finnUtbetalinger(idSett.vedtaksperiodeId))
+        assertEquals(maksdato, utbetaling.maksdato)
+    }
+
+    @Test
+    fun `tar med null maksdato i utgående event`() {
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        sykmeldingSendt()
+        søknadSendt()
+        inntektsmeldingSendt()
+        utbetalt(maksdato = null)
+
+        verify(exactly = 5) { producer.send(capture(slot)) }
+        assertTrue(slot.captured.value()["maksdato"].isMissingOrNull())
+        val utbetaling = requireNotNull(finnUtbetalinger(idSett.vedtaksperiodeId))
+        assertNull(utbetaling.maksdato)
+    }
+
+    @Test
     fun `påfølgende utbetaling`() {
         val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         val idSett1 = IdSett()
@@ -150,11 +198,11 @@ internal class EndToEndTest {
 
         utbetalt(
             idSett1, listOf(
-            idSett1.nySøknadHendelseId,
-            idSett1.sendtSøknadHendelseId,
-            idSett1.inntektsmeldingHendelseId,
-            idSett2.sendtSøknadHendelseId
-        ), false
+                idSett1.nySøknadHendelseId,
+                idSett1.sendtSøknadHendelseId,
+                idSett1.inntektsmeldingHendelseId,
+                idSett2.sendtSøknadHendelseId
+            ), false
         )
 
         verify { producer.send(capture(slot)) }
@@ -230,7 +278,8 @@ internal class EndToEndTest {
             idSett.sendtSøknadHendelseId,
             idSett.inntektsmeldingHendelseId
         ),
-        automatiskBehandling: Boolean = false
+        automatiskBehandling: Boolean = false,
+        maksdato: LocalDate? = null
     ) {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
@@ -243,10 +292,10 @@ internal class EndToEndTest {
         testRapid.sendTestMessage(
             utbetalingMessage(
                 hendelser = vedtakHendelseIder,
-                automatiskBehandling = automatiskBehandling
+                automatiskBehandling = automatiskBehandling,
+                maksdato = maksdato
             )
         )
-
     }
 
     @Language("JSON")
@@ -329,7 +378,8 @@ internal class EndToEndTest {
         fom: LocalDate = LocalDate.of(2020, 6, 1),
         tom: LocalDate = LocalDate.of(2020, 6, 10),
         tidligereBrukteSykedager: Int = 0,
-        automatiskBehandling: Boolean
+        automatiskBehandling: Boolean,
+        maksdato: LocalDate? = null
     ) = """{
     "aktørId": "aktørId",
     "fødselsnummer": "$FNR",
@@ -366,6 +416,7 @@ internal class EndToEndTest {
     "forbrukteSykedager": ${tidligereBrukteSykedager + sykedager(fom, tom)},
     "gjenståendeSykedager": ${248 - tidligereBrukteSykedager - sykedager(fom, tom)},
     "automatiskBehandling": $automatiskBehandling,
+    "maksdato": ${maksdato?.let { "\"$it\"" }},
     "opprettet": "2020-05-04T11:26:30.23846",
     "system_read_count": 0,
     "@event_name": "utbetalt",
@@ -382,6 +433,43 @@ internal class EndToEndTest {
     private fun sykedager(fom: LocalDate, tom: LocalDate) =
         fom.datesUntil(tom.plusDays(1)).asSequence()
             .filter { it.dayOfWeek !in arrayOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) }.count()
+
+    private fun finnUtbetalinger(vedtaksperiodeId: UUID): Utbetaling? {
+        @Language("PostgreSQL")
+        val query = """SELECT distinct v2.vedtaksperiode_id,
+                v.maksdato,
+                v.fom,
+                v.tom,
+                v.automatisk_behandling,
+                v.forbrukte_sykedager,
+                v.gjenstaende_sykedager
+from vedtak v
+         join vedtak_hendelse vh on v.id = vh.vedtak_id
+         join vedtaksperiode_hendelse h on vh.hendelse_id = h.hendelse_id
+         join vedtaksperiode v2 on h.vedtaksperiode_id = v2.id
+WHERE v2.vedtaksperiode_id = ?
+        """
+
+        return sessionOf(dataSource).use { session ->
+            session.run(
+                queryOf(
+                    query,
+                    vedtaksperiodeId
+                ).map {
+                    Utbetaling(
+                        fom = LocalDate.parse(it.string("fom")),
+                        tom = LocalDate.parse(it.string("tom")),
+                        forbrukteSykedager = it.int("forbrukte_sykedager"),
+                        gjenståendeSykedager = it.int("gjenstaende_sykedager"),
+                        automatiskBehandling = it.boolean("automatisk_behandling"),
+                        maksdato = it.localDate("maksdato"),
+                        hendelseIder = emptyList(),
+                        oppdrag = emptyList()
+                    )
+                }.asSingle
+            )
+        }
+    }
 }
 
 data class IdSett(
