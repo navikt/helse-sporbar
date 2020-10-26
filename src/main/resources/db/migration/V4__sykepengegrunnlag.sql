@@ -1,0 +1,2 @@
+ALTER TABLE vedtak
+    ADD COLUMN sykepengegrunnlag BOOLEAN NOT NULL DEFAULT FALSE;

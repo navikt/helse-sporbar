@@ -10,7 +10,8 @@ data class Utbetaling(
     val gjenståendeSykedager: Int,
     val automatiskBehandling: Boolean,
     val hendelseIder: List<UUID>,
-    val oppdrag: List<Oppdrag>
+    val oppdrag: List<Oppdrag>,
+    val sykepengegrunnlag: Double
 ) {
     data class Oppdrag(
         val mottaker: String,
