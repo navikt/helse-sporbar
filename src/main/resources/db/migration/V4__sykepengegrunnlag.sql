@@ -1,2 +1,2 @@
-ALTER TABLE vedtak
-    ADD COLUMN sykepengegrunnlag BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE utbetaling
+    ADD COLUMN sykepengegrunnlag DECIMAL;
