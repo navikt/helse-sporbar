@@ -1,2 +1,2 @@
-ALTER TABLE utbetaling
+ALTER TABLE vedtak
     ADD COLUMN sykepengegrunnlag DECIMAL;
