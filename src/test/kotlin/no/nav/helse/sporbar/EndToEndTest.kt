@@ -92,13 +92,15 @@ internal class EndToEndTest {
     @Test
     fun `utbetaling`() {
         val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val sykepengegrunnlag = 2000.0
         sykmeldingSendt()
         søknadSendt()
         inntektsmeldingSendt()
-        utbetalt()
+        utbetalt(sykepengegrunnlag = sykepengegrunnlag)
 
         verify(exactly = 5) { producer.send(capture(slot)) }
         assertEquals(3, slot.captured.value()["dokumenter"].size())
+        assertEquals(sykepengegrunnlag, slot.captured.value()["sykepengegrunnlag"].asDouble())
     }
 
     @Test
@@ -149,12 +151,14 @@ internal class EndToEndTest {
         søknadSendt(idSett2)
 
         utbetalt(
-            idSett1, listOf(
+            idSett1,
+            listOf(
             idSett1.nySøknadHendelseId,
             idSett1.sendtSøknadHendelseId,
             idSett1.inntektsmeldingHendelseId,
             idSett2.sendtSøknadHendelseId
-        ), false
+        ),
+            false
         )
 
         verify { producer.send(capture(slot)) }
@@ -230,7 +234,8 @@ internal class EndToEndTest {
             idSett.sendtSøknadHendelseId,
             idSett.inntektsmeldingHendelseId
         ),
-        automatiskBehandling: Boolean = false
+        automatiskBehandling: Boolean = false,
+        sykepengegrunnlag: Double = 1000.0
     ) {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
@@ -243,7 +248,8 @@ internal class EndToEndTest {
         testRapid.sendTestMessage(
             utbetalingMessage(
                 hendelser = vedtakHendelseIder,
-                automatiskBehandling = automatiskBehandling
+                automatiskBehandling = automatiskBehandling,
+                sykepengegrunnlag = sykepengegrunnlag
             )
         )
 
@@ -329,7 +335,8 @@ internal class EndToEndTest {
         fom: LocalDate = LocalDate.of(2020, 6, 1),
         tom: LocalDate = LocalDate.of(2020, 6, 10),
         tidligereBrukteSykedager: Int = 0,
-        automatiskBehandling: Boolean
+        automatiskBehandling: Boolean,
+        sykepengegrunnlag: Double
     ) = """{
     "aktørId": "aktørId",
     "fødselsnummer": "$FNR",
@@ -361,6 +368,7 @@ internal class EndToEndTest {
             "utbetalingslinjer": []
         }
     ],
+    "sykepengegrunnlag": $sykepengegrunnlag,
     "fom": "$fom",
     "tom": "$tom",
     "forbrukteSykedager": ${tidligereBrukteSykedager + sykedager(fom, tom)},
