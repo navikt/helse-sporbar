@@ -11,7 +11,8 @@ data class Utbetaling(
     val automatiskBehandling: Boolean,
     val hendelseIder: List<UUID>,
     val oppdrag: List<Oppdrag>,
-    val sykepengegrunnlag: Double
+    val sykepengegrunnlag: Double,
+    val månedsinntekt: Double
 ) {
     data class Oppdrag(
         val mottaker: String,

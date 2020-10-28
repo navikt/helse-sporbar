@@ -91,16 +91,22 @@ internal class EndToEndTest {
 
     @Test
     fun `utbetaling`() {
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
         val sykepengegrunnlag = 2000.0
+        val månedsinntekt = 540.0
         sykmeldingSendt()
         søknadSendt()
         inntektsmeldingSendt()
-        utbetalt(sykepengegrunnlag = sykepengegrunnlag)
+        utbetalt(sykepengegrunnlag = sykepengegrunnlag, månedsinntekt = månedsinntekt)
 
-        verify(exactly = 5) { producer.send(capture(slot)) }
-        assertEquals(3, slot.captured.value()["dokumenter"].size())
-        assertEquals(sykepengegrunnlag, slot.captured.value()["sykepengegrunnlag"].asDouble())
+        val captures = mutableListOf<ProducerRecord<String, JsonNode>>()
+        verify { producer.send(capture(captures)) }
+        val vedtakMelding = captures.find {
+            Meldingstype.Vedtak.name.toByteArray().contentEquals(it.headers().lastHeader("type").value())
+        }!!.value()
+
+        assertEquals(3, vedtakMelding["dokumenter"].size())
+        assertEquals(sykepengegrunnlag, vedtakMelding["sykepengegrunnlag"].asDouble())
+        assertEquals(månedsinntekt, vedtakMelding["månedsinntekt"].asDouble())
     }
 
     @Test
@@ -235,7 +241,8 @@ internal class EndToEndTest {
             idSett.inntektsmeldingHendelseId
         ),
         automatiskBehandling: Boolean = false,
-        sykepengegrunnlag: Double = 1000.0
+        sykepengegrunnlag: Double = 1000.0,
+        månedsinntekt: Double = 59.0
     ) {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
@@ -249,7 +256,8 @@ internal class EndToEndTest {
             utbetalingMessage(
                 hendelser = vedtakHendelseIder,
                 automatiskBehandling = automatiskBehandling,
-                sykepengegrunnlag = sykepengegrunnlag
+                sykepengegrunnlag = sykepengegrunnlag,
+                månedsinntekt = månedsinntekt
             )
         )
 
@@ -336,7 +344,8 @@ internal class EndToEndTest {
         tom: LocalDate = LocalDate.of(2020, 6, 10),
         tidligereBrukteSykedager: Int = 0,
         automatiskBehandling: Boolean,
-        sykepengegrunnlag: Double
+        sykepengegrunnlag: Double,
+        månedsinntekt: Double
     ) = """{
     "aktørId": "aktørId",
     "fødselsnummer": "$FNR",
@@ -369,6 +378,7 @@ internal class EndToEndTest {
         }
     ],
     "sykepengegrunnlag": $sykepengegrunnlag,
+    "månedsinntekt": $månedsinntekt,
     "fom": "$fom",
     "tom": "$tom",
     "forbrukteSykedager": ${tidligereBrukteSykedager + sykedager(fom, tom)},

@@ -9,6 +9,7 @@ data class VedtakDto(
     val gjenståendeSykedager: Int,
     val automatiskBehandling: Boolean,
     val sykepengegrunnlag: Double,
+    val månedsinntekt: Double,
     val utbetalinger: List<UtbetalingDto>,
     val dokumenter: List<Dokument>
 ) {
