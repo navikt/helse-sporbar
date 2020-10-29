@@ -4,6 +4,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 data class Utbetaling(
+    val organisasjonsnummer: String,
     val fom: LocalDate,
     val tom: LocalDate,
     val forbrukteSykedager: Int,

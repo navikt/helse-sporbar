@@ -79,6 +79,7 @@ internal class VedtaksperiodeMediator(
         }
 
         fun oversett(utbetaling: Utbetaling, dokumenter: List<Dokument>) = VedtakDto(
+            organisasjonsnummer = utbetaling.organisasjonsnummer,
             fom = utbetaling.fom,
             tom = utbetaling.tom,
             forbrukteSykedager = utbetaling.forbrukteSykedager,

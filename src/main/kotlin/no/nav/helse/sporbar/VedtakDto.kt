@@ -3,6 +3,7 @@ package no.nav.helse.sporbar
 import java.time.LocalDate
 
 data class VedtakDto(
+    val organisasjonsnummer: String,
     val fom: LocalDate,
     val tom: LocalDate,
     val forbrukteSykedager: Int,

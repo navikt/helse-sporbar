@@ -11,14 +11,16 @@ internal class VedtakDao(private val dataSource: DataSource) {
     ) {
         @Language("PostgreSQL")
         val query =
-            """INSERT INTO vedtak(fom, tom, forbrukte_sykedager, gjenstaende_sykedager, automatisk_behandling, sykepengegrunnlag, månedsinntekt) VALUES (
+            """INSERT INTO vedtak(fom, tom, forbrukte_sykedager, gjenstaende_sykedager, automatisk_behandling, sykepengegrunnlag, månedsinntekt, organisasjonsnummer) VALUES (
                        :fom,
                        :tom,
                        :forbrukte_sykedager,
                        :gjenstaende_sykedager,
                        :automatisk_behandling,
                        :sykepengegrunnlag,
-                       :maanedsinntekt)
+                       :maanedsinntekt,
+                       :organisasjonsnummer
+                       )
                         ON CONFLICT DO NOTHING;
         """
 
@@ -63,7 +65,8 @@ internal class VedtakDao(private val dataSource: DataSource) {
                             "gjenstaende_sykedager" to utbetaling.gjenståendeSykedager,
                             "automatisk_behandling" to utbetaling.automatiskBehandling,
                             "sykepengegrunnlag" to utbetaling.sykepengegrunnlag,
-                            "maanedsinntekt" to utbetaling.månedsinntekt
+                            "maanedsinntekt" to utbetaling.månedsinntekt,
+                            "organisasjonsnummer" to utbetaling.organisasjonsnummer
                         )
                     ).asUpdateAndReturnGeneratedKey
                 )

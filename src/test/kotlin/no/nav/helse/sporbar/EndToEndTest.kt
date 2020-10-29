@@ -105,6 +105,7 @@ internal class EndToEndTest {
         }!!.value()
 
         assertEquals(3, vedtakMelding["dokumenter"].size())
+        assertEquals(ORGNUMMER, vedtakMelding["organisasjonsnummer"].asText())
         assertEquals(sykepengegrunnlag, vedtakMelding["sykepengegrunnlag"].asDouble())
         assertEquals(månedsinntekt, vedtakMelding["månedsinntekt"].asDouble())
     }

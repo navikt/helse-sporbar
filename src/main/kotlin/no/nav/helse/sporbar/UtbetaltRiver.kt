@@ -45,6 +45,7 @@ internal class UtbetaltRiver(
         vedtaksperiodeMediator.utbetaling(
             fødselsnummer = packet["fødselsnummer"].asText(),
             utbetaling = Utbetaling(
+                organisasjonsnummer = packet["organisasjonsnummer"].asText(),
                 fom = packet["fom"].asLocalDate(),
                 tom = packet["tom"].asLocalDate(),
                 forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
