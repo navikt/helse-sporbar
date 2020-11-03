@@ -11,16 +11,16 @@ import java.time.LocalDateTime
 class AnnulleringRiver(
     rapidsConnection: RapidsConnection,
     private val producer: KafkaProducer<String, JsonNode>
-
 ):
     River.PacketListener {
-        init {
-            River(rapidsConnection).apply {
-                validate {
-                    it.requireValue("@event_name", "utbetaling_annullert")
-                }
-            }.register(this)
-        }
+    init {
+        River(rapidsConnection).apply {
+            validate {
+                it.requireValue("@event_name", "utbetaling_annullert")
+                it.requireKey("fødselsnummer", "organisasjonsnummer", "annullertAvSaksbehandler", "utbetalingslinjer")
+            }
+        }.register(this)
+    }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
         val fødselsnummer = packet["fødselsnummer"].asText()
