@@ -4,20 +4,30 @@ import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.verify
+import no.nav.helse.rapids_rivers.asLocalDate
+import no.nav.helse.rapids_rivers.asLocalDateTime
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 class AnnulleringRiverTest {
 
     companion object {
         val fødselsnummer = "12345678910"
+        val orgnummer = "123456789"
+        val tidsstempel = LocalDateTime.now()
+        val fom = LocalDate.now()
+        val tom = LocalDate.now()
     }
 
     private val testRapid = TestRapid()
     private val producerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
+
     init {
         AnnulleringRiver(testRapid, producerMock)
     }
@@ -30,33 +40,40 @@ class AnnulleringRiverTest {
         verify { producerMock.send( capture(captureSlot) ) }
 
         val annullering = captureSlot.captured
-
         assertEquals(fødselsnummer, annullering.key())
+
+        val annulleringJson = annullering.value()
+        assertEquals(annulleringJson["fødselsnummer"].textValue(), fødselsnummer)
+        assertEquals(annulleringJson["orgnummer"].textValue(), orgnummer)
+        assertEquals(annulleringJson["timestamp"].asLocalDateTime(), tidsstempel)
+        assertEquals(annulleringJson["fom"].asLocalDate(), fom)
+        assertEquals(annulleringJson["tom"].asLocalDate(), tom)
     }
 
+    @Language("json")
     private fun annullering() = """
-        {
-        "fødselsnummer": $fødselsnummer",
+    {
+        "fødselsnummer": "$fødselsnummer",
         "aktørId": "1427484794278",
-        "organisasjonsnummer": "910825526",
+        "organisasjonsnummer": "$orgnummer",
         "fagsystemId": "XPJPZQYJ45DVHBSSQPMXTE2OP4",
         "utbetalingslinjer": [
-        {
-            "fom": "2020-07-17",
-            "tom": "2020-07-31",
-            "beløp": 11550,
-            "grad": 100.0
-        }
+            {
+                "fom": "$fom",
+                "tom": "$tom",
+                "beløp": 11550,
+                "grad": 100.0
+            }
         ],
-        "annullertAvSaksbehandler": "2020-10-30T11:12:05.062899",
+        "annullertAvSaksbehandler": "$tidsstempel",
         "saksbehandlerEpost": "ASDASD",
         "system_read_count": 0,
         "system_participating_services": [
-        {
-            "service": "spleis",
-            "instance": "spleis-55b67f658c-pq9tw",
-            "time": "2020-10-30T11:12:05.583425"
-        }
+            {
+                "service": "spleis",
+                "instance": "spleis-55b67f658c-pq9tw",
+                "time": "2020-10-30T11:12:05.583425"
+            }
         ],
         "@event_name": "utbetaling_annullert",
         "@id": "4778a52b-dcbc-4bd2-bf42-e693dab3178f",
@@ -66,20 +83,6 @@ class AnnulleringRiverTest {
             "id": "4a50b680-3b05-438b-993b-57a6e58828cd",
             "opprettet": "2020-10-30T11:12:05.179565"
         }
-    }"""
-
-    private fun utgående() = """
-        {
-          "event_name": "Annullering",
-          "fødselsnummer": "123123123123",
-          "orgnummer": "891238912",
-          "timestamp": "2020-10-30T11:12:05.062899",
-          "utbetalingslinjer": [
-            {
-              "fom": "2020-07-17",
-              "tom": "2020-07-31"
-            }
-          ]
-        }
+    }
     """
 }

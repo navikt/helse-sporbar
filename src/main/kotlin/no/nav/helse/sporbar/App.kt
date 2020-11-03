@@ -45,12 +45,16 @@ fun launchApplication(env: Environment) {
         dokumentDao = dokumentDao,
         producer = producer
     )
+    val miljøstyrtFeatureToggle = MiljøstyrtFeatureToggle(env.raw)
 
     RapidApplication.Builder(RapidApplication.RapidApplicationConfig.fromEnv(env.raw))
         .build().apply {
             NyttDokumentRiver(this, dokumentDao)
             VedtaksperiodeEndretRiver(this, mediator)
             UtbetaltRiver(this, mediator)
+            if(miljøstyrtFeatureToggle.annullering()) {
+                AnnulleringRiver(this, producer)
+            }
             start()
         }
 }
