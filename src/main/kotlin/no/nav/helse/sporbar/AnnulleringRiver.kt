@@ -5,8 +5,13 @@ import no.nav.helse.rapids_rivers.*
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.header.internals.RecordHeader
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
+
+private val log: Logger = LoggerFactory.getLogger("sporbar")
+private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
 
 class AnnulleringRiver(
     rapidsConnection: RapidsConnection,
@@ -42,6 +47,8 @@ class AnnulleringRiver(
                 listOf(RecordHeader("type", Meldingstype.Annullering.name.toByteArray()))
             )
         )
+        log.info("Publiserte annullering")
+        sikkerLog.info("Publiserte annullering på $fødselsnummer")
     }
 
     data class AnnulleringDto(
