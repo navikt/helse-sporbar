@@ -32,7 +32,7 @@ class AnnulleringRiver(
         val annullering = AnnulleringDto(
             orgnummer = packet["organisasjonsnummer"].asText(),
             fødselsnummer = packet["fødselsnummer"].asText(),
-            timestamp = packet["annullertAvSaksbehandler"].asLocalDateTime(),
+            tidsstempel = packet["annullertAvSaksbehandler"].asLocalDateTime(),
             fom = packet["utbetalingslinjer"].map { it["fom"].asLocalDate() }.min(),
             tom = packet["utbetalingslinjer"].map { it["tom"].asLocalDate() }.max()
         )
@@ -53,7 +53,7 @@ class AnnulleringRiver(
 
     data class AnnulleringDto(
         val orgnummer: String,
-        val timestamp: LocalDateTime,
+        val tidsstempel: LocalDateTime,
         val fødselsnummer: String,
         val fom: LocalDate?,
         val tom: LocalDate?

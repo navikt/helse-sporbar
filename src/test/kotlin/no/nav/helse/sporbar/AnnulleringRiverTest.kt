@@ -6,6 +6,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.asLocalDateTime
+import no.nav.helse.rapids_rivers.asOptionalLocalDate
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -33,7 +34,7 @@ class AnnulleringRiverTest {
     }
 
     @Test
-    fun test() {
+    fun `vanlig annullering`() {
         testRapid.sendTestMessage(annullering())
 
         val captureSlot = CapturingSlot<ProducerRecord<String, JsonNode>>()
@@ -45,26 +46,37 @@ class AnnulleringRiverTest {
         val annulleringJson = annullering.value()
         assertEquals(annulleringJson["fødselsnummer"].textValue(), fødselsnummer)
         assertEquals(annulleringJson["orgnummer"].textValue(), orgnummer)
-        assertEquals(annulleringJson["timestamp"].asLocalDateTime(), tidsstempel)
+        assertEquals(annulleringJson["tidsstempel"].asLocalDateTime(), tidsstempel)
         assertEquals(annulleringJson["fom"].asLocalDate(), fom)
         assertEquals(annulleringJson["tom"].asLocalDate(), tom)
     }
 
+    @Test
+    fun `tomme utbetalingslinjer`() {
+        testRapid.sendTestMessage(annullering(emptyList()))
+
+        val captureSlot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        verify { producerMock.send( capture(captureSlot) ) }
+
+        val annullering = captureSlot.captured
+        assertEquals(fødselsnummer, annullering.key())
+
+        val annulleringJson = annullering.value()
+        assertEquals(annulleringJson["fødselsnummer"].textValue(), fødselsnummer)
+        assertEquals(annulleringJson["orgnummer"].textValue(), orgnummer)
+        assertEquals(annulleringJson["tidsstempel"].asLocalDateTime(), tidsstempel)
+        assertEquals(annulleringJson["fom"].asOptionalLocalDate(), null)
+        assertEquals(annulleringJson["tom"].asOptionalLocalDate(), null)
+    }
+
     @Language("json")
-    private fun annullering() = """
+    private fun annullering(utbetalingslinjer: List<Linje> = listOf(Linje(fom, tom, 1000, 100.0))) = """
     {
         "fødselsnummer": "$fødselsnummer",
         "aktørId": "1427484794278",
         "organisasjonsnummer": "$orgnummer",
         "fagsystemId": "XPJPZQYJ45DVHBSSQPMXTE2OP4",
-        "utbetalingslinjer": [
-            {
-                "fom": "$fom",
-                "tom": "$tom",
-                "beløp": 11550,
-                "grad": 100.0
-            }
-        ],
+        "utbetalingslinjer": ${objectMapper.writeValueAsString(utbetalingslinjer)},
         "annullertAvSaksbehandler": "$tidsstempel",
         "saksbehandlerEpost": "ASDASD",
         "system_read_count": 0,
@@ -86,3 +98,10 @@ class AnnulleringRiverTest {
     }
     """
 }
+
+data class Linje(
+    val fom: LocalDate,
+    val tom: LocalDate,
+    val beløp: Int,
+    val grad: Double
+)
