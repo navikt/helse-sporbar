@@ -57,5 +57,3 @@ spec:
     value: sporbar
   - name: DATABASE_VAULT_MOUNT_PATH
     value: postgresql/preprod-fss/
-  - name: ANNULLERING
-    value: "true"
