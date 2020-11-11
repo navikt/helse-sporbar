@@ -48,7 +48,7 @@ spec:
   - name: KAFKA_CONSUMER_GROUP_ID
     value: sporbar-v2
   - name: KAFKA_RESET_POLICY
-    value: earliest
+    value: none
   - name: DATABASE_HOST
     value: A01DBVL014.adeo.no
   - name: DATABASE_PORT
