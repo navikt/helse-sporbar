@@ -21,10 +21,14 @@ class AnnulleringRiver(
     init {
         River(rapidsConnection).apply {
             validate {
-                it.requireValue("@event_name", "utbetaling_annullert")
+                it.demandValue("@event_name", "utbetaling_annullert")
                 it.requireKey("fødselsnummer", "organisasjonsnummer", "annullertAvSaksbehandler", "utbetalingslinjer")
             }
         }.register(this)
+    }
+
+    override fun onError(problems: MessageProblems, context: RapidsConnection.MessageContext) {
+        sikkerLog.error("forstod ikke utbetaling_annullert: ${problems.toExtendedReport()}")
     }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
