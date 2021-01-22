@@ -98,7 +98,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `AVVENTER_SØKNAD_FERDIG_GAP`() {
+    fun AVVENTER_SØKNAD_FERDIG_GAP() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_SØKNAD_FERDIG_GAP),
             eksisterendeDokumenter = listOf(sykmeldingDokument)
@@ -114,7 +114,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `AVVENTER_SØKNAD_UFERDIG_GAP`() {
+    fun AVVENTER_SØKNAD_UFERDIG_GAP() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_SØKNAD_UFERDIG_GAP),
             eksisterendeDokumenter = listOf(sykmeldingDokument)
@@ -130,7 +130,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `AVVENTER_VILKÅRSPRØVING_GAP`() {
+    fun AVVENTER_VILKÅRSPRØVING_GAP() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_VILKÅRSPRØVING_GAP),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
@@ -146,7 +146,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `AVVENTER_VILKÅRSPRØVING_ARBEIDSGIVERSØKNAD`() {
+    fun AVVENTER_VILKÅRSPRØVING_ARBEIDSGIVERSØKNAD() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_VILKÅRSPRØVING_ARBEIDSGIVERSØKNAD),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
@@ -162,9 +162,9 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `avventer kort historikk fra infotrygd`() {
+    fun `avventer historikk fra infotrygd`() {
         sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_GAP),
+            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
         )
 
@@ -242,7 +242,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `avsluttet`() {
+    fun avsluttet() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVSLUTTET),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
@@ -258,7 +258,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `avsluttet_uten_utbetaling`() {
+    fun avsluttet_uten_utbetaling() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVSLUTTET_UTEN_UTBETALING),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
@@ -274,7 +274,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `avsluttet_uten_utbetaling_med_inntektsmelding`() {
+    fun avsluttet_uten_utbetaling_med_inntektsmelding() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVSLUTTET_UTEN_UTBETALING_MED_INNTEKTSMELDING),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
@@ -290,7 +290,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `utbetaling_feilet`() {
+    fun utbetaling_feilet() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.UTBETALING_FEILET),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
@@ -306,23 +306,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `AVVENTER_INNTEKTSMELDING_FERDIG_GAP`() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_FERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun `AVVENTER_UFERDIG_GAP`() {
+    fun AVVENTER_UFERDIG_GAP() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_UFERDIG_GAP),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
@@ -338,7 +322,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `AVVENTER_INNTEKTSMELDING_UFERDIG_GAP`() {
+    fun AVVENTER_INNTEKTSMELDING_UFERDIG_GAP() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_UFERDIG_GAP),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
@@ -354,7 +338,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `AVVENTER_INNTEKTSMELDING_UFERDIG_FORLENGELSE`() {
+    fun AVVENTER_INNTEKTSMELDING_UFERDIG_FORLENGELSE() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_UFERDIG_FORLENGELSE),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
@@ -370,7 +354,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `AVVENTER_SØKNAD_UFERDIG_FORLENGELSE`() {
+    fun AVVENTER_SØKNAD_UFERDIG_FORLENGELSE() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_SØKNAD_UFERDIG_FORLENGELSE),
             eksisterendeDokumenter = listOf(sykmeldingDokument, inntektsmeldingDokument)
@@ -386,7 +370,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `AVVENTER_UFERDIG_FORLENGELSE`() {
+    fun AVVENTER_UFERDIG_FORLENGELSE() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_UFERDIG_FORLENGELSE),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
@@ -402,7 +386,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun `TIL_INFOTRYGD`() {
+    fun TIL_INFOTRYGD() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.TIL_INFOTRYGD),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
@@ -443,7 +427,7 @@ internal class VedtaksperiodeMediatorTest {
     }
 
 
-    fun sendEvent(
+    private fun sendEvent(
         event: VedtaksperiodeEndret,
         eksisterendeDokumenter: List<Dokument>
     ) {

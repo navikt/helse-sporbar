@@ -206,7 +206,7 @@ internal class EndToEndTest {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "MOTTATT_SYKMELDING_FERDIG_GAP",
-                "AVVENTER_GAP",
+                "AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP",
                 idSett.vedtaksperiodeId,
                 vedtakHendelseIder
             )
@@ -225,7 +225,7 @@ internal class EndToEndTest {
         )
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
-                "AVVENTER_GAP",
+                "AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP",
                 "AVVENTER_VILKÅRSPRØVING_GAP",
                 idSett.vedtaksperiodeId,
                 vedtakHendelseIder
