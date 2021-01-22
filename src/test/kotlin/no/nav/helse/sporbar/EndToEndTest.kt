@@ -1,7 +1,6 @@
 package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
-import io.mockk.CapturingSlot
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
@@ -60,12 +59,12 @@ internal class EndToEndTest {
 
     @Test
     fun `mottar sykmelding (ny søknad)`() {
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val slot = mutableListOf<ProducerRecord<String, JsonNode>>()
 
         sykmeldingSendt()
 
         verify(exactly = 1) { producer.send(capture(slot)) }
-        val vedtaksperiodeDto = slot.captured.value()
+        val vedtaksperiodeDto = slot.last().value()
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
             VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto["tilstand"].asText())
@@ -76,12 +75,12 @@ internal class EndToEndTest {
 
     @Test
     fun `ny søknad hendelse`() {
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val slot = mutableListOf<ProducerRecord<String, JsonNode>>()
         sykmeldingSendt()
         søknadSendt()
 
         verify { producer.send(capture(slot)) }
-        val vedtaksperiodeDto = slot.captured.value()
+        val vedtaksperiodeDto = slot.last().value()
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
             VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto["tilstand"].asText())
@@ -90,7 +89,7 @@ internal class EndToEndTest {
     }
 
     @Test
-    fun `utbetaling`() {
+    fun utbetaling() {
         val sykepengegrunnlag = 2000.0
         val månedsinntekt = 540.0
         sykmeldingSendt()
@@ -112,19 +111,19 @@ internal class EndToEndTest {
 
     @Test
     fun `automatiske utbetalinger blir merket i vedtak-event`() {
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val slot = mutableListOf<ProducerRecord<String, JsonNode>>()
         sykmeldingSendt()
         søknadSendt()
         inntektsmeldingSendt()
         utbetalt(automatiskBehandling = true)
 
         verify(exactly = 5) { producer.send(capture(slot)) }
-        assertTrue(slot.captured.value()["automatiskBehandling"].asBoolean())
+        assertTrue(slot.last().value()["automatiskBehandling"].asBoolean())
     }
 
     @Test
     fun `påfølgende utbetaling`() {
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val slot = mutableListOf<ProducerRecord<String, JsonNode>>()
         val idSett1 = IdSett()
         val idSett2 = IdSett()
 
@@ -134,7 +133,7 @@ internal class EndToEndTest {
         utbetalt(idSett1)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.captured.value()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+        assertTrue(slot.last().value()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett1.søknadDokumentId))
 
         sykmeldingSendt(idSett2)
@@ -142,13 +141,13 @@ internal class EndToEndTest {
         utbetalt(idSett2)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.captured.value()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+        assertTrue(slot.last().value()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett2.søknadDokumentId))
     }
 
     @Test
     fun `flere dokumenter knyttet til samme vedtak`() {
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val slot = mutableListOf<ProducerRecord<String, JsonNode>>()
         val idSett1 = IdSett()
         val idSett2 = IdSett()
 
@@ -169,7 +168,7 @@ internal class EndToEndTest {
         )
 
         verify { producer.send(capture(slot)) }
-        assertEquals(5, slot.captured.value()["dokumenter"].size())
+        assertEquals(5, slot.last().value()["dokumenter"].size())
     }
 
     private fun sykmeldingSendt(
