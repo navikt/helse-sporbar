@@ -119,6 +119,7 @@ internal class VedtaksperiodeMediator(
             Tilstand.AVVENTER_SØKNAD_FERDIG_GAP -> Situasjon.AvventerSøknad
             Tilstand.AVVENTER_VILKÅRSPRØVING_ARBEIDSGIVERSØKNAD -> Situasjon.IngenUtbetaling
             Tilstand.AVVENTER_INNTEKTSMELDING_FERDIG_GAP -> Situasjon.AvventerInntektsmelding
+            Tilstand.AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP -> Situasjon.AvventerInntektsmelding
             Tilstand.MOTTATT_SYKMELDING_UFERDIG_GAP,
             Tilstand.MOTTATT_SYKMELDING_UFERDIG_FORLENGELSE,
             Tilstand.AVVENTER_SØKNAD_UFERDIG_GAP,
