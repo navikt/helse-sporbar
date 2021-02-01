@@ -115,6 +115,7 @@ internal class VedtaksperiodeMediator(
             Tilstand.AVSLUTTET_UTEN_UTBETALING -> Situasjon.IngenUtbetaling
             Tilstand.AVSLUTTET_UTEN_UTBETALING_MED_INNTEKTSMELDING -> Situasjon.IngenUtbetaling
             Tilstand.START -> error("Ingen vedtaksperiodeEndret-event vi ha START som gjeldende tilstand")
+            Tilstand.AVVENTER_ARBEIDSGIVERSØKNAD_FERDIG_GAP,
             Tilstand.AVVENTER_SØKNAD_FERDIG_GAP -> Situasjon.AvventerSøknad
             Tilstand.AVVENTER_VILKÅRSPRØVING_ARBEIDSGIVERSØKNAD -> Situasjon.IngenUtbetaling
             Tilstand.AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP -> Situasjon.AvventerInntektsmelding
@@ -125,9 +126,13 @@ internal class VedtaksperiodeMediator(
             Tilstand.AVVENTER_UFERDIG_GAP,
             Tilstand.AVVENTER_INNTEKTSMELDING_UFERDIG_FORLENGELSE,
             Tilstand.AVVENTER_SØKNAD_UFERDIG_FORLENGELSE,
+            Tilstand.UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_GAP,
+            Tilstand.UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_FORLENGELSE,
+            Tilstand.AVVENTER_ARBEIDSGIVERSØKNAD_UFERDIG_GAP,
             Tilstand.AVVENTER_UFERDIG_FORLENGELSE -> Situasjon.AvventerTidligerePeriode
             Tilstand.AVVENTER_VILKÅRSPRØVING_GAP,
             Tilstand.AVVENTER_HISTORIKK,
+            Tilstand.AVVENTER_ARBEIDSGIVERE,
             Tilstand.AVVENTER_GODKJENNING,
             Tilstand.AVVENTER_SIMULERING,
             Tilstand.UTBETALING_FEILET,

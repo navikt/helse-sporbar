@@ -401,6 +401,86 @@ internal class VedtaksperiodeMediatorTest {
         )
     }
 
+    @Test
+    fun AVVENTER_ARBEIDSGIVERSØKNAD_FERDIG_GAP() {
+        sendEvent(
+            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_ARBEIDSGIVERSØKNAD_FERDIG_GAP),
+            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
+        )
+
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        verify { producer.send(capture(slot)) }
+
+        assertEquals(
+            VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+        )
+    }
+
+    @Test
+    fun UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_GAP() {
+        sendEvent(
+            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_GAP),
+            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
+        )
+
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        verify { producer.send(capture(slot)) }
+
+        assertEquals(
+            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+        )
+    }
+
+    @Test
+    fun UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_FORLENGELSE() {
+        sendEvent(
+            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_FORLENGELSE),
+            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
+        )
+
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        verify { producer.send(capture(slot)) }
+
+        assertEquals(
+            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+        )
+    }
+
+    @Test
+    fun AVVENTER_ARBEIDSGIVERSØKNAD_UFERDIG_GAP() {
+        sendEvent(
+            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_ARBEIDSGIVERSØKNAD_UFERDIG_GAP),
+            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
+        )
+
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        verify { producer.send(capture(slot)) }
+
+        assertEquals(
+            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+        )
+    }
+
+    @Test
+    fun AVVENTER_ARBEIDSGIVERE() {
+        sendEvent(
+            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_ARBEIDSGIVERE),
+            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
+        )
+
+        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        verify { producer.send(capture(slot)) }
+
+        assertEquals(
+            VedtaksperiodeDto.TilstandDto.UnderBehandling,
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+        )
+    }
+
     private fun vedtaksperiodeEndret(tilstand: Vedtaksperiode.Tilstand): VedtaksperiodeEndret {
         return VedtaksperiodeEndret(
             fnr = FNR,
