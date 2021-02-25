@@ -1,19 +1,19 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val ktorVersion = "1.5.0"
-val junitJupiterVersion = "5.7.0"
+val ktorVersion = "1.5.1"
+val junitJupiterVersion = "5.7.1"
 val mainClass = "no.nav.helse.sporbar.AppKt"
 
 plugins {
-    kotlin("jvm") version "1.4.21"
+    kotlin("jvm") version "1.4.30"
 }
 
 dependencies {
-    implementation("com.github.navikt:rapids-and-rivers:87c2e6069d")
+    implementation("com.github.navikt:rapids-and-rivers:1.a77261b")
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
-    implementation("com.zaxxer:HikariCP:3.4.5")
+    implementation("com.zaxxer:HikariCP:4.0.2")
     implementation("no.nav:vault-jdbc:1.3.7")
-    implementation("org.flywaydb:flyway-core:7.5.1")
+    implementation("org.flywaydb:flyway-core:7.5.4")
     implementation("com.github.seratch:kotliquery:1.3.1")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
@@ -32,17 +32,17 @@ repositories {
 tasks {
 
     named<KotlinCompile>("compileKotlin") {
-        kotlinOptions.jvmTarget = "14"
+        kotlinOptions.jvmTarget = "15"
     }
 
     named<KotlinCompile>("compileTestKotlin") {
-        kotlinOptions.jvmTarget = "14"
+        kotlinOptions.jvmTarget = "15"
     }
 
     withType<Test> {
         useJUnitPlatform()
         testLogging {
-            events("passed", "skipped", "failed")
+            events("skipped", "failed")
         }
     }
 

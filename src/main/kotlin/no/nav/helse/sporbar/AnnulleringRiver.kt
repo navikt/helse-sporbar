@@ -27,18 +27,18 @@ class AnnulleringRiver(
         }.register(this)
     }
 
-    override fun onError(problems: MessageProblems, context: RapidsConnection.MessageContext) {
+    override fun onError(problems: MessageProblems, context: MessageContext) {
         sikkerLog.error("forstod ikke utbetaling_annullert: ${problems.toExtendedReport()}")
     }
 
-    override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
+    override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val fødselsnummer = packet["fødselsnummer"].asText()
         val annullering = AnnulleringDto(
             orgnummer = packet["organisasjonsnummer"].asText(),
             fødselsnummer = packet["fødselsnummer"].asText(),
             tidsstempel = packet["annullertAvSaksbehandler"].asLocalDateTime(),
-            fom = packet["utbetalingslinjer"].map { it["fom"].asLocalDate() }.min(),
-            tom = packet["utbetalingslinjer"].map { it["tom"].asLocalDate() }.max()
+            fom = packet["utbetalingslinjer"].map { it["fom"].asLocalDate() }.minOrNull(),
+            tom = packet["utbetalingslinjer"].map { it["tom"].asLocalDate() }.maxOrNull()
         )
         val annulleringDto = objectMapper.valueToTree<JsonNode>(annullering)
 

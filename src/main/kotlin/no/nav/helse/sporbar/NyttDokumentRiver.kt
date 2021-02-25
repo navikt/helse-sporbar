@@ -1,9 +1,6 @@
 package no.nav.helse.sporbar
 
-import no.nav.helse.rapids_rivers.JsonMessage
-import no.nav.helse.rapids_rivers.RapidsConnection
-import no.nav.helse.rapids_rivers.River
-import no.nav.helse.rapids_rivers.asLocalDateTime
+import no.nav.helse.rapids_rivers.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -29,7 +26,7 @@ internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val
         }.register(this)
     }
 
-    override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
+    override fun onPacket(packet: JsonMessage, context: MessageContext) {
         try {
             val hendelseId = UUID.fromString(packet["@id"].textValue())
             val opprettet = packet["@opprettet"].asLocalDateTime()
