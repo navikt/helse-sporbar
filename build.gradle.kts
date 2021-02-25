@@ -11,7 +11,7 @@ plugins {
 dependencies {
     implementation("com.github.navikt:rapids-and-rivers:1.a77261b")
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
-    implementation("com.zaxxer:HikariCP:4.0.2")
+    implementation("com.zaxxer:HikariCP:3.4.5")
     implementation("no.nav:vault-jdbc:1.3.7")
     implementation("org.flywaydb:flyway-core:7.5.4")
     implementation("com.github.seratch:kotliquery:1.3.1")
