@@ -5,7 +5,7 @@ val junitJupiterVersion = "5.7.1"
 val mainClass = "no.nav.helse.sporbar.AppKt"
 
 plugins {
-    kotlin("jvm") version "1.4.30"
+    kotlin("jvm") version "1.4.31"
 }
 
 dependencies {
