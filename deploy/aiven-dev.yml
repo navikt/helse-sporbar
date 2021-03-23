@@ -1,0 +1,24 @@
+---
+apiVersion: kafka.nais.io/v1
+kind: Topic
+metadata:
+    name: aapen.helse.spre
+    namespace: tbd
+    labels:
+        team: tbd
+spec:
+    pool: nav-dev
+    config:  # optional; all fields are optional too; defaults shown
+        cleanupPolicy: delete  # delete, compact
+        minimumInSyncReplicas: 1
+        partitions: 3
+        replication: 2  # see min/max requirements
+        retentionBytes: -1  # -1 means unlimited
+        retentionHours: 168  # -1 means unlimited
+    acl:
+        - team: tbd
+          application: sporbar
+          access: readwrite
+        - team: flex #TODO
+          application: spinnsyn #TODO
+          access: read #TODO
