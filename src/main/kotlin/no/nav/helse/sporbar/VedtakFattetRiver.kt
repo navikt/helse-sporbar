@@ -44,7 +44,9 @@ internal class VedtakFattetRiver(
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val fødselsnummer = packet["fødselsnummer"].asText()
-        vedtakFattetMediator.vedtakFattet(VedtakFattet(fødselsnummer))
+        val aktørId = packet["aktørId"].asText()
+        val organisasjonsnummer = packet["organisasjonsnummer"].asText()
+        vedtakFattetMediator.vedtakFattet(VedtakFattet(fødselsnummer = fødselsnummer, aktørId, organisasjonsnummer))
 
         log.info("Lagrer vedtakFattet: ${packet["@id"].asText()}")
     }
@@ -52,4 +54,6 @@ internal class VedtakFattetRiver(
 
 internal data class VedtakFattet(
     val fødselsnummer: String,
+    val aktørId: String,
+    val organisasjonsnummer: String,
 )
