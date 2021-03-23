@@ -5,7 +5,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
 
-fun setUpDatasopurceWithFlyway(): HikariDataSource {
+fun setUpDatasourceWithFlyway(): HikariDataSource {
     val embeddedPostgres = EmbeddedPostgres.builder().setPort(56789).start()
     val hikariConfig = HikariConfig().apply {
         this.jdbcUrl = embeddedPostgres.getJdbcUrl("postgres", "postgres")

@@ -25,7 +25,7 @@ private const val ORGNUMMER = "987654321"
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class EndToEndTest {
     private val testRapid = TestRapid()
-    private val dataSource = setUpDatasopurceWithFlyway()
+    private val dataSource = setUpDatasourceWithFlyway()
     private val dokumentDao = DokumentDao(dataSource)
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     private val vedtakDao = VedtakDao(dataSource)

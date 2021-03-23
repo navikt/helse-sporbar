@@ -46,11 +46,19 @@ fun launchApplication(env: Environment) {
         producer = producer
     )
 
+    val vedtakFattetMediator = VedtakFattetMediator(
+        dokumentDao = dokumentDao,
+        producer = producer
+    )
+
     RapidApplication.Builder(RapidApplication.RapidApplicationConfig.fromEnv(env.raw))
         .build().apply {
             NyttDokumentRiver(this, dokumentDao)
             VedtaksperiodeEndretRiver(this, mediator)
             UtbetaltRiver(this, mediator)
+            VedtakFattetRiver(this, vedtakFattetMediator)
+            // utbetaling_utbetalt
+            // utbetaling_annullert
             AnnulleringRiver(this, producer)
             start()
         }

@@ -13,7 +13,7 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class NyttDokumentRiverTest {
     private val testRapid = TestRapid()
-    private val dataSource = setUpDatasopurceWithFlyway()
+    private val dataSource = setUpDatasourceWithFlyway()
     private val dokumentDao = DokumentDao(dataSource)
 
     init {
