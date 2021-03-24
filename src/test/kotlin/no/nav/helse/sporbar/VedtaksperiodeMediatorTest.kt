@@ -130,22 +130,6 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun AVVENTER_VILKÅRSPRØVING_GAP() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_VILKÅRSPRØVING_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
     fun AVVENTER_VILKÅRSPRØVING() {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_VILKÅRSPRØVING),
@@ -157,22 +141,6 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_VILKÅRSPRØVING_ARBEIDSGIVERSØKNAD() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_VILKÅRSPRØVING_ARBEIDSGIVERSØKNAD),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvsluttetInnenforArbeidsgiverperioden,
             VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
@@ -278,22 +246,6 @@ internal class VedtaksperiodeMediatorTest {
         sendEvent(
             event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVSLUTTET_UTEN_UTBETALING),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvsluttetInnenforArbeidsgiverperioden,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun avsluttet_uten_utbetaling_med_inntektsmelding() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVSLUTTET_UTEN_UTBETALING_MED_INNTEKTSMELDING),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
         val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()

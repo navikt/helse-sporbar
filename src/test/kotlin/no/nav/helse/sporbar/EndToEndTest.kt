@@ -226,7 +226,7 @@ internal class EndToEndTest {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP",
-                "AVVENTER_VILKÅRSPRØVING_GAP",
+                "AVVENTER_HISTORIKK",
                 idSett.vedtaksperiodeId,
                 vedtakHendelseIder
             )
