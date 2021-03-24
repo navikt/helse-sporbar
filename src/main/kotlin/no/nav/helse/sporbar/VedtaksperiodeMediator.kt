@@ -110,14 +110,16 @@ internal class VedtaksperiodeMediator(
         private fun oversett(tilstand: Tilstand) = when (tilstand) {
             Tilstand.TIL_INFOTRYGD -> Situasjon.ManuellBehandling
             Tilstand.MOTTATT_SYKMELDING_FERDIG_GAP -> Situasjon.AvventerSøknadOgInntektsmelding
+            Tilstand.AVVENTER_SØKNAD_FERDIG_FORLENGELSE,
             Tilstand.MOTTATT_SYKMELDING_FERDIG_FORLENGELSE -> Situasjon.AvventerSøknad
             Tilstand.AVSLUTTET -> Situasjon.Ferdigbehandlet
             Tilstand.AVSLUTTET_UTEN_UTBETALING -> Situasjon.IngenUtbetaling
             Tilstand.AVSLUTTET_UTEN_UTBETALING_MED_INNTEKTSMELDING -> Situasjon.IngenUtbetaling
-            Tilstand.START -> error("Ingen vedtaksperiodeEndret-event vi ha START som gjeldende tilstand")
+            Tilstand.START -> error("Ingen vedtaksperiode_endret-event vil ha START som gjeldende tilstand")
             Tilstand.AVVENTER_ARBEIDSGIVERSØKNAD_FERDIG_GAP,
             Tilstand.AVVENTER_SØKNAD_FERDIG_GAP -> Situasjon.AvventerSøknad
             Tilstand.AVVENTER_VILKÅRSPRØVING_ARBEIDSGIVERSØKNAD -> Situasjon.IngenUtbetaling
+            Tilstand.AVVENTER_INNTEKTSMELDING_FERDIG_FORLENGELSE,
             Tilstand.AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP -> Situasjon.AvventerInntektsmelding
             Tilstand.MOTTATT_SYKMELDING_UFERDIG_GAP,
             Tilstand.MOTTATT_SYKMELDING_UFERDIG_FORLENGELSE,
