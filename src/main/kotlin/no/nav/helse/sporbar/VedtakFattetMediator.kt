@@ -16,6 +16,9 @@ internal class VedtakFattetMediator(
     private val producer: KafkaProducer<String, JsonNode>
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
+
+        val dokumenter = dokumentDao.finn(vedtakFattet.hendelseIder)
+
         producer.send(
             ProducerRecord(
                 "aapen-helse-sporbar",

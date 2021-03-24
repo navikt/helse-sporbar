@@ -13,6 +13,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -25,9 +26,14 @@ internal class VedtakFattetRiverTest {
     companion object {
         val FØDSELSNUMMER = "12345678910"
         val ORGNUMMER = "123456789"
+        val VEDTAKSPERIODEID = "3af72a48-3944-4256-a224-e52feb1a5540"
+        val AKTØRID = "qwerty"
         val TIDSSTEMPEL = LocalDateTime.now()
         val FOM = LocalDate.of(2020, 1, 1)
         val TOM = LocalDate.of(2020, 1, 31)
+        val SKJÆRINGSTIDSPUNKT = LocalDate.of(2020, 1, 1)
+        val SYKEPENGEGRUNNLAG = 388260.0
+        val INNTEKT = 388260.0
     }
 
     private val testRapid = TestRapid()
@@ -67,27 +73,74 @@ internal class VedtakFattetRiverTest {
 
         val vedtakFattetJson = vedtakFattet.value()
         assertEquals(vedtakFattetJson["fødselsnummer"].textValue(), FØDSELSNUMMER)
-
-
+        assertEquals(vedtakFattetJson["aktørId"].textValue(), AKTØRID)
+        assertEquals(vedtakFattetJson["fom"].asLocalDate(), FOM)
+        assertEquals(vedtakFattetJson["tom"].asLocalDate(), TOM)
+        assertEquals(vedtakFattetJson["skjæringstidspunkt"].asLocalDate(), SKJÆRINGSTIDSPUNKT)
+        assertEquals(vedtakFattetJson["inntekt"].asDouble(), INNTEKT)
+        assertEquals(vedtakFattetJson["sykepengegrunnlag"].asDouble(), SYKEPENGEGRUNNLAG)
+        assertTrue(vedtakFattetJson.path("utbetalingId").let { it.isMissingNode || it.isNull })
+        assertTrue(vedtakFattetJson.path("vedtaksperiodeId").let { it.isMissingNode || it.isNull })
     }
 
+    @Test
+    fun `vedtakFattet med utbetaling`() {
+        val captureSlot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        testRapid.sendTestMessage(vedtakFattetMedUtbetaling())
+
+        verify { producerMock.send( capture(captureSlot) ) }
+
+        val vedtakFattet = captureSlot.captured
+        assertEquals(FØDSELSNUMMER, vedtakFattet.key())
+
+        val vedtakFattetJson = vedtakFattet.value()
+        assertEquals(vedtakFattetJson["fødselsnummer"].textValue(), FØDSELSNUMMER)
+        assertEquals(vedtakFattetJson["fom"].asLocalDate(), FOM)
+        assertEquals(vedtakFattetJson["tom"].asLocalDate(), TOM)
+        assertEquals(vedtakFattetJson["skjæringstidspunkt"].asLocalDate(), SKJÆRINGSTIDSPUNKT)
+        assertTrue(vedtakFattetJson.path("utbetalingId").asText().isNotEmpty())
+    }
 
     @Language("json")
     private fun vedtakFattetUtenUtbetaling() = """{
-  "vedtaksperiodeId": "3af72a48-3944-4256-a224-e52feb1a5540",
+  "vedtaksperiodeId": "$VEDTAKSPERIODEID",
   "fom": "$FOM",
   "tom": "$TOM",
+  "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
   "hendelser": [
     "08a433b7-4749-4fc4-b24f-ca3ede32041e",
     "af6f884f-8b9f-4b67-ba15-444d673898cf",
     "8cfb8541-6367-4d01-8d80-655e231d6694"
   ],
-  "sykepengegrunnlag": 388260.0,
-  "inntekt": 32355.0,
+  "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
+  "inntekt": "$INNTEKT",
   "@event_name": "vedtak_fattet",
   "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
   "@opprettet": "$TIDSSTEMPEL",
-  "aktørId": "qwerty",
+  "aktørId": "$AKTØRID",
+  "fødselsnummer": "$FØDSELSNUMMER",
+  "organisasjonsnummer": "$ORGNUMMER"
+}
+    """
+
+    @Language("json")
+    private fun vedtakFattetMedUtbetaling() = """{
+  "vedtaksperiodeId": "$VEDTAKSPERIODEID",
+  "fom": "$FOM",
+  "tom": "$TOM",
+  "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
+  "hendelser": [
+    "08a433b7-4749-4fc4-b24f-ca3ede32041e",
+    "af6f884f-8b9f-4b67-ba15-444d673898cf",
+    "8cfb8541-6367-4d01-8d80-655e231d6694"
+  ],
+  "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
+  "inntekt": "$INNTEKT",
+  "utbetalingId": "41425537-24c0-494d-8fc6-5decf0ae7ecb",
+  "@event_name": "vedtak_fattet",
+  "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
+  "@opprettet": "$TIDSSTEMPEL",
+  "aktørId": "$AKTØRID",
   "fødselsnummer": "$FØDSELSNUMMER",
   "organisasjonsnummer": "$ORGNUMMER"
 }
