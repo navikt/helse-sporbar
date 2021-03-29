@@ -64,7 +64,7 @@ internal class VedtakFattetRiver(
             sykepengegrunnlag = sykepengegrunnlag,
             utbetalingId = utbetalingId
         ))
-        log.info("Lagrer vedtakFattet: ${packet["@id"].asText()}")
+        log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
     }
 }
 
