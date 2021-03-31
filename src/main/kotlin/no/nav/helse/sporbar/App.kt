@@ -45,9 +45,11 @@ fun launchApplication(env: Environment) {
         dokumentDao = dokumentDao,
         producer = producer
     )
-
     val vedtakFattetMediator = VedtakFattetMediator(
         dokumentDao = dokumentDao,
+        producer = producer
+    )
+    val utbetalingMediator = UtbetalingMediator(
         producer = producer
     )
 
@@ -57,7 +59,8 @@ fun launchApplication(env: Environment) {
             VedtaksperiodeEndretRiver(this, mediator)
             UtbetaltRiver(this, mediator)
             VedtakFattetRiver(this, vedtakFattetMediator)
-            // utbetaling_utbetalt
+            UtbetalingUtbetaltRiver(this, utbetalingMediator)
+
             // utbetaling_annullert
             AnnulleringRiver(this, producer)
             start()
