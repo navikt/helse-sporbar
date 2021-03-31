@@ -90,13 +90,13 @@ internal class VedtakFattetRiverTest {
         assertEquals(FØDSELSNUMMER, vedtakFattet.key())
 
         val vedtakFattetJson = vedtakFattet.value()
-        assertEquals(vedtakFattetJson["fødselsnummer"].textValue(), FØDSELSNUMMER)
-        assertEquals(vedtakFattetJson["aktørId"].textValue(), AKTØRID)
-        assertEquals(vedtakFattetJson["fom"].asLocalDate(), FOM)
-        assertEquals(vedtakFattetJson["tom"].asLocalDate(), TOM)
-        assertEquals(vedtakFattetJson["skjæringstidspunkt"].asLocalDate(), SKJÆRINGSTIDSPUNKT)
-        assertEquals(vedtakFattetJson["inntekt"].asDouble(), INNTEKT)
-        assertEquals(vedtakFattetJson["sykepengegrunnlag"].asDouble(), SYKEPENGEGRUNNLAG)
+        assertEquals(FØDSELSNUMMER, vedtakFattetJson["fødselsnummer"].textValue())
+        assertEquals(AKTØRID, vedtakFattetJson["aktørId"].textValue())
+        assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
+        assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
+        assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
+        assertEquals(INNTEKT, vedtakFattetJson["inntekt"].asDouble())
+        assertEquals(SYKEPENGEGRUNNLAG, vedtakFattetJson["sykepengegrunnlag"].asDouble())
         assertTrue(vedtakFattetJson.path("utbetalingId").isNull)
         assertTrue(vedtakFattetJson.path("vedtaksperiodeId").isMissingNode)
 
@@ -120,11 +120,11 @@ internal class VedtakFattetRiverTest {
         assertEquals(FØDSELSNUMMER, vedtakFattet.key())
 
         val vedtakFattetJson = vedtakFattet.value()
-        assertEquals(vedtakFattetJson["fødselsnummer"].textValue(), FØDSELSNUMMER)
-        assertEquals(vedtakFattetJson["fom"].asLocalDate(), FOM)
-        assertEquals(vedtakFattetJson["tom"].asLocalDate(), TOM)
-        assertEquals(vedtakFattetJson["skjæringstidspunkt"].asLocalDate(), SKJÆRINGSTIDSPUNKT)
-        assertEquals(vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())}, idSett.utbetalingId)
+        assertEquals(FØDSELSNUMMER, vedtakFattetJson["fødselsnummer"].textValue())
+        assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
+        assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
+        assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
+        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())})
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett.søknadDokumentId))

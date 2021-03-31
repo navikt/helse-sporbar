@@ -101,21 +101,20 @@ internal class UtbetalingTest {
         val utbetalingUtbetaltJson = utbetalingUtbetalt.value()
         val vedtakFattetJson = vedtakFattet.value()
 
-        assertEquals(utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText())}, idSett.utbetalingId)
+        assertEquals(idSett.utbetalingId, utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText())})
         assertEquals(utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText())},
             vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())})
 
-        assertEquals(utbetalingUtbetaltJson["fødselsnummer"].textValue(), FØDSELSNUMMER)
-        assertEquals(utbetalingUtbetaltJson["aktørId"].textValue(), VedtakFattetRiverTest.AKTØRID)
-        assertEquals(utbetalingUtbetaltJson["fom"].asLocalDate(), FOM)
-        assertEquals(utbetalingUtbetaltJson["tom"].asLocalDate(), TOM)
-        assertEquals(utbetalingUtbetaltJson["forbrukteSykedager"].asInt(), FORBRUKTESYKEDAGER)
-        assertEquals(utbetalingUtbetaltJson["gjenståendeSykedager"].asInt(), GJENSTÅENDESYKEDAGER)
-        assertEquals(utbetalingUtbetaltJson["automatiskBehandling"].asBoolean(), AUTOMATISK_BEHANDLING)
-        assertEquals(utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["nettoBeløp"].asInt(), NETTOBELØP)
-        assertEquals(utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["fom"].asLocalDate(), FOM)
-        assertEquals(utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate(), TOM)
-        assertEquals(utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate(), TOM)
+        assertEquals(FØDSELSNUMMER, utbetalingUtbetaltJson["fødselsnummer"].textValue())
+        assertEquals(AKTØRID, utbetalingUtbetaltJson["aktørId"].textValue())
+        assertEquals(FOM, utbetalingUtbetaltJson["fom"].asLocalDate())
+        assertEquals(TOM, utbetalingUtbetaltJson["tom"].asLocalDate())
+        assertEquals(FORBRUKTESYKEDAGER, utbetalingUtbetaltJson["forbrukteSykedager"].asInt())
+        assertEquals(GJENSTÅENDESYKEDAGER, utbetalingUtbetaltJson["gjenståendeSykedager"].asInt())
+        assertEquals(AUTOMATISK_BEHANDLING, utbetalingUtbetaltJson["automatiskBehandling"].asBoolean())
+        assertEquals(NETTOBELØP, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["nettoBeløp"].asInt())
+        assertEquals(FOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["fom"].asLocalDate())
+        assertEquals(TOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate())
 
         assertTrue(utbetalingUtbetaltJson.path("vedtaksperiodeId").isMissingNode)
     }
