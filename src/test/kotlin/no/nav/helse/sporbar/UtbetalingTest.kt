@@ -67,6 +67,7 @@ internal class UtbetalingTest {
         VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeMediator)
         VedtakFattetRiver(testRapid, vedtakFattetMediator)
         UtbetalingUtbetaltRiver(testRapid, utbetalingMediator)
+        UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator)
     }
 
     @AfterAll
@@ -102,9 +103,10 @@ internal class UtbetalingTest {
         val vedtakFattetJson = vedtakFattet.value()
 
         assertEquals(idSett.utbetalingId, utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText())})
-        assertEquals(utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText())},
-            vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())})
+        assertEquals(utbetalingUtbetaltJson["utbetalingId"].asText(),
+            vedtakFattetJson["utbetalingId"].asText())
 
+        assertEquals("utbetaling_utbetalt", utbetalingUtbetaltJson["event"].textValue())
         assertEquals(FØDSELSNUMMER, utbetalingUtbetaltJson["fødselsnummer"].textValue())
         assertEquals(AKTØRID, utbetalingUtbetaltJson["aktørId"].textValue())
         assertEquals(FOM, utbetalingUtbetaltJson["fom"].asLocalDate())
@@ -117,6 +119,26 @@ internal class UtbetalingTest {
         assertEquals(TOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate())
 
         assertTrue(utbetalingUtbetaltJson.path("vedtaksperiodeId").isMissingNode)
+    }
+
+    @Test
+    fun `vedtakFattet med tilhørende utbetalingUtenUtbetaling`() {
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val idSett = IdSett()
+
+        sykmeldingSendt(idSett)
+        søknadSendt(idSett)
+        inntektsmeldingSendt(idSett)
+        vedtakFattetMedUtbetalingSendt(idSett)
+        utbetalingUtbetaltSendt(idSett, "utbetaling_uten_utbetaling")
+
+        verify { producerMock.send( capture(captureSlot) ) }
+
+        val utbetalingUtbetalt = captureSlot.last()
+        assertEquals(FØDSELSNUMMER, utbetalingUtbetalt.key())
+        val utbetalingUtbetaltJson = utbetalingUtbetalt.value()
+
+        assertEquals("utbetaling_uten_utbetaling", utbetalingUtbetaltJson["event"].textValue())
     }
 
     private fun sykmeldingSendt(
@@ -199,8 +221,8 @@ internal class UtbetalingTest {
         testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett))
     }
 
-    private fun utbetalingUtbetaltSendt(idSett: IdSett) {
-        testRapid.sendTestMessage(utbetalingUtbetalt(idSett))
+    private fun utbetalingUtbetaltSendt(idSett: IdSett, event: String = "utbetaling_utbetalt") {
+        testRapid.sendTestMessage(utbetalingUtbetalt(idSett, event))
     }
 
     @Language("json")
@@ -232,7 +254,7 @@ internal class UtbetalingTest {
 
 
     @Language("json")
-    private fun utbetalingUtbetalt(idSett: IdSett, utbetalingId: UUID = idSett.utbetalingId) = """{
+    private fun utbetalingUtbetalt(idSett: IdSett, event: String, utbetalingId: UUID = idSett.utbetalingId) = """{
   "utbetalingId": "$utbetalingId",
   "fom": "$FOM",
   "tom": "$TOM",
@@ -243,7 +265,7 @@ internal class UtbetalingTest {
   "epost": "tbd@nav.no",
   "tidspunkt": "$TIDSSTEMPEL",
   "automatiskBehandling": "$AUTOMATISK_BEHANDLING",
-  "@event_name": "utbetaling_utbetalt",
+  "@event_name": "$event",
   "arbeidsgiverOppdrag": {
     "mottaker": "$ORGNUMMER",
     "fagområde": "SPREF",

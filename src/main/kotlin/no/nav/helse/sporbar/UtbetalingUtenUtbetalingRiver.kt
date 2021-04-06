@@ -9,7 +9,7 @@ import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 
-internal class UtbetalingUtbetaltRiver(
+internal class UtbetalingUtenUtbetalingRiver(
     rapidsConnection: RapidsConnection,
     private val utbetalingMediator: UtbetalingMediator
 ) : River.PacketListener {
@@ -17,7 +17,7 @@ internal class UtbetalingUtbetaltRiver(
     init {
         River(rapidsConnection).apply {
             validate {
-                it.requireValue("@event_name", "utbetaling_utbetalt")
+                it.requireValue("@event_name", "utbetaling_uten_utbetaling")
                 it.requireKey(
                     "aktørId",
                     "fødselsnummer",
@@ -79,38 +79,8 @@ internal class UtbetalingUtbetaltRiver(
             gjenståendeSykedager = gjenståendeSykedager,
             automatiskBehandling = automatiskBehandling,
             arbeidsgiverOppdrag = arbeidsgiverOppdrag
-        ), eventName = "utbetaling_utbetalt")
-        log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
+        ), eventName = "utbetaling_uten_utbetaling")
+        log.info("Behandler utbetaling_uten_utbetaling: ${packet["@id"].asText()}")
     }
 
-}
-
-data class UtbetalingUtbetalt(
-    val utbetalingId: UUID,
-    val fødselsnummer: String,
-    val aktørId: String,
-    val organisasjonsnummer: String,
-    val fom: LocalDate,
-    val tom: LocalDate,
-    val forbrukteSykedager: Int,
-    val gjenståendeSykedager: Int,
-    val automatiskBehandling: Boolean,
-    val arbeidsgiverOppdrag: OppdragDto
-) {
-        data class OppdragDto(
-            val mottaker: String,
-            val fagområde: String,
-            val fagsystemId: String,
-            val nettoBeløp: Int,
-            val utbetalingslinjer: List<UtbetalingslinjeDto>
-        ) {
-            data class UtbetalingslinjeDto(
-                val fom: LocalDate,
-                val tom: LocalDate,
-                val dagsats: Int,
-                val totalbeløp: Int,
-                val grad: Double,
-                val stønadsdager: Int
-            )
-        }
 }

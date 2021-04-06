@@ -14,10 +14,8 @@ private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 internal class UtbetalingMediator(
     private val producer: KafkaProducer<String, JsonNode>
 ) {
-    internal fun utbetalingUtbetalt(utbetalingUtbetalt: UtbetalingUtbetalt) {
-
-        val meldingForEkstern = oversett(utbetalingUtbetalt)
-
+    internal fun utbetalingUtbetalt(utbetalingUtbetalt: UtbetalingUtbetalt, eventName: String) {
+        val meldingForEkstern = oversett(utbetalingUtbetalt, eventName)
         producer.send(
             ProducerRecord(
                 "aapen-helse-sporbar",
@@ -27,12 +25,12 @@ internal class UtbetalingMediator(
                 )
             )
         )
-
-        sikkerLogg.info("Publiserer {}", StructuredArguments.keyValue("utbetalingUtbetalt", meldingForEkstern))
+        sikkerLogg.info("Publiserer {}", StructuredArguments.keyValue(eventName, meldingForEkstern))
     }
 
-    private fun oversett(utbetalingUtbetalt: UtbetalingUtbetalt): UtbetalingUtbetaltForEksternDTO {
+    private fun oversett(utbetalingUtbetalt: UtbetalingUtbetalt, eventName: String): UtbetalingUtbetaltForEksternDTO {
         return UtbetalingUtbetaltForEksternDTO(
+            event = eventName,
             utbetalingId = utbetalingUtbetalt.utbetalingId,
             fødselsnummer = utbetalingUtbetalt.fødselsnummer,
             aktørId = utbetalingUtbetalt.aktørId,
@@ -48,6 +46,7 @@ internal class UtbetalingMediator(
 }
 
  data class UtbetalingUtbetaltForEksternDTO(
+     val event: String,
      val utbetalingId: UUID,
      val fødselsnummer: String,
      val aktørId: String,
