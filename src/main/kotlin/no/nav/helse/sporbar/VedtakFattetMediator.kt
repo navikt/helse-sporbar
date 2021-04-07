@@ -2,6 +2,7 @@
 
 import com.fasterxml.jackson.databind.JsonNode
 import net.logstash.logback.argument.StructuredArguments
+import net.logstash.logback.argument.StructuredArguments.keyValue
 
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -20,20 +21,19 @@ internal class VedtakFattetMediator(
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
 
         val dokumenter: List<Dokument> = dokumentDao.finn(vedtakFattet.hendelseIder)
-        val meldingForEkstern = oversett(vedtakFattet, dokumenter)
+        val meldingForEkstern = objectMapper.valueToTree<JsonNode>(oversett(vedtakFattet, dokumenter))
 
         producer.send(
             ProducerRecord(
                 "tbd.vedtak",
                 null,
                 vedtakFattet.fødselsnummer,
-                objectMapper.valueToTree(meldingForEkstern
-                )
+                meldingForEkstern
             )
         )
-        sikkerLogg.info("Publiserer {}", StructuredArguments.keyValue("vedtakFattet", meldingForEkstern))
+        sikkerLogg.info("Publiserer {}", keyValue("vedtakFattet", meldingForEkstern))
         log.info("Publiserte vedtakFattet for {}",
-            StructuredArguments.keyValue("dokumenter", dokumenter.map { it.dokumentId })
+            keyValue("dokumenter", dokumenter.map { it.dokumentId })
         )
     }
 
