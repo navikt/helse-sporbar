@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
+private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 internal class VedtakFattetRiver(
     rapidsConnection: RapidsConnection,
@@ -17,7 +18,7 @@ internal class VedtakFattetRiver(
     init {
         River(rapidsConnection).apply {
             validate {
-                it.requireValue("@event_name", "vedtak_fattet")
+                it.demandValue("@event_name", "vedtak_fattet")
                 it.requireKey(
                     "aktørId",
                     "fødselsnummer",
@@ -36,6 +37,11 @@ internal class VedtakFattetRiver(
 
             }
         }.register(this)
+    }
+
+    override fun onError(problems: MessageProblems, context: MessageContext) {
+        log.error("forstod ikke vedtak_fattet. (se sikkerlogg for melding)")
+        sikkerLog.error("forstod ikke vedtak_fattet:\n${problems.toExtendedReport()}")
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {

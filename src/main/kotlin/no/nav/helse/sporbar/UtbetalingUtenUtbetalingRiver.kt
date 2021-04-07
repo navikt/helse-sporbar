@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
+private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 internal class UtbetalingUtenUtbetalingRiver(
     rapidsConnection: RapidsConnection,
@@ -17,7 +18,7 @@ internal class UtbetalingUtenUtbetalingRiver(
     init {
         River(rapidsConnection).apply {
             validate {
-                it.requireValue("@event_name", "utbetaling_uten_utbetaling")
+                it.demandValue("@event_name", "utbetaling_uten_utbetaling")
                 it.requireKey(
                     "aktørId",
                     "fødselsnummer",
@@ -36,6 +37,11 @@ internal class UtbetalingUtenUtbetalingRiver(
 
             }
         }.register(this)
+    }
+
+    override fun onError(problems: MessageProblems, context: MessageContext) {
+        log.error("forstod ikke utbetaling_uten_utbetaling. (se sikkerlogg for melding)")
+        sikkerLog.error("forstod ikke utbetaling_uten_utbetaling:\n${problems.toExtendedReport()}")
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
