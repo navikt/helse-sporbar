@@ -18,7 +18,7 @@ internal class UtbetalingMediator(
         val meldingForEkstern = oversett(utbetalingUtbetalt, eventName)
         producer.send(
             ProducerRecord(
-                "aapen-helse-sporbar",
+                "tbd.utbetaling",
                 null,
                 utbetalingUtbetalt.fødselsnummer,
                 objectMapper.valueToTree(meldingForEkstern

@@ -24,7 +24,7 @@ internal class VedtakFattetMediator(
 
         producer.send(
             ProducerRecord(
-                "aapen-helse-sporbar",
+                "tbd.vedtak",
                 null,
                 vedtakFattet.fødselsnummer,
                 objectMapper.valueToTree(meldingForEkstern

@@ -52,7 +52,7 @@ fun Properties.toProducerConfig(): Properties = Properties().also {
     it[ProducerConfig.ACKS_CONFIG] = "all"
     it[ProducerConfig.CLIENT_ID_CONFIG] = "aapen-helse-sporbar"
     it[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-    it[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = VedtaksperiodeDtoSerializer::class.java
+    it[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = JsonNodeSerializer::class.java
 }
 
 data class ServiceUser(
