@@ -27,7 +27,8 @@ internal class UtbetalingUtenUtbetalingRiver(
                     "forbrukteSykedager",
                     "gjenståendeSykedager",
                     "automatiskBehandling",
-                    "arbeidsgiverOppdrag"
+                    "arbeidsgiverOppdrag",
+                    "utbetalingsdager"
                 )
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
@@ -54,6 +55,12 @@ internal class UtbetalingUtenUtbetalingRiver(
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
         val gjenståendeSykedager = packet["gjenståendeSykedager"].asInt()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
+        val utbetalingsdager = packet["utbetalingsdager"].toList().map{dag ->
+            UtbetalingUtbetalt.UtbetalingdagDto(
+                dato = dag["dato"].asLocalDate(),
+                type = dag["type"].asText()
+            )
+        }
 
         val arbeidsgiverOppdrag = packet["arbeidsgiverOppdrag"].let{oppdrag ->
             UtbetalingUtbetalt.OppdragDto(
@@ -84,9 +91,9 @@ internal class UtbetalingUtenUtbetalingRiver(
             forbrukteSykedager = forbrukteSykedager,
             gjenståendeSykedager = gjenståendeSykedager,
             automatiskBehandling = automatiskBehandling,
-            arbeidsgiverOppdrag = arbeidsgiverOppdrag
+            arbeidsgiverOppdrag = arbeidsgiverOppdrag,
+            utbetalingsdager = utbetalingsdager
         ), eventName = "utbetaling_uten_utbetaling")
         log.info("Behandler utbetaling_uten_utbetaling: ${packet["@id"].asText()}")
     }
-
 }

@@ -26,8 +26,8 @@ internal class UtbetalingTest {
         val FØDSELSNUMMER = "12345678910"
         val ORGNUMMER = "123456789"
         val TIDSSTEMPEL = LocalDateTime.now()
-        val FOM = LocalDate.of(2020, 1, 1)
-        val TOM = LocalDate.of(2020, 1, 31)
+        val FOM = LocalDate.of(2021, 1, 1)
+        val TOM = LocalDate.of(2021, 1, 7)
         val MAKSDATO = LocalDate.of(2020, 5, 10)
         val SKJÆRINGSTIDSPUNKT = LocalDate.of(2020, 1, 1)
         val SYKEPENGEGRUNNLAG = 388260.0
@@ -117,7 +117,7 @@ internal class UtbetalingTest {
         assertEquals(NETTOBELØP, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["nettoBeløp"].asInt())
         assertEquals(FOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["fom"].asLocalDate())
         assertEquals(TOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate())
-
+        assertTrue(utbetalingUtbetaltJson.path("utbetalingsdager").toList().isNotEmpty())
         assertTrue(utbetalingUtbetaltJson.path("vedtaksperiodeId").isMissingNode)
     }
 
@@ -291,6 +291,36 @@ internal class UtbetalingTest {
     "fom": "$FOM",
     "tom": "$TOM"
   },
+  "utbetalingsdager": [
+        {
+          "dato": "2021-01-01",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-01-02",
+          "type": "NavHelgDag"
+        },
+        {
+          "dato": "2021-01-03",
+          "type": "NavHelgDag"
+        },
+        {
+          "dato": "2021-01-04",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-01-05",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-01-06",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-01-07",
+          "type": "NavDag"
+        }
+  ],
   "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec01",
   "@opprettet": "$TIDSSTEMPEL",
   "aktørId": "$AKTØRID",

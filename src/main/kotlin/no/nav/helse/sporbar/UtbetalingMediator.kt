@@ -40,7 +40,8 @@ internal class UtbetalingMediator(
             forbrukteSykedager = utbetalingUtbetalt.forbrukteSykedager,
             gjenståendeSykedager = utbetalingUtbetalt.gjenståendeSykedager,
             automatiskBehandling = utbetalingUtbetalt.automatiskBehandling,
-            arbeidsgiverOppdrag = utbetalingUtbetalt.arbeidsgiverOppdrag
+            arbeidsgiverOppdrag = utbetalingUtbetalt.arbeidsgiverOppdrag,
+            utbetalingsdager = utbetalingUtbetalt.utbetalingsdager,
         )
     }
 }
@@ -56,5 +57,6 @@ internal class UtbetalingMediator(
      val forbrukteSykedager: Int,
      val gjenståendeSykedager: Int,
      val automatiskBehandling: Boolean,
-     val arbeidsgiverOppdrag: UtbetalingUtbetalt.OppdragDto
+     val arbeidsgiverOppdrag: UtbetalingUtbetalt.OppdragDto,
+     val utbetalingsdager: List<UtbetalingUtbetalt.UtbetalingdagDto>,
      )

@@ -27,14 +27,14 @@ internal class UtbetalingUtbetaltRiver(
                     "forbrukteSykedager",
                     "gjenståendeSykedager",
                     "automatiskBehandling",
-                    "arbeidsgiverOppdrag"
+                    "arbeidsgiverOppdrag",
+                    "utbetalingsdager"
                 )
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
                 it.require("maksdato", JsonNode::asLocalDate)
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
-
             }
         }.register(this)
     }
@@ -54,6 +54,12 @@ internal class UtbetalingUtbetaltRiver(
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
         val gjenståendeSykedager = packet["gjenståendeSykedager"].asInt()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
+        val utbetalingsdager = packet["utbetalingsdager"].toList().map{dag ->
+            UtbetalingUtbetalt.UtbetalingdagDto(
+                dato = dag["dato"].asLocalDate(),
+                type = dag["type"].asText()
+            )
+        }
 
         val arbeidsgiverOppdrag = packet["arbeidsgiverOppdrag"].let{oppdrag ->
             UtbetalingUtbetalt.OppdragDto(
@@ -84,7 +90,8 @@ internal class UtbetalingUtbetaltRiver(
             forbrukteSykedager = forbrukteSykedager,
             gjenståendeSykedager = gjenståendeSykedager,
             automatiskBehandling = automatiskBehandling,
-            arbeidsgiverOppdrag = arbeidsgiverOppdrag
+            arbeidsgiverOppdrag = arbeidsgiverOppdrag,
+            utbetalingsdager = utbetalingsdager
         ), eventName = "utbetaling_utbetalt")
         log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
     }
@@ -101,7 +108,8 @@ data class UtbetalingUtbetalt(
     val forbrukteSykedager: Int,
     val gjenståendeSykedager: Int,
     val automatiskBehandling: Boolean,
-    val arbeidsgiverOppdrag: OppdragDto
+    val arbeidsgiverOppdrag: OppdragDto,
+    val utbetalingsdager: List<UtbetalingdagDto>
 ) {
         data class OppdragDto(
             val mottaker: String,
@@ -119,4 +127,8 @@ data class UtbetalingUtbetalt(
                 val stønadsdager: Int
             )
         }
+        data class UtbetalingdagDto(
+            val dato: LocalDate,
+            val type: String
+        )
 }
