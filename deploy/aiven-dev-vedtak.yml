@@ -2,10 +2,15 @@
 apiVersion: kafka.nais.io/v1
 kind: Topic
 metadata:
-    name: aapen.helse.sporbar.vedtak
+    name: vedtak
     namespace: tbd
     labels:
         team: tbd
+    annotations:
+        dcat.data.nav.no/title: "Sykepengevedtak"
+        dcat.data.nav.no/description: "Vedtak fattet om sykepenger"
+        dcat.data.nav.no/theme: "helse"
+        dcat.data.nav.no/keyword: "helse, sykepenger, vedtak"
 spec:
     pool: nav-dev
     config:  # optional; all fields are optional too; defaults shown

@@ -2,10 +2,15 @@
 apiVersion: kafka.nais.io/v1
 kind: Topic
 metadata:
-    name: aapen.helse.sporbar.utbetaling
+    name: utbetaling
     namespace: tbd
     labels:
         team: tbd
+    annotations:
+        dcat.data.nav.no/title: "Sykepengeutbetalinger"
+        dcat.data.nav.no/description: "Avsluttede utbetalinger fra vedtaksløsning for sykepenger"
+        dcat.data.nav.no/theme: "helse"
+        dcat.data.nav.no/keyword: "helse, sykepenger, utbetalinger"
 spec:
     pool: nav-prod
     config:  # optional; all fields are optional too; defaults shown
