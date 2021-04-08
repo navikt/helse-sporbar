@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import no.nav.helse.rapids_rivers.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
 import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
@@ -28,7 +27,8 @@ internal class UtbetalingUtenUtbetalingRiver(
                     "gjenståendeSykedager",
                     "automatiskBehandling",
                     "arbeidsgiverOppdrag",
-                    "utbetalingsdager"
+                    "utbetalingsdager",
+                    "type"
                 )
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
@@ -54,6 +54,7 @@ internal class UtbetalingUtenUtbetalingRiver(
         val utbetalingId = packet["utbetalingId"].let{ UUID.fromString(it.asText())}
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
         val gjenståendeSykedager = packet["gjenståendeSykedager"].asInt()
+        val type = packet["type"].asText()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
         val utbetalingsdager = packet["utbetalingsdager"].toList().map{dag ->
             UtbetalingUtbetalt.UtbetalingdagDto(
@@ -82,6 +83,7 @@ internal class UtbetalingUtenUtbetalingRiver(
         }
 
         utbetalingMediator.utbetalingUtbetalt(UtbetalingUtbetalt(
+            event = "utbetaling_uten_utbetaling",
             utbetalingId = utbetalingId,
             fødselsnummer = fødselsnummer,
             aktørId = aktørId,
@@ -92,8 +94,9 @@ internal class UtbetalingUtenUtbetalingRiver(
             gjenståendeSykedager = gjenståendeSykedager,
             automatiskBehandling = automatiskBehandling,
             arbeidsgiverOppdrag = arbeidsgiverOppdrag,
+            type = type,
             utbetalingsdager = utbetalingsdager
-        ), eventName = "utbetaling_uten_utbetaling")
+        ))
         log.info("Behandler utbetaling_uten_utbetaling: ${packet["@id"].asText()}")
     }
 }

@@ -24,6 +24,7 @@ internal class UtbetalingTest {
 
     companion object {
         val FØDSELSNUMMER = "12345678910"
+        val UTBETALINGSTYPE = "UTBETALING"
         val ORGNUMMER = "123456789"
         val TIDSSTEMPEL = LocalDateTime.now()
         val FOM = LocalDate.of(2021, 1, 1)
@@ -108,6 +109,7 @@ internal class UtbetalingTest {
 
         assertEquals("utbetaling_utbetalt", utbetalingUtbetaltJson["event"].textValue())
         assertEquals(FØDSELSNUMMER, utbetalingUtbetaltJson["fødselsnummer"].textValue())
+        assertEquals(UTBETALINGSTYPE, utbetalingUtbetaltJson["type"].textValue())
         assertEquals(AKTØRID, utbetalingUtbetaltJson["aktørId"].textValue())
         assertEquals(FOM, utbetalingUtbetaltJson["fom"].asLocalDate())
         assertEquals(TOM, utbetalingUtbetaltJson["tom"].asLocalDate())
@@ -263,6 +265,7 @@ internal class UtbetalingTest {
   "gjenståendeSykedager": "$GJENSTÅENDESYKEDAGER",
   "ident": "Automatisk behandlet",
   "epost": "tbd@nav.no",
+  "type": "$UTBETALINGSTYPE",
   "tidspunkt": "$TIDSSTEMPEL",
   "automatiskBehandling": "$AUTOMATISK_BEHANDLING",
   "@event_name": "$event",

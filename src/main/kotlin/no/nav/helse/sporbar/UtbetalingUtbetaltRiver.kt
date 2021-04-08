@@ -28,7 +28,8 @@ internal class UtbetalingUtbetaltRiver(
                     "gjenståendeSykedager",
                     "automatiskBehandling",
                     "arbeidsgiverOppdrag",
-                    "utbetalingsdager"
+                    "utbetalingsdager",
+                    "type",
                 )
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
@@ -54,6 +55,7 @@ internal class UtbetalingUtbetaltRiver(
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
         val gjenståendeSykedager = packet["gjenståendeSykedager"].asInt()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
+        val type = packet["type"].asText()
         val utbetalingsdager = packet["utbetalingsdager"].toList().map{dag ->
             UtbetalingUtbetalt.UtbetalingdagDto(
                 dato = dag["dato"].asLocalDate(),
@@ -81,6 +83,7 @@ internal class UtbetalingUtbetaltRiver(
         }
 
         utbetalingMediator.utbetalingUtbetalt(UtbetalingUtbetalt(
+            event = "utbetaling_utbetalt",
             utbetalingId = utbetalingId,
             fødselsnummer = fødselsnummer,
             aktørId = aktørId,
@@ -91,14 +94,16 @@ internal class UtbetalingUtbetaltRiver(
             gjenståendeSykedager = gjenståendeSykedager,
             automatiskBehandling = automatiskBehandling,
             arbeidsgiverOppdrag = arbeidsgiverOppdrag,
+            type = type,
             utbetalingsdager = utbetalingsdager
-        ), eventName = "utbetaling_utbetalt")
+        ))
         log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
     }
 
 }
 
 data class UtbetalingUtbetalt(
+    val event: String,
     val utbetalingId: UUID,
     val fødselsnummer: String,
     val aktørId: String,
@@ -109,6 +114,7 @@ data class UtbetalingUtbetalt(
     val gjenståendeSykedager: Int,
     val automatiskBehandling: Boolean,
     val arbeidsgiverOppdrag: OppdragDto,
+    val type: String,
     val utbetalingsdager: List<UtbetalingdagDto>
 ) {
         data class OppdragDto(

@@ -6,57 +6,22 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
-import java.util.*
 
 private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 
 internal class UtbetalingMediator(
     private val producer: KafkaProducer<String, JsonNode>
 ) {
-    internal fun utbetalingUtbetalt(utbetalingUtbetalt: UtbetalingUtbetalt, eventName: String) {
-        val meldingForEkstern = oversett(utbetalingUtbetalt, eventName)
+    internal fun utbetalingUtbetalt(utbetalingUtbetalt: UtbetalingUtbetalt) {
         producer.send(
             ProducerRecord(
                 "tbd.utbetaling",
                 null,
                 utbetalingUtbetalt.fødselsnummer,
-                objectMapper.valueToTree(meldingForEkstern
-                )
+                objectMapper.valueToTree(utbetalingUtbetalt)
             )
         )
-        sikkerLogg.info("Publiserer {}", StructuredArguments.keyValue(eventName, meldingForEkstern))
-    }
-
-    private fun oversett(utbetalingUtbetalt: UtbetalingUtbetalt, eventName: String): UtbetalingUtbetaltForEksternDTO {
-        return UtbetalingUtbetaltForEksternDTO(
-            event = eventName,
-            utbetalingId = utbetalingUtbetalt.utbetalingId,
-            fødselsnummer = utbetalingUtbetalt.fødselsnummer,
-            aktørId = utbetalingUtbetalt.aktørId,
-            organisasjonsnummer = utbetalingUtbetalt.organisasjonsnummer,
-            fom = utbetalingUtbetalt.fom,
-            tom = utbetalingUtbetalt.tom,
-            forbrukteSykedager = utbetalingUtbetalt.forbrukteSykedager,
-            gjenståendeSykedager = utbetalingUtbetalt.gjenståendeSykedager,
-            automatiskBehandling = utbetalingUtbetalt.automatiskBehandling,
-            arbeidsgiverOppdrag = utbetalingUtbetalt.arbeidsgiverOppdrag,
-            utbetalingsdager = utbetalingUtbetalt.utbetalingsdager,
-        )
+        sikkerLogg.info("Publiserer {}", StructuredArguments.keyValue(utbetalingUtbetalt.event, utbetalingUtbetalt))
     }
 }
 
- data class UtbetalingUtbetaltForEksternDTO(
-     val event: String,
-     val utbetalingId: UUID,
-     val fødselsnummer: String,
-     val aktørId: String,
-     val organisasjonsnummer: String,
-     val fom: LocalDate,
-     val tom: LocalDate,
-     val forbrukteSykedager: Int,
-     val gjenståendeSykedager: Int,
-     val automatiskBehandling: Boolean,
-     val arbeidsgiverOppdrag: UtbetalingUtbetalt.OppdragDto,
-     val utbetalingsdager: List<UtbetalingUtbetalt.UtbetalingdagDto>,
-     )
