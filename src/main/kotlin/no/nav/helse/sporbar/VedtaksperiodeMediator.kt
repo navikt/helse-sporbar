@@ -141,6 +141,7 @@ internal class VedtaksperiodeMediator(
             Tilstand.AVVENTER_SIMULERING_REVURDERING,
             Tilstand.UTBETALING_FEILET,
             Tilstand.AVVENTER_REVURDERING,
+            Tilstand.AVVENTER_HISTORIKK_REVURDERING,
             Tilstand.TIL_UTBETALING -> Situasjon.UnderBehandling
         }
     }
