@@ -32,7 +32,8 @@ meldingene:
 | tom | |
 | skjæringstidspunkt | Den første dagen i sykefraværet som går ut over arbeidsgiverperioden. Vilkårsprøving og fastsetting av sykepengegrunnlaget tar utgangspunkt i denne dagen |
 | dokumenter | Liste av `dokumentId` og `type` til søknaden, sykmeldingen og eventuelt inntektsmeldingen |
-| inntekt | Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren (**Eller for det aktuelle arbeidsforholdet??**) |
+| inntekt | Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren (**Eller for det
+aktuelle arbeidsforholdet??**) |
 | sykepengegrunnlag | Inntekten som er lagt til grunn for sykepenger, på årsnivå, begrenset oppad til 6G. Inntekter fra flere arbeidsgivere kan inngå i sykepengegrunnlaget. |
 | utbetalingId | Peker på en "utbetaling", det vil i praksis si en melding på utbetaling-topicen. |
 
@@ -58,7 +59,7 @@ meldingene:
 | | type | _Se forklaring i egen tabell_ |
 | | begrunnelse | Begrunnelse av årsak til avvising, kun inkludert for avviste dager |
 
-#### Person- og arbeidsgiveroppdrag ser slik ut:
+#### Arbeidsgiveroppdrag ser slik ut:
 
 | Felt | Forklaring | |
 | --- | --- | --- |
@@ -73,7 +74,10 @@ meldingene:
 | | dagsats | Faktisk utbetalingsbeløp per dag, altså etter gradering |
 | | totalbeløp | Utregning av dagsats ganger antall stønadsdager |
 | | grad | Sykdomsgrad per dag |
-| | stønadsdager | Antall virkedager mellom FOM og TOM. Helligdager er inkludert, men helgedager er ikke |
+| | stønadsdager | Antall dager mellom FOM og TOM med utbetaling fra Nav. Helligdager er inkludert, men helgedager er ikke |
+
+OBS: på `aapen-helse-sporbar` inneholdt beløp-feltet "beløp til utbetaling per dag etter gradering", dette beløpet
+ligger nå i dagsats-feltet.
 
 #### Dagtypene:
 
@@ -82,9 +86,9 @@ meldingene:
 | NavDag | Utbetalingsdag fra Nav |
 | NavHelgDag | Ingen utbetaling grunnet helg, men registrert syk |
 | ArbeidsgiverperiodeDag | Beregnet at arbeidsgiver dekker sykepengeutbetaling |
-| Arbeidsdag | Arbeidstaker var ikke syk denne dagen |
-| Fridag | Arbeidstaker hadde ikke arbeidsdag denne dagen |
-| AvvistDag | Arbeidstaker hadde ikke rett til sykepenger denne dagen |
+| Arbeidsdag | Arbeidstaker var på jobb |
+| Fridag | Arbeidstaker hadde ikke arbeidsdag |
+| AvvistDag | Arbeidstaker hadde ikke rett til sykepenger |
 | ForeldetDag | Dagen ligger for langt tilbake i tid til at man kan få sykepenger for den |
 | UkjentDag | Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag |
 
