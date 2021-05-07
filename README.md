@@ -24,13 +24,12 @@ meldingene:
 
 | Felt | Forklaring |
 | --- | --- |
-| event | "vedtak|
 | fødselsnummer | |
 | aktørId | |
 | organisasjonsnummer | |
 | fom | |
 | tom | |
-| skjæringstidspunkt | Den første dagen i sykefraværet som går ut over arbeidsgiverperioden. Vilkårsprøving og fastsetting av sykepengegrunnlaget tar utgangspunkt i denne dagen |
+| skjæringstidspunkt | Den første dagen i sykefraværet som går ut over arbeidsgiverperioden. Med andre ord dagen etter siste dag søker var på jobb før gjeldende sykefraværsperiode. Vilkårsprøving og fastsetting av sykepengegrunnlaget tar utgangspunkt i denne dagen |
 | dokumenter | Liste av `dokumentId` og `type` til søknaden, sykmeldingen og eventuelt inntektsmeldingen |
 | inntekt | Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren (**Eller for det
 aktuelle arbeidsforholdet??**) |
@@ -41,7 +40,7 @@ aktuelle arbeidsforholdet??**) |
 
 | Felt | Forklaring | |
 | --- | --- | --- |
-| event|"utbetaling"|
+| event | "utbetaling_utbetalt" eller "utbetaling_uten_utbetaling" |
 | utbetalingId | NB, flere utbetalingId-er kan peke på samme fagsystemId |
 | fødselsnummer | | |
 | aktørId | | |
@@ -67,7 +66,7 @@ aktuelle arbeidsforholdet??**) |
 | fagområde | `SP` hvis utbetalingen er til søker, eller `SPREF` hvis det er refusjon til arbeidsgiver | |
 | fagsystemId | ID i oppdragssystemet, for utbetalingsoppdraget. Oppdraget kan deles av flere "utbetalinger" | |
 | nettoBeløp | Totalt beløp til utbetaling for hele oppdraget | |
-| utbetalingslinjer | En liste av: | |
+| utbetalingslinjer | En liste, der hvert element inneholder følgende felter: | |
 | | **Felt** | **Forklaring** |
 | | fom | Fra-dato for denne kombinasjonen av dagsats og grad |
 | | tom | Til-dato |
