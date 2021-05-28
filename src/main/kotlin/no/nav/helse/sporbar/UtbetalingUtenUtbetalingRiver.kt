@@ -59,7 +59,9 @@ internal class UtbetalingUtenUtbetalingRiver(
         val utbetalingsdager = packet["utbetalingsdager"].toList().map{dag ->
             UtbetalingUtbetalt.UtbetalingdagDto(
                 dato = dag["dato"].asLocalDate(),
-                type = dag["type"].asText()
+                type = dag["type"].asText(),
+                begrunnelser = dag.path("begrunnelser").takeUnless(JsonNode::isMissingOrNull)
+                    ?.let { mapBegrunnelser(it.toList())} ?: emptyList()
             )
         }
 

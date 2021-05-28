@@ -124,6 +124,20 @@ internal class UtbetalingTest {
     }
 
     @Test
+    fun `utbetaling - mapper ut begrunnelser på avviste dager `() {
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        testRapid.sendTestMessage(utbetalingUtbetaltEnAvvistDag())
+        verify { producerMock.send( capture(captureSlot) ) }
+
+        val utbetalingUtbetalt = captureSlot.last()
+        val utbetalingUtbetaltJson = utbetalingUtbetalt.value()
+
+        val avvistDag = utbetalingUtbetaltJson.path("utbetalingsdager").toList().last()
+            .path("begrunnelser").toList().map { it.asText() }
+        assertEquals(listOf("Personen er død", "Krav til minste sykepengegrunnlag er ikke oppfylt"), avvistDag)
+    }
+
+    @Test
     fun `vedtakFattet med tilhørende utbetalingUtenUtbetaling`() {
         val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
         val idSett = IdSett()
@@ -329,6 +343,95 @@ internal class UtbetalingTest {
   "aktørId": "$AKTØRID",
   "fødselsnummer": "$FØDSELSNUMMER",
   "organisasjonsnummer": "$ORGNUMMER"
+}
+    """
+
+    @Language("json")
+    private fun utbetalingUtbetaltEnAvvistDag(
+        id: UUID = UUID.randomUUID(),
+        utbetalingId: UUID = UUID.randomUUID()
+    ) = """{
+  "@id": "$id",
+  "fødselsnummer": "12345678910",
+  "utbetalingId": "$utbetalingId",
+  "@event_name": "utbetaling_utbetalt",
+  "fom": "2021-05-06",
+  "tom": "2021-05-13",
+  "maksdato": "2021-07-15",
+  "forbrukteSykedager": "217",
+  "gjenståendeSykedager": "31",
+  "ident": "Automatisk behandlet",
+  "epost": "tbd@nav.no",
+  "type": "REVURDERING",
+  "tidspunkt": "${LocalDateTime.now()}",
+  "automatiskBehandling": "true",
+  "arbeidsgiverOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SPREF",
+    "linjer": [
+      {
+        "fom": "2021-05-06",
+        "tom": "2021-05-13",
+        "dagsats": 1431,
+        "lønn": 2193,
+        "grad": 100.0,
+        "stønadsdager": 35,
+        "totalbeløp": 38360,
+        "endringskode": "UEND",
+        "delytelseId": 1,
+        "klassekode": "SPREFAG-IOP"
+      }
+    ],
+    "fagsystemId": "123",
+    "endringskode": "ENDR",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": "38360",
+    "stønadsdager": 35,
+    "fom": "2021-05-06",
+    "tom": "2021-05-13"
+  },
+  "utbetalingsdager": [
+        {
+          "dato": "2021-05-06",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-05-07",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-05-08",
+          "type": "NavHelgeDag"
+        },
+        {
+          "dato": "2021-05-09",
+          "type": "NavHelgeDag"
+        },
+        {
+          "dato": "2021-05-10",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-05-11",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-05-12",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-05-13",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-05-14",
+          "type": "AvvistDag",
+          "begrunnelser": ["EtterDødsdato", "MinimumInntekt"]
+        }
+  ],
+  "@opprettet": "${LocalDateTime.now()}",
+  "aktørId": "123",
+  "organisasjonsnummer": "123456789"
 }
     """
 

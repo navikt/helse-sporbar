@@ -59,7 +59,9 @@ internal class UtbetalingUtbetaltRiver(
         val utbetalingsdager = packet["utbetalingsdager"].toList().map{dag ->
             UtbetalingUtbetalt.UtbetalingdagDto(
                 dato = dag["dato"].asLocalDate(),
-                type = dag["type"].asText()
+                type = dag["type"].asText(),
+                begrunnelser = dag.path("begrunnelser").takeUnless(JsonNode::isMissingOrNull)
+                    ?.let { mapBegrunnelser(it.toList())} ?: emptyList()
             )
         }
 
@@ -135,6 +137,23 @@ data class UtbetalingUtbetalt(
         }
         data class UtbetalingdagDto(
             val dato: LocalDate,
-            val type: String
+            val type: String,
+            val begrunnelser: List<String>
         )
+}
+
+internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<String> = begrunnelser.map {
+    when (it.asText()) {
+        "SykepengedagerOppbrukt" -> "Dager etter maksdato"
+        "MinimumInntekt" -> "Krav til minste sykepengegrunnlag er ikke oppfylt"
+        "EgenmeldingUtenforArbeidsgiverperiode" -> "Egenmelding etter arbeidsgiverperioden"
+        "MinimumSykdomsgrad" -> "Sykdomsgrad under 20%"
+        "ManglerOpptjening" -> "Krav til 4 ukers opptjening er ikke oppfylt"
+        "ManglerMedlemskap" -> "Krav til medlemskap er ikke oppfylt"
+        "EtterDødsdato" -> "Personen er død"
+        else -> {
+            log.error("Ukjent begrunnelse $it")
+            "Ukjent begrunnelse: \"${it}\""
+        }
+    }
 }
