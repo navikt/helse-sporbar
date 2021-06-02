@@ -134,7 +134,7 @@ internal class UtbetalingTest {
 
         val avvistDag = utbetalingUtbetaltJson.path("utbetalingsdager").toList().last()
             .path("begrunnelser").toList().map { it.asText() }
-        assertEquals(listOf("Personen er død", "Krav til minste sykepengegrunnlag er ikke oppfylt"), avvistDag)
+        assertEquals(listOf("EtterDødsdato","MinimumInntekt"), avvistDag)
     }
 
     @Test

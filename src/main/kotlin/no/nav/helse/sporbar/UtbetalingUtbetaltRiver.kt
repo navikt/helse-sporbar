@@ -119,6 +119,8 @@ data class UtbetalingUtbetalt(
     val type: String,
     val utbetalingsdager: List<UtbetalingdagDto>
 ) {
+    enum class Begrunnelse {SykepengedagerOppbrukt, MinimumInntekt, EgenmeldingUtenforArbeidsgiverperiode, MinimumSykdomsgrad, ManglerOpptjening, ManglerMedlemskap, EtterDødsdato, UKJENT }
+
         data class OppdragDto(
             val mottaker: String,
             val fagområde: String,
@@ -138,22 +140,22 @@ data class UtbetalingUtbetalt(
         data class UtbetalingdagDto(
             val dato: LocalDate,
             val type: String,
-            val begrunnelser: List<String>
+            val begrunnelser: List<Begrunnelse>
         )
 }
 
-internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<String> = begrunnelser.map {
+internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<UtbetalingUtbetalt.Begrunnelse> = begrunnelser.map {
     when (it.asText()) {
-        "SykepengedagerOppbrukt" -> "Dager etter maksdato"
-        "MinimumInntekt" -> "Krav til minste sykepengegrunnlag er ikke oppfylt"
-        "EgenmeldingUtenforArbeidsgiverperiode" -> "Egenmelding etter arbeidsgiverperioden"
-        "MinimumSykdomsgrad" -> "Sykdomsgrad under 20%"
-        "ManglerOpptjening" -> "Krav til 4 ukers opptjening er ikke oppfylt"
-        "ManglerMedlemskap" -> "Krav til medlemskap er ikke oppfylt"
-        "EtterDødsdato" -> "Personen er død"
+        "SykepengedagerOppbrukt" -> UtbetalingUtbetalt.Begrunnelse.SykepengedagerOppbrukt
+        "MinimumInntekt" -> UtbetalingUtbetalt.Begrunnelse.MinimumInntekt
+        "EgenmeldingUtenforArbeidsgiverperiode" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
+        "MinimumSykdomsgrad" -> UtbetalingUtbetalt.Begrunnelse.MinimumSykdomsgrad
+        "ManglerOpptjening" -> UtbetalingUtbetalt.Begrunnelse.ManglerOpptjening
+        "ManglerMedlemskap" -> UtbetalingUtbetalt.Begrunnelse.ManglerMedlemskap
+        "EtterDødsdato" -> UtbetalingUtbetalt.Begrunnelse.EtterDødsdato
         else -> {
             log.error("Ukjent begrunnelse $it")
-            "Ukjent begrunnelse: \"${it}\""
+            UtbetalingUtbetalt.Begrunnelse.UKJENT
         }
     }
 }
