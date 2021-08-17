@@ -36,6 +36,7 @@ internal class UtbetalingUtbetaltRiver(
                 it.require("maksdato", JsonNode::asLocalDate)
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
+                it.interestedIn("vedtaksperiodeIder")
             }
         }.register(this)
     }
@@ -84,6 +85,8 @@ internal class UtbetalingUtbetaltRiver(
             )
         }
 
+        val antallVedtak = packet["vedtaksperiodeIder"].takeIf { it.isArray }?.size()
+
         utbetalingMediator.utbetalingUtbetalt(UtbetalingUtbetalt(
             event = "utbetaling_utbetalt",
             utbetalingId = utbetalingId,
@@ -97,7 +100,8 @@ internal class UtbetalingUtbetaltRiver(
             automatiskBehandling = automatiskBehandling,
             arbeidsgiverOppdrag = arbeidsgiverOppdrag,
             type = type,
-            utbetalingsdager = utbetalingsdager
+            utbetalingsdager = utbetalingsdager,
+            antallVedtak = antallVedtak
         ))
         log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
     }
@@ -117,7 +121,8 @@ data class UtbetalingUtbetalt(
     val automatiskBehandling: Boolean,
     val arbeidsgiverOppdrag: OppdragDto,
     val type: String,
-    val utbetalingsdager: List<UtbetalingdagDto>
+    val utbetalingsdager: List<UtbetalingdagDto>,
+    val antallVedtak: Int?
 ) {
     enum class Begrunnelse {SykepengedagerOppbrukt, MinimumInntekt, EgenmeldingUtenforArbeidsgiverperiode, MinimumSykdomsgrad, ManglerOpptjening, ManglerMedlemskap, EtterDødsdato, UKJENT }
 

@@ -35,7 +35,7 @@ internal class UtbetalingUtenUtbetalingRiver(
                 it.require("maksdato", JsonNode::asLocalDate)
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
-
+                it.interestedIn("vedtaksperiodeIder")
             }
         }.register(this)
     }
@@ -84,6 +84,8 @@ internal class UtbetalingUtenUtbetalingRiver(
             )
         }
 
+        val antallVedtak = packet["vedtaksperiodeIder"].takeIf { it.isArray }?.size()
+
         utbetalingMediator.utbetalingUtbetalt(UtbetalingUtbetalt(
             event = "utbetaling_uten_utbetaling",
             utbetalingId = utbetalingId,
@@ -97,7 +99,8 @@ internal class UtbetalingUtenUtbetalingRiver(
             automatiskBehandling = automatiskBehandling,
             arbeidsgiverOppdrag = arbeidsgiverOppdrag,
             type = type,
-            utbetalingsdager = utbetalingsdager
+            utbetalingsdager = utbetalingsdager,
+            antallVedtak = antallVedtak
         ))
         log.info("Behandler utbetaling_uten_utbetaling: ${packet["@id"].asText()}")
     }
