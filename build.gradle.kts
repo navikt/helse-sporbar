@@ -10,7 +10,13 @@ plugins {
 
 dependencies {
     implementation("com.github.navikt:rapids-and-rivers:1.a77261b")
+
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
+    implementation("io.ktor:ktor-jackson:$ktorVersion")
+    implementation("io.ktor:ktor-auth-jwt:$ktorVersion") {
+        exclude(group = "junit")
+    }
+
     implementation("com.zaxxer:HikariCP:4.0.2")
     implementation("no.nav:vault-jdbc:1.3.7")
     implementation("org.flywaydb:flyway-core:7.5.4")

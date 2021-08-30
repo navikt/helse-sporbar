@@ -5,6 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import io.ktor.application.*
+import io.ktor.auth.*
+import io.ktor.features.*
+import io.ktor.http.*
+import io.ktor.jackson.*
+import io.ktor.routing.*
 import no.nav.helse.rapids_rivers.RapidApplication
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -62,6 +68,17 @@ fun launchApplication(env: Environment) {
     )
 
     RapidApplication.Builder(RapidApplication.RapidApplicationConfig.fromEnv(env.raw))
+        .withKtorModule {
+            install(ContentNegotiation) {
+                register(ContentType.Application.Json, JacksonConverter(objectMapper))
+            }
+            azureAdAppAuthentication(env.wellKnownUrl, env.clientId)
+            routing {
+                authenticate(JWT_AUTH) {
+                    vedtakApi(vedtakDao)
+                }
+            }
+        }
         .build().apply {
             NyttDokumentRiver(this, dokumentDao)
             VedtaksperiodeEndretRiver(this, mediator)

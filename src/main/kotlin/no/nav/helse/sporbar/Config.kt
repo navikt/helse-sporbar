@@ -18,7 +18,9 @@ fun readServiceUserCredentials() = ServiceUser(
 class Environment(
     val raw: Map<String, String>,
     val db: DB,
-    val serviceUser: ServiceUser
+    val serviceUser: ServiceUser,
+    val wellKnownUrl: String,
+    val clientId: String
 ) {
     constructor(raw: Map<String, String>) : this(
         raw = raw,
@@ -28,7 +30,9 @@ class Environment(
             port = raw.getValue("DATABASE_PORT").toInt(),
             vaultMountPath = raw.getValue("DATABASE_VAULT_MOUNT_PATH")
         ),
-        serviceUser = readServiceUserCredentials()
+        serviceUser = readServiceUserCredentials(),
+        wellKnownUrl = raw.getValue("AZURE_APP_WELL_KNOWN_URL"),
+        clientId = raw.getValue("AZURE_APP_CLIENT_ID")
     )
 
     class DB(
