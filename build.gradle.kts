@@ -11,6 +11,7 @@ plugins {
 dependencies {
     implementation("com.github.navikt:rapids-and-rivers:1.a77261b")
 
+    implementation("io.ktor:ktor-client-apache:$ktorVersion")
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
     implementation("io.ktor:ktor-jackson:$ktorVersion")
     implementation("io.ktor:ktor-auth-jwt:$ktorVersion") {
