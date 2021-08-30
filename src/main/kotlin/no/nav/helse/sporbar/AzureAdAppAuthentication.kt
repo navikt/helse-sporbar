@@ -6,12 +6,19 @@ import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.client.*
+import io.ktor.client.engine.apache.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.runBlocking
 
 const val JWT_AUTH = "server_to_server"
 
-private val client: HttpClient = HttpClient()
+private val client: HttpClient = HttpClient(Apache) {
+    engine {
+        customizeClient {
+            useSystemProperties()
+        }
+    }
+}
 
 fun Application.azureAdAppAuthentication(wellKnownUrl: String, clientId: String) {
     val wellKnown = fetchWellKnown(wellKnownUrl)
