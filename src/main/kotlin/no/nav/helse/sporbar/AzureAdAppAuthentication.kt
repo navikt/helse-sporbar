@@ -7,7 +7,9 @@ import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.client.*
 import io.ktor.client.engine.apache.*
+import io.ktor.client.features.json.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 
 const val JWT_AUTH = "server_to_server"
@@ -18,6 +20,8 @@ private val client: HttpClient = HttpClient(Apache) {
             useSystemProperties()
         }
     }
+
+    install(JsonFeature)
 }
 
 fun Application.azureAdAppAuthentication(wellKnownUrl: String, clientId: String) {
@@ -35,4 +39,6 @@ fun Application.azureAdAppAuthentication(wellKnownUrl: String, clientId: String)
     }
 }
 
-private fun fetchWellKnown(url: String) = runBlocking { client.get<JsonNode>(url) }
+private fun fetchWellKnown(url: String) = runBlocking { client.get<JsonNode>(url) {
+    accept(ContentType.Application.Json)
+} }
