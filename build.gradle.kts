@@ -5,7 +5,7 @@ val junitJupiterVersion = "5.7.1"
 val mainClass = "no.nav.helse.sporbar.AppKt"
 
 plugins {
-    kotlin("jvm") version "1.4.31"
+    kotlin("jvm") version "1.5.30"
 }
 
 dependencies {
@@ -27,7 +27,7 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
 
     testImplementation("com.opentable.components:otj-pg-embedded:0.13.3")
-    testImplementation("io.mockk:mockk:1.10.5")
+    testImplementation("io.mockk:mockk:1.12.0")
 }
 
 repositories {
@@ -38,11 +38,11 @@ repositories {
 tasks {
 
     named<KotlinCompile>("compileKotlin") {
-        kotlinOptions.jvmTarget = "15"
+        kotlinOptions.jvmTarget = "16"
     }
 
     named<KotlinCompile>("compileTestKotlin") {
-        kotlinOptions.jvmTarget = "15"
+        kotlinOptions.jvmTarget = "16"
     }
 
     withType<Test> {
