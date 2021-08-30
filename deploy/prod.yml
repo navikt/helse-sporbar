@@ -29,6 +29,9 @@ spec:
     enabled: true
     path: /metrics
   webproxy: true
+  azure:
+    application:
+      enabled: true
   kafka:
     pool: nav-prod
   secureLogs:
