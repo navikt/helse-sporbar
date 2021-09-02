@@ -27,3 +27,6 @@ spec:
         - team: flex
           application: spinnsyn-backend
           access: read
+        - team: disykefravar
+          application: dvh-sykp-konsument
+          access: read
