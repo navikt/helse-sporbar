@@ -28,5 +28,8 @@ spec:
           application: spinnsyn-backend
           access: read
         - team: disykefravar
-          application: dvh-sykp-konsument
+          application: dvh-sporbar-konsument-prod
+          access: read
+        - team: disykefravar
+          application: dvh-sporbar-konsument-utv
           access: read
