@@ -141,6 +141,7 @@ internal class VedtaksperiodeMediator(
             Tilstand.AVVENTER_SIMULERING_REVURDERING,
             Tilstand.UTBETALING_FEILET,
             Tilstand.AVVENTER_REVURDERING,
+            Tilstand.AVVENTER_VILKÅRSPRØVING_REVURDERING,
             Tilstand.AVVENTER_HISTORIKK_REVURDERING,
             Tilstand.AVVENTER_GJENNOMFØRT_REVURDERING,
             Tilstand.REVURDERING_FEILET,
