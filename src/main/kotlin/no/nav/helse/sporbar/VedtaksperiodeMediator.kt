@@ -84,6 +84,7 @@ internal class VedtaksperiodeMediator(
             tom = utbetaling.tom,
             forbrukteSykedager = utbetaling.forbrukteSykedager,
             gjenståendeSykedager = utbetaling.gjenståendeSykedager,
+            foreløpigBeregnetSluttPåSykepenger = utbetaling.maksdato,
             automatiskBehandling = utbetaling.automatiskBehandling,
             sykepengegrunnlag = utbetaling.sykepengegrunnlag,
             månedsinntekt = utbetaling.månedsinntekt,

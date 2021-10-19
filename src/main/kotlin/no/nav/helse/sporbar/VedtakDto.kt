@@ -8,6 +8,7 @@ data class VedtakDto(
     val tom: LocalDate,
     val forbrukteSykedager: Int,
     val gjenståendeSykedager: Int,
+    val foreløpigBeregnetSluttPåSykepenger: LocalDate,
     val automatiskBehandling: Boolean,
     val sykepengegrunnlag: Double,
     val månedsinntekt: Double,
