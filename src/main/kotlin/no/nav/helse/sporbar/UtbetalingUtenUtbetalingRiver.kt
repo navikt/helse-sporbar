@@ -51,6 +51,7 @@ internal class UtbetalingUtenUtbetalingRiver(
         val organisasjonsnummer = packet["organisasjonsnummer"].asText()
         val fom = packet["fom"].asLocalDate()
         val tom = packet["tom"].asLocalDate()
+        val maksdato = packet["maksdato"].asLocalDate()
         val utbetalingId = packet["utbetalingId"].let{ UUID.fromString(it.asText())}
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
         val gjenståendeSykedager = packet["gjenståendeSykedager"].asInt()
@@ -100,7 +101,8 @@ internal class UtbetalingUtenUtbetalingRiver(
             arbeidsgiverOppdrag = arbeidsgiverOppdrag,
             type = type,
             utbetalingsdager = utbetalingsdager,
-            antallVedtak = antallVedtak
+            antallVedtak = antallVedtak,
+            foreløpigBeregnetSluttPåSykepenger = maksdato
         ))
         log.info("Behandler utbetaling_uten_utbetaling: ${packet["@id"].asText()}")
     }

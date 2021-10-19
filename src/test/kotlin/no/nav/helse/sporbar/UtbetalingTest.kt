@@ -119,6 +119,7 @@ internal class UtbetalingTest {
         assertEquals(NETTOBELØP, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["nettoBeløp"].asInt())
         assertEquals(FOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["fom"].asLocalDate())
         assertEquals(TOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate())
+        assertEquals(MAKSDATO, utbetalingUtbetaltJson.path("foreløpigBeregnetSluttPåSykepenger").asLocalDate())
         assertTrue(utbetalingUtbetaltJson.path("utbetalingsdager").toList().isNotEmpty())
         assertTrue(utbetalingUtbetaltJson.path("vedtaksperiodeId").isMissingNode)
     }
@@ -156,10 +157,12 @@ internal class UtbetalingTest {
         testRapid.sendTestMessage(utbetalingUtenUtbetalingMedVedtaksperiodeIder())
         verify { producerMock.send( capture(captureSlot) ) }
 
-        val utbetalingUtbetalt = captureSlot.last()
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.value()
+        val utbetalingUtenUtbetaling = captureSlot.last()
+        val utbetalingUtenUtbetalingJson = utbetalingUtenUtbetaling.value()
 
-        val antallVedtak = utbetalingUtbetaltJson.path("antallVedtak").asInt()
+        val antallVedtak = utbetalingUtenUtbetalingJson.path("antallVedtak").asInt()
+
+        assertEquals(LocalDate.of(2021,7,15), utbetalingUtenUtbetalingJson.path("foreløpigBeregnetSluttPåSykepenger").asLocalDate())
         assertEquals(2, antallVedtak)
     }
 
