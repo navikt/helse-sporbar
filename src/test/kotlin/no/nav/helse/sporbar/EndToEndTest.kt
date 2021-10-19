@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
+import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -107,6 +108,7 @@ internal class EndToEndTest {
         assertEquals(ORGNUMMER, vedtakMelding["organisasjonsnummer"].asText())
         assertEquals(sykepengegrunnlag, vedtakMelding["sykepengegrunnlag"].asDouble())
         assertEquals(månedsinntekt, vedtakMelding["månedsinntekt"].asDouble())
+        assertEquals(LocalDate.of(2021, 1,17), vedtakMelding["foreløpigBeregnetSluttPåSykepenger"].asLocalDate())
     }
 
     @Test
@@ -345,7 +347,8 @@ internal class EndToEndTest {
         tidligereBrukteSykedager: Int = 0,
         automatiskBehandling: Boolean,
         sykepengegrunnlag: Double,
-        månedsinntekt: Double
+        månedsinntekt: Double,
+        maksdato: LocalDate = fom.plusDays(230)
     ) = """{
     "aktørId": "aktørId",
     "fødselsnummer": "$FNR",
@@ -381,6 +384,7 @@ internal class EndToEndTest {
     "månedsinntekt": $månedsinntekt,
     "fom": "$fom",
     "tom": "$tom",
+    "maksdato": "$maksdato",
     "forbrukteSykedager": ${tidligereBrukteSykedager + sykedager(fom, tom)},
     "gjenståendeSykedager": ${248 - tidligereBrukteSykedager - sykedager(fom, tom)},
     "automatiskBehandling": $automatiskBehandling,

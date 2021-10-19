@@ -28,7 +28,8 @@ internal class UtbetaltRiver(
                     "gjenståendeSykedager",
                     "automatiskBehandling",
                     "sykepengegrunnlag",
-                    "månedsinntekt"
+                    "månedsinntekt",
+                    "maksdato"
                 )
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
@@ -46,6 +47,7 @@ internal class UtbetaltRiver(
                 tom = packet["tom"].asLocalDate(),
                 forbrukteSykedager = packet["forbrukteSykedager"].asInt(),
                 gjenståendeSykedager = packet["gjenståendeSykedager"].asInt(),
+                maksdato = packet["maksdato"].asLocalDate(),
                 sykepengegrunnlag = packet["sykepengegrunnlag"].asDouble(),
                 månedsinntekt = packet["månedsinntekt"].asDouble(),
                 automatiskBehandling = packet["automatiskBehandling"].asBoolean(),
