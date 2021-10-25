@@ -91,7 +91,7 @@ ligger nå i dagsats-feltet.
 | ForeldetDag | Dagen ligger for langt tilbake i tid til at man kan få sykepenger for den |
 | UkjentDag | Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag |
 
-#### Begrunnelser (ikke implementert ennå):
+#### Begrunnelser:
 
 | Kode |
 | --- |
@@ -102,6 +102,7 @@ ligger nå i dagsats-feltet.
 | EtterDødsdato |
 | ManglerOpptjening |
 | ManglerMedlemskap |
+| Over70 |
 
 Spør om noe er uklart :-)
 

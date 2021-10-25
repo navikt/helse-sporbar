@@ -127,7 +127,7 @@ data class UtbetalingUtbetalt(
     val antallVedtak: Int?,
     val foreløpigBeregnetSluttPåSykepenger: LocalDate
 ) {
-    enum class Begrunnelse {SykepengedagerOppbrukt, MinimumInntekt, EgenmeldingUtenforArbeidsgiverperiode, MinimumSykdomsgrad, ManglerOpptjening, ManglerMedlemskap, EtterDødsdato, UKJENT }
+    enum class Begrunnelse {SykepengedagerOppbrukt, MinimumInntekt, EgenmeldingUtenforArbeidsgiverperiode, MinimumSykdomsgrad, ManglerOpptjening, ManglerMedlemskap, EtterDødsdato, Over70, UKJENT }
 
         data class OppdragDto(
             val mottaker: String,
@@ -161,6 +161,7 @@ internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<UtbetalingUtbet
         "ManglerOpptjening" -> UtbetalingUtbetalt.Begrunnelse.ManglerOpptjening
         "ManglerMedlemskap" -> UtbetalingUtbetalt.Begrunnelse.ManglerMedlemskap
         "EtterDødsdato" -> UtbetalingUtbetalt.Begrunnelse.EtterDødsdato
+        "Over70" -> UtbetalingUtbetalt.Begrunnelse.Over70
         else -> {
             log.error("Ukjent begrunnelse $it")
             UtbetalingUtbetalt.Begrunnelse.UKJENT
