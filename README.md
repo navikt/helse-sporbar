@@ -34,9 +34,6 @@ meldingene:
 | inntekt | Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren (**Eller for det
 aktuelle arbeidsforholdet??**) |
 | sykepengegrunnlag | Inntekten som er lagt til grunn for sykepenger, på årsnivå, begrenset oppad til 6G. Inntekter fra flere arbeidsgivere kan inngå i sykepengegrunnlaget. |
-| grunnlagForSykepengegrunnlag | Den samlede årlige inntekten før evt. begrensning |
-| grunnlagForSykepengegrunnlagPerArbeidsgiver | Et objekt med orgnummer -> årlig inntekt per arbeidsgiver `{"123456789": 500000.0, "987654321": 700000.0}` |
-| begrensning |Om sykepengegrunnlaget er 6G begrenset. En av disse: `ER_6G_BEGRENSET`, `ER_IKKE_6G_BEGRENSET`, `VURDERT_I_INFOTRYGD` og `VET_IKKE` |
 | utbetalingId | Peker på en "utbetaling", det vil i praksis si en melding på utbetaling-topicen. |
 
 #### Meldinger på `tbd.utbetaling` inneholder disse feltene:

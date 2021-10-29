@@ -32,9 +32,6 @@ internal class UtbetalingTest {
         val MAKSDATO = LocalDate.of(2020, 5, 10)
         val SKJÆRINGSTIDSPUNKT = LocalDate.of(2020, 1, 1)
         val SYKEPENGEGRUNNLAG = 388260.0
-        val GRUNNLAG_FOR_SYKEPENGEGRUNNLAG = 500000.0
-        val GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER = """{"12345678910":500000.0,"987654321":700000.0}"""
-        val BEGRENSNING = "ER_IKKE_6G_BEGRENSET"
         val INNTEKT = 388260.0
         val AKTØRID = "123"
         val FORBRUKTESYKEDAGER = 217
@@ -289,9 +286,6 @@ internal class UtbetalingTest {
   "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
   "hendelser": ${hendelser.map { "\"${it}\"" }},
   "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
-  "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
-  "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
-  "begrensning": "$BEGRENSNING",
   "inntekt": "$INNTEKT",
   "utbetalingId": "$utbetalingId",
   "@event_name": "vedtak_fattet",

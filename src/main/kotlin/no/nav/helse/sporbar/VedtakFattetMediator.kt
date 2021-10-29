@@ -47,30 +47,24 @@ internal class VedtakFattetMediator(
             skjæringstidspunkt = vedtakFattet.skjæringstidspunkt,
             inntekt = vedtakFattet.inntekt,
             sykepengegrunnlag = vedtakFattet.sykepengegrunnlag,
-            grunnlagForSykepengegrunnlag = vedtakFattet.grunnlagForSykepengegrunnlag,
-            grunnlagForSykepengegrunnlagPerArbeidsgiver = vedtakFattet.grunnlagForSykepengegrunnlagPerArbeidsgiver,
-            begrensning = vedtakFattet.begrensning,
             dokumenter = dokumenter,
             utbetalingId = vedtakFattet.utbetalingId
         )
     }
 }
 
-data class VedtakFattetForEksternDto(
-    val fødselsnummer: String,
-    val aktørId: String,
-    val organisasjonsnummer: String,
-    val fom: LocalDate,
-    val tom: LocalDate,
-    val skjæringstidspunkt: LocalDate,
-    val dokumenter: List<Dokument>,
-    val inntekt: Double,
-    val sykepengegrunnlag: Double,
-    val grunnlagForSykepengegrunnlag: Double,
-    val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
-    val begrensning: String,
-    val utbetalingId: UUID?
-)
+ data class VedtakFattetForEksternDto(
+     val fødselsnummer: String,
+     val aktørId: String,
+     val organisasjonsnummer: String,
+     val fom: LocalDate,
+     val tom: LocalDate,
+     val skjæringstidspunkt: LocalDate,
+     val dokumenter: List<Dokument>,
+     val inntekt: Double,
+     val sykepengegrunnlag: Double,
+     val utbetalingId: UUID?
+     )
 
 
 
