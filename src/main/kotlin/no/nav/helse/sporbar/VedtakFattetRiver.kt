@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import no.nav.helse.rapids_rivers.*
 import org.slf4j.Logger
@@ -27,6 +28,9 @@ internal class VedtakFattetRiver(
                     "organisasjonsnummer",
                     "hendelser",
                     "sykepengegrunnlag",
+                    "grunnlagForSykepengegrunnlag",
+                    "grunnlagForSykepengegrunnlagPerArbeidsgiver",
+                    "begrensning",
                     "inntekt"
                 )
                 it.require("fom", JsonNode::asLocalDate)
@@ -54,22 +58,31 @@ internal class VedtakFattetRiver(
         val hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) }
         val inntekt = packet["inntekt"].asDouble()
         val sykepengegrunnlag = packet["sykepengegrunnlag"].asDouble()
+        val grunnlagForSykepengegrunnlag = packet["grunnlagForSykepengegrunnlag"].asDouble()
+        val grunnlagForSykepengegrunnlagPerArbeidsgiver = objectMapper.readValue(packet["grunnlagForSykepengegrunnlagPerArbeidsgiver"].toString(), object : TypeReference<Map<String, Double>>() {})
+        val begrensning = packet["begrensning"].asText()
 
         val utbetalingId = packet["utbetalingId"].takeUnless(JsonNode::isMissingOrNull)?.let {
-            UUID.fromString(it.asText())}
+            UUID.fromString(it.asText())
+        }
 
-        vedtakFattetMediator.vedtakFattet(VedtakFattet(
-            fødselsnummer = fødselsnummer,
-            aktørId = aktørId,
-            organisasjonsnummer = organisasjonsnummer,
-            fom = fom,
-            tom = tom,
-            skjæringstidspunkt = skjæringstidspunkt,
-            hendelseIder = hendelseIder,
-            inntekt = inntekt,
-            sykepengegrunnlag = sykepengegrunnlag,
-            utbetalingId = utbetalingId
-        ))
+        vedtakFattetMediator.vedtakFattet(
+            VedtakFattet(
+                fødselsnummer = fødselsnummer,
+                aktørId = aktørId,
+                organisasjonsnummer = organisasjonsnummer,
+                fom = fom,
+                tom = tom,
+                skjæringstidspunkt = skjæringstidspunkt,
+                hendelseIder = hendelseIder,
+                inntekt = inntekt,
+                sykepengegrunnlag = sykepengegrunnlag,
+                grunnlagForSykepengegrunnlag = grunnlagForSykepengegrunnlag,
+                grunnlagForSykepengegrunnlagPerArbeidsgiver = grunnlagForSykepengegrunnlagPerArbeidsgiver,
+                begrensning = begrensning,
+                utbetalingId = utbetalingId
+            )
+        )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
     }
 }
@@ -84,5 +97,8 @@ internal data class VedtakFattet(
     val hendelseIder: List<UUID>,
     val inntekt: Double,
     val sykepengegrunnlag: Double,
+    val grunnlagForSykepengegrunnlag: Double,
+    val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
+    val begrensning: String,
     val utbetalingId: UUID?
 )
