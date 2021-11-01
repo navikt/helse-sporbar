@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.clearAllMocks
 import io.mockk.mockk
@@ -30,6 +31,9 @@ internal class VedtakFattetRiverTest {
         val TOM = LocalDate.of(2020, 1, 31)
         val SKJÆRINGSTIDSPUNKT = LocalDate.of(2020, 1, 1)
         val SYKEPENGEGRUNNLAG = 388260.0
+        val GRUNNLAG_FOR_SYKEPENGEGRUNNLAG = 500000.0
+        val GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER = """{"12345678910":500000.0,"987654321":700000.0}"""
+        val BEGRENSNING = "ER_IKKE_6G_BEGRENSET"
         val INNTEKT = 388260.0
         val AKTØRID = "123"
     }
@@ -97,6 +101,9 @@ internal class VedtakFattetRiverTest {
         assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
         assertEquals(INNTEKT, vedtakFattetJson["inntekt"].asDouble())
         assertEquals(SYKEPENGEGRUNNLAG, vedtakFattetJson["sykepengegrunnlag"].asDouble())
+        assertEquals(GRUNNLAG_FOR_SYKEPENGEGRUNNLAG, vedtakFattetJson["grunnlagForSykepengegrunnlag"].asDouble())
+        assertEquals(GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER, vedtakFattetJson["grunnlagForSykepengegrunnlagPerArbeidsgiver"].toString())
+        assertEquals(BEGRENSNING, vedtakFattetJson["begrensning"].asText())
         assertTrue(vedtakFattetJson.path("utbetalingId").isNull)
         assertTrue(vedtakFattetJson.path("vedtaksperiodeId").isMissingNode)
 
@@ -242,6 +249,9 @@ internal class VedtakFattetRiverTest {
   "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
   "hendelser": ${hendelser.map { "\"${it}\"" }},
   "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
+  "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
+  "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
+  "begrensning": "$BEGRENSNING",
   "inntekt": "$INNTEKT",
   "@event_name": "vedtak_fattet",
   "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
@@ -268,6 +278,9 @@ internal class VedtakFattetRiverTest {
   "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
   "hendelser": ${hendelser.map { "\"${it}\"" }},
   "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
+  "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
+  "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
+  "begrensning": "$BEGRENSNING",
   "inntekt": "$INNTEKT",
   "utbetalingId": "$utbetalingId",
   "@event_name": "vedtak_fattet",
