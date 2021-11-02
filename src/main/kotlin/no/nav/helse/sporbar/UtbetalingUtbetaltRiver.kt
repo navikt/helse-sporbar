@@ -127,7 +127,19 @@ data class UtbetalingUtbetalt(
     val antallVedtak: Int?,
     val foreløpigBeregnetSluttPåSykepenger: LocalDate
 ) {
-    enum class Begrunnelse {SykepengedagerOppbrukt, MinimumInntekt, EgenmeldingUtenforArbeidsgiverperiode, MinimumSykdomsgrad, ManglerOpptjening, ManglerMedlemskap, EtterDødsdato, Over70, UKJENT }
+    enum class Begrunnelse {
+        SykepengedagerOppbrukt,
+        SykepengedagerOppbruktOver67,
+        MinimumInntekt,
+        EgenmeldingUtenforArbeidsgiverperiode,
+        MinimumSykdomsgrad,
+        ManglerOpptjening,
+        ManglerMedlemskap,
+        EtterDødsdato,
+        Over70,
+        MinimumInntektOver67,
+        UKJENT
+    }
 
         data class OppdragDto(
             val mottaker: String,
@@ -155,7 +167,9 @@ data class UtbetalingUtbetalt(
 internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<UtbetalingUtbetalt.Begrunnelse> = begrunnelser.map {
     when (it.asText()) {
         "SykepengedagerOppbrukt" -> UtbetalingUtbetalt.Begrunnelse.SykepengedagerOppbrukt
+        "SykepengedagerOppbruktOver67" -> UtbetalingUtbetalt.Begrunnelse.SykepengedagerOppbruktOver67
         "MinimumInntekt" -> UtbetalingUtbetalt.Begrunnelse.MinimumInntekt
+        "MinimumInntektOver67" -> UtbetalingUtbetalt.Begrunnelse.MinimumInntektOver67
         "EgenmeldingUtenforArbeidsgiverperiode" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
         "MinimumSykdomsgrad" -> UtbetalingUtbetalt.Begrunnelse.MinimumSykdomsgrad
         "ManglerOpptjening" -> UtbetalingUtbetalt.Begrunnelse.ManglerOpptjening

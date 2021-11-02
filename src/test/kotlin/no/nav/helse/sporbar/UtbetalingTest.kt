@@ -138,7 +138,10 @@ internal class UtbetalingTest {
 
         val avvistDag = utbetalingUtbetaltJson.path("utbetalingsdager").toList().last()
             .path("begrunnelser").toList().map { it.asText() }
-        assertEquals(listOf("EtterDødsdato","MinimumInntekt","Over70"), avvistDag)
+        assertEquals(
+            listOf("EtterDødsdato","MinimumInntekt","Over70","MinimumInntektOver67","SykepengedagerOppbruktOver67"),
+            avvistDag
+        )
     }
 
     @Test
@@ -461,7 +464,7 @@ internal class UtbetalingTest {
         {
           "dato": "2021-05-14",
           "type": "AvvistDag",
-          "begrunnelser": ["EtterDødsdato", "MinimumInntekt", "Over70"]
+          "begrunnelser": ["EtterDødsdato", "MinimumInntekt", "Over70", "MinimumInntektOver67", "SykepengedagerOppbruktOver67"]
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",

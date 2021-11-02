@@ -99,7 +99,9 @@ ligger nå i dagsats-feltet.
 | Kode |
 | --- |
 | SykepengedagerOppbrukt |
+| SykepengedagerOppbruktOver67 |
 | MinimumInntekt |
+| MinimumInntektOver67 |
 | EgenmeldingUtenforArbeidsgiverperiode |
 | MinimumSykdomsgrad |
 | EtterDødsdato |
