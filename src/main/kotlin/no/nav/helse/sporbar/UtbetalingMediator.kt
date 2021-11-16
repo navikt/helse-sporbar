@@ -13,15 +13,16 @@ internal class UtbetalingMediator(
     private val producer: KafkaProducer<String, JsonNode>
 ) {
     internal fun utbetalingUtbetalt(utbetalingUtbetalt: UtbetalingUtbetalt) {
+        val utbetalingJson = objectMapper.valueToTree<JsonNode>(utbetalingUtbetalt)
         producer.send(
             ProducerRecord(
                 "tbd.utbetaling",
                 null,
                 utbetalingUtbetalt.fødselsnummer,
-                objectMapper.valueToTree(utbetalingUtbetalt)
+                utbetalingJson
             )
         )
-        sikkerLogg.info("Publiserer {}", StructuredArguments.keyValue(utbetalingUtbetalt.event, utbetalingUtbetalt))
+        sikkerLogg.info("Publiserer ${utbetalingUtbetalt.event}: {}", utbetalingJson)
     }
 }
 
