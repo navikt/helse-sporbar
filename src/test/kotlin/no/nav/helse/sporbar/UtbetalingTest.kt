@@ -13,8 +13,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -186,6 +185,8 @@ internal class UtbetalingTest {
 
         val antallVedtak = utbetalingUtenUtbetalingJson.path("antallVedtak").asInt()
 
+        assertFalse(utbetalingUtenUtbetalingJson.path("arbeidsgiverOppdrag").isNull) { "Denne skal være assertTrue når toggelen NULLE_UT_TOMME_OPPDRAG fjernes (eller settes til true mannuelt)" }
+        assertFalse(utbetalingUtenUtbetalingJson.path("personOppdrag").isNull) { "Denne skal være assertTrue når toggelen NULLE_UT_TOMME_OPPDRAG fjernes (eller settes til true mannuelt)" }
         assertEquals(LocalDate.of(2021,7,15), utbetalingUtenUtbetalingJson.path("foreløpigBeregnetSluttPåSykepenger").asLocalDate())
         assertEquals(2, antallVedtak)
     }
@@ -333,6 +334,7 @@ internal class UtbetalingTest {
   "maksdato": "$MAKSDATO",
   "forbrukteSykedager": "$FORBRUKTESYKEDAGER",
   "gjenståendeSykedager": "$GJENSTÅENDESYKEDAGER",
+  "stønadsdager": 35,
   "ident": "Automatisk behandlet",
   "epost": "tbd@nav.no",
   "type": "$UTBETALINGSTYPE",
@@ -354,6 +356,31 @@ internal class UtbetalingTest {
         "endringskode": "UEND",
         "delytelseId": 1,
         "klassekode": "SPREFAG-IOP"
+      }
+    ],
+    "fagsystemId": "123",
+    "endringskode": "ENDR",
+    "tidsstempel": "$TIDSSTEMPEL",
+    "nettoBeløp": "$NETTOBELØP",
+    "stønadsdager": 35,
+    "fom": "$FOM",
+    "tom": "$TOM"
+  },
+  "personOppdrag": {
+    "mottaker": "$ORGNUMMER",
+    "fagområde": "SP",
+    "linjer": [
+      {
+        "fom": "$FOM",
+        "tom": "$TOM",
+        "dagsats": 1431,
+        "lønn": 2193,
+        "grad": 100.0,
+        "stønadsdager": 35,
+        "totalbeløp": 38360,
+        "endringskode": "UEND",
+        "delytelseId": 1,
+        "klassekode": "SPATORD"
       }
     ],
     "fagsystemId": "123",
@@ -416,6 +443,7 @@ internal class UtbetalingTest {
   "maksdato": "2021-07-15",
   "forbrukteSykedager": "217",
   "gjenståendeSykedager": "31",
+  "stønadsdager": 35,
   "ident": "Automatisk behandlet",
   "epost": "tbd@nav.no",
   "type": "REVURDERING",
@@ -436,6 +464,31 @@ internal class UtbetalingTest {
         "endringskode": "UEND",
         "delytelseId": 1,
         "klassekode": "SPREFAG-IOP"
+      }
+    ],
+    "fagsystemId": "123",
+    "endringskode": "ENDR",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": "38360",
+    "stønadsdager": 35,
+    "fom": "2021-05-06",
+    "tom": "2021-05-13"
+  },
+  "personOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SP",
+    "linjer": [
+      {
+        "fom": "2021-05-06",
+        "tom": "2021-05-13",
+        "dagsats": 1431,
+        "lønn": 2193,
+        "grad": 100.0,
+        "stønadsdager": 35,
+        "totalbeløp": 38360,
+        "endringskode": "UEND",
+        "delytelseId": 1,
+        "klassekode": "SPATORD"
       }
     ],
     "fagsystemId": "123",
@@ -506,6 +559,7 @@ internal class UtbetalingTest {
   "maksdato": "2021-07-15",
   "forbrukteSykedager": "217",
   "gjenståendeSykedager": "31",
+  "stønadsdager": 35,
   "ident": "Automatisk behandlet",
   "epost": "tbd@nav.no",
   "type": "REVURDERING",
@@ -536,6 +590,18 @@ internal class UtbetalingTest {
     "fom": "2021-05-06",
     "tom": "2021-05-13"
   },
+  "personOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SP",
+    "linjer": [],
+    "fagsystemId": "123",
+    "endringskode": "NY",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": 0,
+    "stønadsdager": 0,
+    "fom": "${LocalDate.MIN}",
+    "tom": "${LocalDate.MAX}"
+  },
   "utbetalingsdager": [
         {
           "dato": "2021-05-06",
@@ -563,12 +629,25 @@ internal class UtbetalingTest {
   "maksdato": "2021-07-15",
   "forbrukteSykedager": "217",
   "gjenståendeSykedager": "31",
+  "stønadsdager": 35,
   "ident": "Automatisk behandlet",
   "epost": "tbd@nav.no",
   "type": "REVURDERING",
   "tidspunkt": "${LocalDateTime.now()}",
   "automatiskBehandling": "true",
   "arbeidsgiverOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SPREF",
+    "linjer": [],
+    "fagsystemId": "123",
+    "endringskode": "NY",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": 0,
+    "stønadsdager": 0,
+    "fom": "-999999999-01-01",
+    "tom": "-999999999-01-01"
+  },
+  "personOppdrag": {
     "mottaker": "123456789",
     "fagområde": "SPREF",
     "linjer": [],

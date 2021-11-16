@@ -2,6 +2,8 @@ package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
 import no.nav.helse.rapids_rivers.*
+import no.nav.helse.sporbar.UtbetalingUtbetalt.OppdragDto.Companion.parseOppdrag
+import no.nav.helse.sporbar.UtbetalingUtbetalt.OppdragDto.UtbetalingslinjeDto.Companion.parseLinje
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
@@ -9,6 +11,8 @@ import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
+
+private val NULLE_UT_TOMME_OPPDRAG = System.getenv("NULLE_UT_TOMME_OPPDRAG")?.toBoolean() ?: false
 
 internal class UtbetalingUtbetaltRiver(
     rapidsConnection: RapidsConnection,
@@ -26,8 +30,10 @@ internal class UtbetalingUtbetaltRiver(
                     "organisasjonsnummer",
                     "forbrukteSykedager",
                     "gjenståendeSykedager",
+                    "stønadsdager",
                     "automatiskBehandling",
                     "arbeidsgiverOppdrag",
+                    "personOppdrag",
                     "utbetalingsdager",
                     "type",
                 )
@@ -56,9 +62,10 @@ internal class UtbetalingUtbetaltRiver(
         val utbetalingId = packet["utbetalingId"].let{ UUID.fromString(it.asText())}
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
         val gjenståendeSykedager = packet["gjenståendeSykedager"].asInt()
+        val stønadsdager = packet["stønadsdager"].asInt()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
         val type = packet["type"].asText()
-        val utbetalingsdager = packet["utbetalingsdager"].toList().map{dag ->
+        val utbetalingsdager = packet["utbetalingsdager"].toList().map { dag ->
             UtbetalingUtbetalt.UtbetalingdagDto(
                 dato = dag["dato"].asLocalDate(),
                 type = dag["type"].asText(),
@@ -67,24 +74,8 @@ internal class UtbetalingUtbetaltRiver(
             )
         }
 
-        val arbeidsgiverOppdrag = packet["arbeidsgiverOppdrag"].let{oppdrag ->
-            UtbetalingUtbetalt.OppdragDto(
-                mottaker = oppdrag["mottaker"].asText(),
-                fagområde = oppdrag["fagområde"].asText(),
-                fagsystemId = oppdrag["fagsystemId"].asText(),
-                nettoBeløp = oppdrag["nettoBeløp"].asInt(),
-                utbetalingslinjer = oppdrag["linjer"].map{ linje ->
-                    UtbetalingUtbetalt.OppdragDto.UtbetalingslinjeDto(
-                        fom = linje["fom"].asLocalDate(),
-                        tom = linje["tom"].asLocalDate(),
-                        dagsats = linje["dagsats"].asInt(),
-                        totalbeløp = linje["totalbeløp"].asInt(),
-                        grad = linje["grad"].asDouble(),
-                        stønadsdager = linje["stønadsdager"].asInt()
-                    )
-                }
-            )
-        }
+        val arbeidsgiverOppdrag = parseOppdrag(packet["arbeidsgiverOppdrag"])
+        val personOppdrag = parseOppdrag(packet["personOppdrag"])
 
         val antallVedtak = packet["vedtaksperiodeIder"].takeIf { it.isArray }?.size()
 
@@ -98,8 +89,10 @@ internal class UtbetalingUtbetaltRiver(
             tom = tom,
             forbrukteSykedager = forbrukteSykedager,
             gjenståendeSykedager = gjenståendeSykedager,
+            stønadsdager = stønadsdager,
             automatiskBehandling = automatiskBehandling,
             arbeidsgiverOppdrag = arbeidsgiverOppdrag,
+            personOppdrag = personOppdrag,
             type = type,
             utbetalingsdager = utbetalingsdager,
             antallVedtak = antallVedtak,
@@ -107,7 +100,6 @@ internal class UtbetalingUtbetaltRiver(
         ))
         log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
     }
-
 }
 
 data class UtbetalingUtbetalt(
@@ -120,8 +112,10 @@ data class UtbetalingUtbetalt(
     val tom: LocalDate,
     val forbrukteSykedager: Int,
     val gjenståendeSykedager: Int,
+    val stønadsdager: Int,
     val automatiskBehandling: Boolean,
-    val arbeidsgiverOppdrag: OppdragDto,
+    val arbeidsgiverOppdrag: OppdragDto?,
+    val personOppdrag: OppdragDto?,
     val type: String,
     val utbetalingsdager: List<UtbetalingdagDto>,
     val antallVedtak: Int?,
@@ -146,8 +140,25 @@ data class UtbetalingUtbetalt(
             val fagområde: String,
             val fagsystemId: String,
             val nettoBeløp: Int,
+            val stønadsdager: Int,
+            val fom: LocalDate,
+            val tom: LocalDate,
             val utbetalingslinjer: List<UtbetalingslinjeDto>
         ) {
+            companion object {
+                fun parseOppdrag(oppdrag: JsonNode) =
+                    OppdragDto(
+                        mottaker = oppdrag["mottaker"].asText(),
+                        fagområde = oppdrag["fagområde"].asText(),
+                        fagsystemId = oppdrag["fagsystemId"].asText(),
+                        nettoBeløp = oppdrag["nettoBeløp"].asInt(),
+                        stønadsdager = oppdrag["stønadsdager"].asInt(),
+                        fom = oppdrag["fom"].asLocalDate(),
+                        tom = oppdrag["tom"].asLocalDate(),
+                        utbetalingslinjer = oppdrag["linjer"].map { linje -> parseLinje(linje) }
+                    ).takeUnless { NULLE_UT_TOMME_OPPDRAG && it.utbetalingslinjer.isEmpty() }
+            }
+
             data class UtbetalingslinjeDto(
                 val fom: LocalDate,
                 val tom: LocalDate,
@@ -155,7 +166,19 @@ data class UtbetalingUtbetalt(
                 val totalbeløp: Int,
                 val grad: Double,
                 val stønadsdager: Int
-            )
+            ) {
+                companion object {
+                    fun parseLinje(linje: JsonNode) =
+                        UtbetalingslinjeDto(
+                            fom = linje["fom"].asLocalDate(),
+                            tom = linje["tom"].asLocalDate(),
+                            dagsats = linje["dagsats"].asInt(),
+                            totalbeløp = linje["totalbeløp"].asInt(),
+                            grad = linje["grad"].asDouble(),
+                            stønadsdager = linje["stønadsdager"].asInt()
+                        )
+                }
+            }
         }
         data class UtbetalingdagDto(
             val dato: LocalDate,

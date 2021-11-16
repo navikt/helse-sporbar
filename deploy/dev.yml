@@ -60,3 +60,5 @@ spec:
     value: sporbar
   - name: DATABASE_VAULT_MOUNT_PATH
     value: postgresql/preprod-fss/
+  - name: NULLE_UT_TOMME_OPPDRAG
+    value: "true"
