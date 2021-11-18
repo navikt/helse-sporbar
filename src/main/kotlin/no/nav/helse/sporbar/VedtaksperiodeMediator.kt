@@ -1,7 +1,6 @@
 package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
-import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.sporbar.Vedtaksperiode.Tilstand
 import no.nav.helse.sporbar.VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -62,8 +61,8 @@ internal class VedtaksperiodeMediator(
             )
         )
 
-        sikkerLogg.info("Publiserer {}", keyValue("vedtak", vedtak))
-        log.info("Publiserte utbetalinger for {}", keyValue("dokumenter", dokumenter.map { it.dokumentId }))
+        sikkerLogg.info("Publiserer {}", vedtak)
+        log.info("Publiserte utbetalinger for {}", dokumenter.map { it.dokumentId })
     }
 
     private object Oversetter {

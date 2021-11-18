@@ -1,9 +1,6 @@
- package no.nav.helse.sporbar
+package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
-import net.logstash.logback.argument.StructuredArguments
-import net.logstash.logback.argument.StructuredArguments.keyValue
-
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
@@ -11,7 +8,7 @@ import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.util.*
 
- private val log: Logger = LoggerFactory.getLogger("sporbar")
+private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 
 internal class VedtakFattetMediator(
@@ -31,10 +28,8 @@ internal class VedtakFattetMediator(
                 meldingForEkstern
             )
         )
-        sikkerLogg.info("Publiserer {}", keyValue("vedtakFattet", meldingForEkstern))
-        log.info("Publiserte vedtakFattet for {}",
-            keyValue("dokumenter", dokumenter.map { it.dokumentId })
-        )
+        sikkerLogg.info("Publiserer {}", meldingForEkstern)
+        log.info("Publiserte vedtakFattet for {}", dokumenter.map { it.dokumentId })
     }
 
     private fun oversett(vedtakFattet: VedtakFattet, dokumenter: List<Dokument>): VedtakFattetForEksternDto {
