@@ -6,6 +6,7 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
@@ -46,7 +47,8 @@ internal class VedtakFattetMediator(
             grunnlagForSykepengegrunnlagPerArbeidsgiver = vedtakFattet.grunnlagForSykepengegrunnlagPerArbeidsgiver,
             begrensning = vedtakFattet.begrensning,
             dokumenter = dokumenter,
-            utbetalingId = vedtakFattet.utbetalingId
+            utbetalingId = vedtakFattet.utbetalingId,
+            vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt
         )
     }
 }
@@ -64,7 +66,8 @@ data class VedtakFattetForEksternDto(
     val grunnlagForSykepengegrunnlag: Double,
     val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
     val begrensning: String,
-    val utbetalingId: UUID?
+    val utbetalingId: UUID?,
+    val vedtakFattetTidspunkt: LocalDateTime
 )
 
 

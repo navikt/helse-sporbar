@@ -6,6 +6,7 @@ import no.nav.helse.rapids_rivers.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
@@ -36,6 +37,7 @@ internal class VedtakFattetRiver(
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
                 it.require("skjæringstidspunkt", JsonNode::asLocalDate)
+                it.require("vedtakFattetTidspunkt", JsonNode::asLocalDateTime)
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.interestedIn("utbetalingId") { id -> UUID.fromString(id.asText()) }
 
@@ -61,6 +63,7 @@ internal class VedtakFattetRiver(
         val grunnlagForSykepengegrunnlag = packet["grunnlagForSykepengegrunnlag"].asDouble()
         val grunnlagForSykepengegrunnlagPerArbeidsgiver = objectMapper.readValue(packet["grunnlagForSykepengegrunnlagPerArbeidsgiver"].toString(), object : TypeReference<Map<String, Double>>() {})
         val begrensning = packet["begrensning"].asText()
+        val vedtakFattetTidspunkt = packet["vedtakFattetTidspunkt"].asLocalDateTime()
 
         val utbetalingId = packet["utbetalingId"].takeUnless(JsonNode::isMissingOrNull)?.let {
             UUID.fromString(it.asText())
@@ -80,7 +83,8 @@ internal class VedtakFattetRiver(
                 grunnlagForSykepengegrunnlag = grunnlagForSykepengegrunnlag,
                 grunnlagForSykepengegrunnlagPerArbeidsgiver = grunnlagForSykepengegrunnlagPerArbeidsgiver,
                 begrensning = begrensning,
-                utbetalingId = utbetalingId
+                utbetalingId = utbetalingId,
+                vedtakFattetTidspunkt = vedtakFattetTidspunkt
             )
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
@@ -100,5 +104,6 @@ internal data class VedtakFattet(
     val grunnlagForSykepengegrunnlag: Double,
     val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
     val begrensning: String,
-    val utbetalingId: UUID?
+    val utbetalingId: UUID?,
+    val vedtakFattetTidspunkt: LocalDateTime
 )

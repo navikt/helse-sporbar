@@ -22,6 +22,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
+import no.nav.helse.rapids_rivers.asLocalDateTime
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class VedtakFattetRiverTest {
@@ -41,6 +42,7 @@ internal class VedtakFattetRiverTest {
         val BEGRENSNING = "ER_IKKE_6G_BEGRENSET"
         val INNTEKT = 388260.0
         val AKTØRID = "123"
+        val VEDTAK_FATTET_TIDSPUNKT = LocalDateTime.now()
     }
 
     private val testRapid = TestRapid()
@@ -124,6 +126,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(BEGRENSNING, vedtakFattetJson["begrensning"].asText())
         assertTrue(vedtakFattetJson.path("utbetalingId").isNull)
         assertTrue(vedtakFattetJson.path("vedtaksperiodeId").isMissingNode)
+        assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett.søknadDokumentId))
@@ -150,6 +153,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
         assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
         assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())})
+        assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett.søknadDokumentId))
@@ -276,7 +280,8 @@ internal class VedtakFattetRiverTest {
   "@opprettet": "$TIDSSTEMPEL",
   "aktørId": "$AKTØRID",
   "fødselsnummer": "$FØDSELSNUMMER",
-  "organisasjonsnummer": "$ORGNUMMER"
+  "organisasjonsnummer": "$ORGNUMMER",
+  "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT"
 }
     """
 
@@ -306,7 +311,8 @@ internal class VedtakFattetRiverTest {
   "@opprettet": "$TIDSSTEMPEL",
   "aktørId": "$AKTØRID",
   "fødselsnummer": "$FØDSELSNUMMER",
-  "organisasjonsnummer": "$ORGNUMMER"
+  "organisasjonsnummer": "$ORGNUMMER",
+  "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT"
 }
     """
 

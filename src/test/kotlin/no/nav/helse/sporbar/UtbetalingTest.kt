@@ -55,6 +55,7 @@ internal class UtbetalingTest {
         val GJENSTÅENDESYKEDAGER =  31
         val AUTOMATISK_BEHANDLING = true
         val NETTOBELØP = 38360
+        val VEDTAK_FATTET_TIDSPUNKT = LocalDateTime.now()
     }
 
     private val testRapid = TestRapid()
@@ -321,7 +322,8 @@ internal class UtbetalingTest {
   "@opprettet": "$TIDSSTEMPEL",
   "aktørId": "$AKTØRID",
   "fødselsnummer": "$FØDSELSNUMMER",
-  "organisasjonsnummer": "$ORGNUMMER"
+  "organisasjonsnummer": "$ORGNUMMER",
+  "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT"
 }
     """
 
