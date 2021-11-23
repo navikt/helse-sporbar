@@ -89,7 +89,9 @@ ligger nå i dagsats-feltet.
 | NavHelgDag | Ingen utbetaling grunnet helg, men registrert syk |
 | ArbeidsgiverperiodeDag | Beregnet at arbeidsgiver dekker sykepengeutbetaling |
 | Arbeidsdag | Arbeidstaker var på jobb |
-| Fridag | Arbeidstaker hadde ikke arbeidsdag |
+| Fridag | Arbeidstaker hadde fri |
+| Feriedag | Arbeidstaker hadde ferie |
+| Permisjonsdag | Arbeidstaker hadde permisjon |
 | AvvistDag | Arbeidstaker hadde ikke rett til sykepenger |
 | ForeldetDag | Dagen ligger for langt tilbake i tid til at man kan få sykepenger for den |
 | UkjentDag | Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag |
