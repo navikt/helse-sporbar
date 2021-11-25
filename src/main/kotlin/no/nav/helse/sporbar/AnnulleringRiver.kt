@@ -22,7 +22,7 @@ class AnnulleringRiver(
         River(rapidsConnection).apply {
             validate {
                 it.demandValue("@event_name", "utbetaling_annullert")
-                it.requireKey("fødselsnummer", "organisasjonsnummer", "annullertAvSaksbehandler", "utbetalingslinjer")
+                it.requireKey("fødselsnummer", "organisasjonsnummer", "tidspunkt", "fom", "tom")
             }
         }.register(this)
     }
@@ -36,9 +36,9 @@ class AnnulleringRiver(
         val annullering = AnnulleringDto(
             orgnummer = packet["organisasjonsnummer"].asText(),
             fødselsnummer = packet["fødselsnummer"].asText(),
-            tidsstempel = packet["annullertAvSaksbehandler"].asLocalDateTime(),
-            fom = packet["utbetalingslinjer"].map { it["fom"].asLocalDate() }.minOrNull(),
-            tom = packet["utbetalingslinjer"].map { it["tom"].asLocalDate() }.maxOrNull()
+            tidsstempel = packet["tidspunkt"].asLocalDateTime(),
+            fom = packet["fom"].asLocalDate(),
+            tom = packet["tom"].asLocalDate()
         )
         val annulleringDto = objectMapper.valueToTree<JsonNode>(annullering)
 
@@ -59,7 +59,7 @@ class AnnulleringRiver(
         val orgnummer: String,
         val tidsstempel: LocalDateTime,
         val fødselsnummer: String,
-        val fom: LocalDate?,
-        val tom: LocalDate?
+        val fom: LocalDate,
+        val tom: LocalDate
     )
 }
