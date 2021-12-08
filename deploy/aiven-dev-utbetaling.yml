@@ -30,3 +30,6 @@ spec:
         - team: disykefravar
           application: dvh-sporbar-konsument-utv
           access: read
+        - team: teamnks
+          application: sf-sykmelding
+          access: read
