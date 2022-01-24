@@ -132,6 +132,7 @@ data class UtbetalingUtbetalt(
         EtterDødsdato,
         Over70,
         MinimumInntektOver67,
+        NyVilkårsprøvingNødvendig,
         UKJENT
     }
 
@@ -199,6 +200,7 @@ internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<UtbetalingUtbet
         "ManglerMedlemskap" -> UtbetalingUtbetalt.Begrunnelse.ManglerMedlemskap
         "EtterDødsdato" -> UtbetalingUtbetalt.Begrunnelse.EtterDødsdato
         "Over70" -> UtbetalingUtbetalt.Begrunnelse.Over70
+        "NyVilkårsprøvingNødvendig" -> UtbetalingUtbetalt.Begrunnelse.NyVilkårsprøvingNødvendig
         else -> {
             log.error("Ukjent begrunnelse $it")
             UtbetalingUtbetalt.Begrunnelse.UKJENT
