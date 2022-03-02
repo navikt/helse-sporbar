@@ -86,7 +86,7 @@ fun launchApplication(env: Environment) {
             VedtakFattetRiver(this, vedtakFattetMediator)
             UtbetalingUtbetaltRiver(this, utbetalingMediator)
             UtbetalingUtenUtbetalingRiver(this, utbetalingMediator)
-            AnnulleringRiver(this, producer)
+            AnnulleringRiver(this, producer, aivenProducer)
             start()
         }
 }

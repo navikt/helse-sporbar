@@ -15,7 +15,8 @@ private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
 
 class AnnulleringRiver(
     rapidsConnection: RapidsConnection,
-    private val producer: KafkaProducer<String, JsonNode>
+    private val producer: KafkaProducer<String, JsonNode>,
+    private val aivenProducer: KafkaProducer<String, JsonNode>,
 ):
     River.PacketListener {
     init {
@@ -35,6 +36,7 @@ class AnnulleringRiver(
         val fødselsnummer = packet["fødselsnummer"].asText()
         val annullering = AnnulleringDto(
             orgnummer = packet["organisasjonsnummer"].asText(),
+            organisasjonsnummer = packet["organisasjonsnummer"].asText(),
             fødselsnummer = packet["fødselsnummer"].asText(),
             tidsstempel = packet["tidspunkt"].asLocalDateTime(),
             fom = packet["fom"].asLocalDate(),
@@ -51,12 +53,23 @@ class AnnulleringRiver(
                 listOf(RecordHeader("type", Meldingstype.Annullering.name.toByteArray()))
             )
         )
+        aivenProducer.send(
+            ProducerRecord(
+                "tbd.utbetaling",
+                null,
+                fødselsnummer,
+                annulleringDto,
+                listOf(RecordHeader("type", Meldingstype.Annullering.name.toByteArray()))
+            )
+        )
         log.info("Publiserte annullering")
         sikkerLog.info("Publiserte annullering på $fødselsnummer")
     }
 
     data class AnnulleringDto(
+        @Deprecated("trengs så lenge vi produserer til on-prem")
         val orgnummer: String,
+        val organisasjonsnummer: String,
         val tidsstempel: LocalDateTime,
         val fødselsnummer: String,
         val fom: LocalDate,

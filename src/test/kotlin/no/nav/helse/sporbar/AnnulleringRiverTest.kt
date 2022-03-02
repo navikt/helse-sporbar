@@ -19,17 +19,17 @@ class AnnulleringRiverTest {
 
     companion object {
         val fødselsnummer = "12345678910"
-        val orgnummer = "123456789"
+        val organisasjonsnummer = "123456789"
         val tidsstempel = LocalDateTime.now()
         val fom = LocalDate.now()
         val tom = LocalDate.now()
     }
 
     private val testRapid = TestRapid()
-    private val producerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
+    private val aivenProducerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
 
     init {
-        AnnulleringRiver(testRapid, producerMock)
+        AnnulleringRiver(testRapid, mockk(relaxed = true), aivenProducerMock)
     }
 
     @Test
@@ -37,14 +37,14 @@ class AnnulleringRiverTest {
         testRapid.sendTestMessage(annullering())
 
         val captureSlot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producerMock.send( capture(captureSlot) ) }
+        verify { aivenProducerMock.send( capture(captureSlot) ) }
 
         val annullering = captureSlot.captured
         assertEquals(fødselsnummer, annullering.key())
 
         val annulleringJson = annullering.value()
         assertEquals(annulleringJson["fødselsnummer"].textValue(), fødselsnummer)
-        assertEquals(annulleringJson["orgnummer"].textValue(), orgnummer)
+        assertEquals(annulleringJson["organisasjonsnummer"].textValue(), organisasjonsnummer)
         assertEquals(annulleringJson["tidsstempel"].asLocalDateTime(), tidsstempel)
         assertEquals(annulleringJson["fom"].asLocalDate(), fom)
         assertEquals(annulleringJson["tom"].asLocalDate(), tom)
@@ -55,7 +55,7 @@ class AnnulleringRiverTest {
     {
         "fødselsnummer": "$fødselsnummer",
         "aktørId": "1427484794278",
-        "organisasjonsnummer": "$orgnummer",
+        "organisasjonsnummer": "$organisasjonsnummer",
         "tidspunkt": "$tidsstempel",
         "fom": "$fom",
         "tom": "$tom",
