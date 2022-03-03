@@ -1,8 +1,6 @@
 package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
@@ -10,15 +8,12 @@ import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.testcontainers.containers.PostgreSQLContainer
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.*
@@ -29,22 +24,11 @@ private const val ORGNUMMER = "987654321"
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class EndToEndTest {
-    private val postgres = PostgreSQLContainer<Nothing>("postgres:13").also { it.start() }
-    private val dataSource = HikariDataSource(HikariConfig().apply {
-        jdbcUrl = postgres.jdbcUrl
-        username = postgres.username
-        password = postgres.password
-        maximumPoolSize = 3
-        minimumIdle = 1
-        idleTimeout = 10001
-        connectionTimeout = 1000
-        maxLifetime = 30001
-    })
 
     private val testRapid = TestRapid()
-    private val dokumentDao = DokumentDao(dataSource)
-    private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
-    private val vedtakDao = VedtakDao(dataSource)
+    private val dokumentDao = DokumentDao(TestDatabase.dataSource)
+    private val vedtaksperiodeDao = VedtaksperiodeDao(TestDatabase.dataSource)
+    private val vedtakDao = VedtakDao(TestDatabase.dataSource)
     private val producer = mockk<KafkaProducer<String, JsonNode>>(relaxed = true)
     private val vedtaksperiodeMediator = VedtaksperiodeMediator(
         vedtaksperiodeDao = vedtaksperiodeDao,
@@ -56,18 +40,9 @@ internal class EndToEndTest {
     private lateinit var idSett: IdSett
 
     init {
-        Flyway.configure()
-            .dataSource(dataSource)
-            .load()
-            .migrate()
         NyttDokumentRiver(testRapid, dokumentDao)
         VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeMediator)
         UtbetaltRiver(testRapid, vedtaksperiodeMediator)
-    }
-
-    @AfterAll
-    fun cleanUp() {
-        dataSource.close()
     }
 
     @BeforeEach

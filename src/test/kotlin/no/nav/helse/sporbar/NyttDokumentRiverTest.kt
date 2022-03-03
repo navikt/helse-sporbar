@@ -1,47 +1,22 @@
 package no.nav.helse.sporbar
 
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
-import org.flywaydb.core.Flyway
 import org.intellij.lang.annotations.Language
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.testcontainers.containers.PostgreSQLContainer
-import java.util.UUID
+import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class NyttDokumentRiverTest {
-    private val postgres = PostgreSQLContainer<Nothing>("postgres:13").also { it.start() }
-    private val dataSource = HikariDataSource(HikariConfig().apply {
-        jdbcUrl = postgres.jdbcUrl
-        username = postgres.username
-        password = postgres.password
-        maximumPoolSize = 3
-        minimumIdle = 1
-        idleTimeout = 10001
-        connectionTimeout = 1000
-        maxLifetime = 30001
-    })
 
     private val testRapid = TestRapid()
-    private val dokumentDao = DokumentDao(dataSource)
+    private val dokumentDao = DokumentDao(TestDatabase.dataSource)
 
     init {
-        Flyway.configure()
-            .dataSource(dataSource)
-            .load()
-            .migrate()
         NyttDokumentRiver(testRapid, dokumentDao)
-    }
-
-    @AfterAll
-    fun cleanUp() {
-        dataSource.close()
     }
 
     @BeforeEach
