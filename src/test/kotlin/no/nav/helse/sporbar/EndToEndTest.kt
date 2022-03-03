@@ -1,8 +1,6 @@
 package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
@@ -30,17 +28,7 @@ private const val ORGNUMMER = "987654321"
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class EndToEndTest {
     private val postgres = PostgreSQLContainer<Nothing>("postgres:13").also { it.start() }
-    private val dataSource = HikariDataSource(HikariConfig().apply {
-        jdbcUrl = postgres.jdbcUrl
-        username = postgres.username
-        password = postgres.password
-        maximumPoolSize = 3
-        minimumIdle = 1
-        idleTimeout = 10001
-        connectionTimeout = 1000
-        maxLifetime = 30001
-    })
-
+    private val dataSource = postgres.dataSource()
     private val testRapid = TestRapid()
     private val dokumentDao = DokumentDao(dataSource)
     private val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
