@@ -1,16 +1,16 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val ktorVersion = "1.5.1"
-val junitJupiterVersion = "5.7.1"
+val ktorVersion = "1.6.7"
+val junitJupiterVersion = "5.8.2"
 val mainClass = "no.nav.helse.sporbar.AppKt"
 val testcontainersVersion = "1.16.2"
 
 plugins {
-    kotlin("jvm") version "1.5.30"
+    kotlin("jvm") version "1.6.0"
 }
 
 dependencies {
-    implementation("com.github.navikt:rapids-and-rivers:1.a77261b")
+    implementation("com.github.navikt:rapids-and-rivers:2022.02.28-16.20.1a549dcffaae")
 
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
@@ -35,18 +35,22 @@ dependencies {
 }
 
 repositories {
-    jcenter()
     maven("https://jitpack.io")
+    mavenCentral()
 }
 
 tasks {
 
     named<KotlinCompile>("compileKotlin") {
-        kotlinOptions.jvmTarget = "16"
+        kotlinOptions.jvmTarget = "17"
     }
 
     named<KotlinCompile>("compileTestKotlin") {
-        kotlinOptions.jvmTarget = "16"
+        kotlinOptions.jvmTarget = "17"
+    }
+
+    withType<Wrapper> {
+        gradleVersion = "7.4"
     }
 
     withType<Test> {
