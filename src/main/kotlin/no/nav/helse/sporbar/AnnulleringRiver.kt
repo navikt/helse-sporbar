@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode
 import no.nav.helse.rapids_rivers.*
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.common.header.internals.RecordHeader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
@@ -23,7 +23,16 @@ class AnnulleringRiver(
         River(rapidsConnection).apply {
             validate {
                 it.demandValue("@event_name", "utbetaling_annullert")
-                it.requireKey("fødselsnummer", "organisasjonsnummer", "tidspunkt", "fom", "tom")
+                it.requireKey(
+                    "fødselsnummer",
+                    "organisasjonsnummer",
+                    "tidspunkt",
+                    "fom",
+                    "tom",
+                    "utbetalingId",
+                    "korrelasjonsId"
+                )
+                it.interestedIn("arbeidsgiverFagsystemId", "personFagsystemId")
             }
         }.register(this)
     }
@@ -35,12 +44,15 @@ class AnnulleringRiver(
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val fødselsnummer = packet["fødselsnummer"].asText()
         val annullering = AnnulleringDto(
-            orgnummer = packet["organisasjonsnummer"].asText(),
             organisasjonsnummer = packet["organisasjonsnummer"].asText(),
-            fødselsnummer = packet["fødselsnummer"].asText(),
+            fødselsnummer = fødselsnummer,
             tidsstempel = packet["tidspunkt"].asLocalDateTime(),
             fom = packet["fom"].asLocalDate(),
-            tom = packet["tom"].asLocalDate()
+            tom = packet["tom"].asLocalDate(),
+            utbetalingId = UUID.fromString(packet["utbetalingId"].asText()),
+            korrelasjonsId = UUID.fromString(packet["korrelasjonsId"].asText()),
+            arbeidsgiverFagsystemId = packet["arbeidsgiverFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText(),
+            personFagsystemId = packet["personFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText()
         )
         val annulleringDto = objectMapper.valueToTree<JsonNode>(annullering)
 
@@ -50,7 +62,7 @@ class AnnulleringRiver(
                 null,
                 fødselsnummer,
                 annulleringDto,
-                listOf(RecordHeader("type", Meldingstype.Annullering.name.toByteArray()))
+                listOf(Meldingstype.Annullering.header())
             )
         )
         aivenProducer.send(
@@ -59,7 +71,7 @@ class AnnulleringRiver(
                 null,
                 fødselsnummer,
                 annulleringDto,
-                listOf(RecordHeader("type", Meldingstype.Annullering.name.toByteArray()))
+                listOf(Meldingstype.Annullering.header())
             )
         )
         log.info("Publiserte annullering")
@@ -67,12 +79,17 @@ class AnnulleringRiver(
     }
 
     data class AnnulleringDto(
-        @Deprecated("trengs så lenge vi produserer til on-prem")
-        val orgnummer: String,
+        val utbetalingId: UUID,
+        val korrelasjonsId: UUID,
         val organisasjonsnummer: String,
         val tidsstempel: LocalDateTime,
         val fødselsnummer: String,
         val fom: LocalDate,
-        val tom: LocalDate
-    )
+        val tom: LocalDate,
+        val arbeidsgiverFagsystemId: String?,
+        val personFagsystemId: String?) {
+        val event = "utbetaling_annullert"
+        @Deprecated("trengs så lenge vi produserer til on-prem")
+        val orgnummer: String = organisasjonsnummer
+    }
 }
