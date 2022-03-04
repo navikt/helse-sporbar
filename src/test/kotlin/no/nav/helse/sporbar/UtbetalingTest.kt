@@ -100,8 +100,8 @@ internal class UtbetalingTest {
         val vedtakFattetJson = vedtakFattet.value()
 
         assertEquals(idSett.utbetalingId, utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText())})
-        assertEquals(utbetalingUtbetaltJson["utbetalingId"].asText(),
-            vedtakFattetJson["utbetalingId"].asText())
+        assertEquals(idSett.korrelasjonsId, utbetalingUtbetaltJson["korrelasjonsId"].let { UUID.fromString(it.asText())})
+        assertEquals(utbetalingUtbetaltJson["utbetalingId"].asText(), vedtakFattetJson["utbetalingId"].asText())
 
         assertEquals("utbetaling_utbetalt", utbetalingUtbetaltJson["event"].textValue())
         assertEquals(FØDSELSNUMMER, utbetalingUtbetaltJson["fødselsnummer"].textValue())
@@ -306,6 +306,7 @@ internal class UtbetalingTest {
     @Language("json")
     private fun utbetalingUtbetalt(idSett: IdSett, event: String, utbetalingId: UUID = idSett.utbetalingId) = """{
   "utbetalingId": "$utbetalingId",
+  "korrelasjonsId": "${idSett.korrelasjonsId}",
   "fom": "$FOM",
   "tom": "$TOM",
   "maksdato": "$MAKSDATO",
@@ -414,6 +415,7 @@ internal class UtbetalingTest {
   "@id": "$id",
   "fødselsnummer": "12345678910",
   "utbetalingId": "$utbetalingId",
+  "korrelasjonsId": "${UUID.randomUUID()}",
   "@event_name": "utbetaling_utbetalt",
   "fom": "2021-05-06",
   "tom": "2021-05-13",
@@ -530,6 +532,7 @@ internal class UtbetalingTest {
   "@id": "$id",
   "fødselsnummer": "12345678910",
   "utbetalingId": "$utbetalingId",
+  "korrelasjonsId": "${UUID.randomUUID()}",
   "@event_name": "utbetaling_utbetalt",
   "fom": "2021-05-06",
   "tom": "2021-05-13",
@@ -600,6 +603,7 @@ internal class UtbetalingTest {
   "@id": "$id",
   "fødselsnummer": "12345678910",
   "utbetalingId": "$utbetalingId",
+  "korrelasjonsId": "${UUID.randomUUID()}",
   "@event_name": "utbetaling_uten_utbetaling",
   "fom": "-999999999-01-01",
   "tom": "+999999999-12-31",
@@ -733,5 +737,6 @@ private data class IdSett(
     val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
     val vedtaksperiodeId: UUID = UUID.randomUUID(),
     val utbetalingId: UUID = UUID.randomUUID(),
+    val korrelasjonsId: UUID = UUID.randomUUID()
 )
 }

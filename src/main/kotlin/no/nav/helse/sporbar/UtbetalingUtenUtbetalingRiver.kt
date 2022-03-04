@@ -38,6 +38,7 @@ internal class UtbetalingUtenUtbetalingRiver(
                 it.require("maksdato", JsonNode::asLocalDate)
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
+                it.require("korrelasjonsId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("vedtaksperiodeIder")
             }
         }.register(this)
@@ -56,6 +57,7 @@ internal class UtbetalingUtenUtbetalingRiver(
         val tom = packet["tom"].asLocalDate()
         val maksdato = packet["maksdato"].asLocalDate()
         val utbetalingId = packet["utbetalingId"].let{ UUID.fromString(it.asText())}
+        val korrelasjonsId = packet["korrelasjonsId"].let{ UUID.fromString(it.asText())}
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
         val gjenståendeSykedager = packet["gjenståendeSykedager"].asInt()
         val stønadsdager = packet["stønadsdager"].asInt()
@@ -75,9 +77,10 @@ internal class UtbetalingUtenUtbetalingRiver(
 
         val antallVedtak = packet["vedtaksperiodeIder"].takeIf { it.isArray }?.size()
 
-        utbetalingMediator.utbetalingUtbetalt(UtbetalingUtbetalt(
+        utbetalingMediator.utbetalingUtenUtbetaling(UtbetalingUtbetalt(
             event = "utbetaling_uten_utbetaling",
             utbetalingId = utbetalingId,
+            korrelasjonsId = korrelasjonsId,
             fødselsnummer = fødselsnummer,
             aktørId = aktørId,
             organisasjonsnummer = organisasjonsnummer,
