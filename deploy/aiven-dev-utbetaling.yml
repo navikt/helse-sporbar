@@ -33,3 +33,6 @@ spec:
         - team: teamnks
           application: sf-sykmelding
           access: read
+        - team: teamsykmelding
+          application: sparenaproxy
+          access: read
