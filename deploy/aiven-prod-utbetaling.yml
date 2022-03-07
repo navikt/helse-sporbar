@@ -36,3 +36,6 @@ spec:
         - team: teamsykmelding
           application: sparenaproxy
           access: read
+        - team: helsearbeidsgiver
+          application: helse-spion
+          access: read

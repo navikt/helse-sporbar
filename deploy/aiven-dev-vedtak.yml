@@ -33,3 +33,6 @@ spec:
         - team: teamnks
           application: sf-sykmelding
           access: read
+        - team: helsearbeidsgiver
+          application: helse-spion
+          access: read
