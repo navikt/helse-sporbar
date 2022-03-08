@@ -81,7 +81,8 @@ internal class UtbetalingUtbetaltRiver(
 
         val antallVedtak = packet["vedtaksperiodeIder"].takeIf { it.isArray }?.size()
 
-        utbetalingMediator.utbetalingUtbetalt(UtbetalingUtbetalt(
+        utbetalingMediator.
+        utbetalingUtbetalt(UtbetalingUtbetalt(
             event = "utbetaling_utbetalt",
             utbetalingId = utbetalingId,
             korrelasjonsId = korrelasjonsId,
@@ -102,6 +103,7 @@ internal class UtbetalingUtbetaltRiver(
             foreløpigBeregnetSluttPåSykepenger = maksdato
         ))
         log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
+        sikkerLog.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
     }
 }
 

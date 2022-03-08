@@ -88,6 +88,7 @@ internal class VedtakFattetRiver(
             )
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
+        sikkerLog.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
     }
 }
 

@@ -61,7 +61,7 @@ internal class VedtaksperiodeMediator(
             )
         )
 
-        sikkerLogg.info("Publiserer {}", vedtak)
+        sikkerLogg.info("Publiserer vedtak-melding fra 'utbetalt'-event på aapen-helse-sporbar: {}", vedtak)
         log.info("Publiserte utbetalinger for {}", dokumenter.map { it.dokumentId })
     }
 

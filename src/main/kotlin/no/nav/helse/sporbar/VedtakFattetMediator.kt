@@ -29,7 +29,7 @@ internal class VedtakFattetMediator(
                 meldingForEkstern
             )
         )
-        sikkerLogg.info("Publiserer {}", meldingForEkstern)
+        sikkerLogg.info("Publiserer vedtakFattet {}", meldingForEkstern)
         log.info("Publiserte vedtakFattet for {}", dokumenter.map { it.dokumentId })
     }
 

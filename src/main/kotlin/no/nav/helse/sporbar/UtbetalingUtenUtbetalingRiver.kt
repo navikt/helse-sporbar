@@ -98,5 +98,6 @@ internal class UtbetalingUtenUtbetalingRiver(
             foreløpigBeregnetSluttPåSykepenger = maksdato
         ))
         log.info("Behandler utbetaling_uten_utbetaling: ${packet["@id"].asText()}")
+        sikkerLog.info("Behandler utbetaling_uten_utbetaling: ${packet["@id"].asText()}")
     }
 }
