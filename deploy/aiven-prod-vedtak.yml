@@ -19,7 +19,7 @@ spec:
         partitions: 3
         replication: 2  # see min/max requirements
         retentionBytes: -1  # -1 means unlimited
-        retentionHours: 168  # -1 means unlimited
+        retentionHours: 8760  # -1 means unlimited
     acl:
         - team: tbd
           application: sporbar
