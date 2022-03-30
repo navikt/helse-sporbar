@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.*
+import org.junit.jupiter.api.assertThrows
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class NyttDokumentRiverTest {
@@ -58,7 +59,7 @@ internal class NyttDokumentRiverTest {
         val nySøknadHendelseId = "1234-1234-1234-1234"
         val sykmeldingId = UUID.randomUUID().toString()
         val søknadId = UUID.randomUUID().toString()
-        assertDoesNotThrow {
+        assertThrows<IllegalArgumentException> {
             testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
         }
     }

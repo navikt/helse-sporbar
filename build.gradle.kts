@@ -10,7 +10,7 @@ plugins {
 }
 
 dependencies {
-    implementation("com.github.navikt:rapids-and-rivers:2022.02.28-16.20.1a549dcffaae")
+    implementation("com.github.navikt:rapids-and-rivers:2022.03.30-21.22.dbaa41649bd3")
 
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
