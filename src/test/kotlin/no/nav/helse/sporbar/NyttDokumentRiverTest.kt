@@ -59,7 +59,7 @@ internal class NyttDokumentRiverTest {
         val nySøknadHendelseId = "1234-1234-1234-1234"
         val sykmeldingId = UUID.randomUUID().toString()
         val søknadId = UUID.randomUUID().toString()
-        assertThrows<IllegalArgumentException> {
+        assertDoesNotThrow {
             testRapid.sendTestMessage(nySøknadMessage(nySøknadHendelseId, sykmeldingId, søknadId))
         }
     }
