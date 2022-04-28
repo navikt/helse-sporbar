@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import io.ktor.application.*
-import io.ktor.auth.*
-import io.ktor.features.*
 import io.ktor.http.*
-import io.ktor.jackson.*
-import io.ktor.routing.*
+import io.ktor.serialization.jackson.JacksonConverter
+import io.ktor.server.application.install
+import io.ktor.server.auth.authenticate
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.routing.routing
 import no.nav.helse.rapids_rivers.RapidApplication
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer

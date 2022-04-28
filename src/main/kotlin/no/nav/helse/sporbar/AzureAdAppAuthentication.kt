@@ -2,14 +2,17 @@ package no.nav.helse.sporbar
 
 import com.auth0.jwk.JwkProviderBuilder
 import com.fasterxml.jackson.databind.JsonNode
-import io.ktor.application.*
-import io.ktor.auth.*
-import io.ktor.auth.jwt.*
 import io.ktor.client.*
 import io.ktor.client.engine.apache.*
-import io.ktor.client.features.json.*
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.serialization.jackson.JacksonConverter
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.jwt.jwt
 import kotlinx.coroutines.runBlocking
 
 const val JWT_AUTH = "server_to_server"
@@ -21,7 +24,9 @@ private val client: HttpClient = HttpClient(Apache) {
         }
     }
 
-    install(JsonFeature)
+    install(ContentNegotiation) {
+        register(ContentType.Application.Json, JacksonConverter(objectMapper))
+    }
 }
 
 fun Application.azureAdAppAuthentication(wellKnownUrl: String, clientId: String) {
@@ -39,6 +44,6 @@ fun Application.azureAdAppAuthentication(wellKnownUrl: String, clientId: String)
     }
 }
 
-private fun fetchWellKnown(url: String) = runBlocking { client.get<JsonNode>(url) {
+private fun fetchWellKnown(url: String) = runBlocking { client.prepareGet(url) {
     accept(ContentType.Application.Json)
-} }
+}.body<JsonNode>() }

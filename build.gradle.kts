@@ -1,28 +1,38 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val ktorVersion = "1.6.7"
-val junitJupiterVersion = "5.8.2"
 val mainClass = "no.nav.helse.sporbar.AppKt"
-val testcontainersVersion = "1.16.2"
+val jvmTarget = "17"
+
+val rapidsAndRiversVersion = "2022.04.21-09.34.08966130226f"
+val ktorVersion = "2.0.0"
+val junitJupiterVersion = "5.8.2"
+val testcontainersVersion = "1.17.1"
+val mockkVersion = "1.12.3"
+val kotliqueryVersion = "1.3.1"
+val hikariCPVersion = "4.0.2"
+val vaultjdbcVersion = "1.3.7"
+val flywaycoreVersion = "7.5.4"
 
 plugins {
-    kotlin("jvm") version "1.6.0"
+    kotlin("jvm") version "1.6.21"
 }
 
 dependencies {
-    implementation("com.github.navikt:rapids-and-rivers:2022.04.05-09.40.11a466d7ac70")
+    implementation("com.github.navikt:rapids-and-rivers:$rapidsAndRiversVersion")
 
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
-    implementation("io.ktor:ktor-client-jackson:$ktorVersion")
-    implementation("io.ktor:ktor-jackson:$ktorVersion")
-    implementation("io.ktor:ktor-auth-jwt:$ktorVersion") {
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
+    implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion") {
         exclude(group = "junit")
     }
 
-    implementation("com.zaxxer:HikariCP:4.0.2")
-    implementation("no.nav:vault-jdbc:1.3.7")
-    implementation("org.flywaydb:flyway-core:7.5.4")
-    implementation("com.github.seratch:kotliquery:1.3.1")
+    implementation("com.zaxxer:HikariCP:$hikariCPVersion")
+    implementation("no.nav:vault-jdbc:$vaultjdbcVersion")
+    implementation("org.flywaydb:flyway-core:$flywaycoreVersion")
+    implementation("com.github.seratch:kotliquery:$kotliqueryVersion")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
@@ -31,7 +41,7 @@ dependencies {
     testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
     testImplementation("org.testcontainers:testcontainers:$testcontainersVersion")
     testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
-    testImplementation("io.mockk:mockk:1.12.0")
+    testImplementation("io.mockk:mockk:$mockkVersion")
 }
 
 repositories {
@@ -42,15 +52,15 @@ repositories {
 tasks {
 
     named<KotlinCompile>("compileKotlin") {
-        kotlinOptions.jvmTarget = "17"
+        kotlinOptions.jvmTarget = jvmTarget
     }
 
     named<KotlinCompile>("compileTestKotlin") {
-        kotlinOptions.jvmTarget = "17"
+        kotlinOptions.jvmTarget = jvmTarget
     }
 
     withType<Wrapper> {
-        gradleVersion = "7.4"
+        gradleVersion = "7.4.2"
     }
 
     withType<Test> {

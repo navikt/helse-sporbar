@@ -113,10 +113,19 @@ ligger nå i dagsats-feltet.
 
 Spør om noe er uklart :-)
 
+
+## Oppgradering av gradle wrapper
+Finn nyeste versjon av gradle her: https://gradle.org/releases/
+
+```./gradlew wrapper --gradle-version $gradleVersjon```
+
+Husk å oppdatere gradle versjonen i build.gradle.kts filen
+```val gradlewVersion = "$gradleVersjon"```
+
 # Henvendelser
 
 Spørsmål knyttet til koden eller prosjektet kan stilles som issues her på GitHub.
 
 ## For NAV-ansatte
 
-Interne henvendelser kan sendes via Slack i kanalen #område-helse.
+Interne henvendelser kan sendes via Slack i kanalen #team-bømlo-værsågod
