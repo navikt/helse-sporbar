@@ -32,102 +32,7 @@ internal class VedtaksperiodeMediatorTest {
     private val søknadDokument = Dokument(UUID.randomUUID(), Dokument.Type.Søknad)
     private val inntektsmeldingDokument = Dokument(UUID.randomUUID(), Dokument.Type.Inntektsmelding)
 
-    @Test
-    fun `sendt sykmelding uten forlengelse`() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.MOTTATT_SYKMELDING_FERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument)
-        )
 
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-        assertEquals(2, slot.captured.value()["manglendeDokumenter"].size())
-    }
-
-    @Test
-    fun `sendt sykmelding med forlengelse`() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.MOTTATT_SYKMELDING_FERDIG_FORLENGELSE),
-            eksisterendeDokumenter = listOf(sykmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-        assertEquals(1, slot.captured.value()["manglendeDokumenter"].size())
-    }
-
-    @Test
-    fun `sendt sykmelding uten forlengelse påfølgende uferdig behandling`() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.MOTTATT_SYKMELDING_UFERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun `sendt sykmelding forlengelse påfølgende uferdig behandling`() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.MOTTATT_SYKMELDING_UFERDIG_FORLENGELSE),
-            eksisterendeDokumenter = listOf(sykmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_SØKNAD_FERDIG_GAP() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_SØKNAD_FERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_SØKNAD_UFERDIG_GAP() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_SØKNAD_UFERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
 
     @Test
     fun AVVENTER_VILKÅRSPRØVING() {
@@ -148,7 +53,7 @@ internal class VedtaksperiodeMediatorTest {
     @Test
     fun `avventer historikk fra infotrygd`() {
         sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP),
+            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
         )
 
@@ -274,57 +179,9 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun AVVENTER_UFERDIG_GAP() {
+    fun AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK() {
         sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_UFERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_INNTEKTSMELDING_UFERDIG_GAP() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_UFERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_INNTEKTSMELDING_UFERDIG_FORLENGELSE() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_UFERDIG_FORLENGELSE),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_INNTEKTSMELDING_FERDIG_FORLENGELSE() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_FERDIG_FORLENGELSE),
+            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument)
         )
 
@@ -338,41 +195,9 @@ internal class VedtaksperiodeMediatorTest {
     }
 
     @Test
-    fun AVVENTER_SØKNAD_UFERDIG_FORLENGELSE() {
+    fun AVVENTER_BLOKKERENDE_PERIODE() {
         sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_SØKNAD_UFERDIG_FORLENGELSE),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_SØKNAD_FERDIG_FORLENGELSE() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_SØKNAD_FERDIG_FORLENGELSE),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_UFERDIG_FORLENGELSE() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_UFERDIG_FORLENGELSE),
+            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_BLOKKERENDE_PERIODE),
             eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
         )
 
@@ -397,86 +222,6 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.ManuellBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_ARBEIDSGIVERSØKNAD_FERDIG_GAP() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_ARBEIDSGIVERSØKNAD_FERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_GAP() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_FORLENGELSE() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.UTEN_UTBETALING_MED_INNTEKTSMELDING_UFERDIG_FORLENGELSE),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_ARBEIDSGIVERSØKNAD_UFERDIG_GAP() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_ARBEIDSGIVERSØKNAD_UFERDIG_GAP),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
-        )
-    }
-
-    @Test
-    fun AVVENTER_ARBEIDSGIVERE() {
-        sendEvent(
-            event = vedtaksperiodeEndret(Vedtaksperiode.Tilstand.AVVENTER_ARBEIDSGIVERE),
-            eksisterendeDokumenter = listOf(sykmeldingDokument, søknadDokument, inntektsmeldingDokument)
-        )
-
-        val slot = CapturingSlot<ProducerRecord<String, JsonNode>>()
-        verify { producer.send(capture(slot)) }
-
-        assertEquals(
-            VedtaksperiodeDto.TilstandDto.UnderBehandling,
             VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
         )
     }
