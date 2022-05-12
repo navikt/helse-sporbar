@@ -41,75 +41,75 @@ meldingene:
 
 #### Meldinger på `tbd.utbetaling` inneholder disse feltene:
 
-| Felt | Forklaring | |
-| --- | --- | --- |
-| event | "utbetaling_utbetalt" eller "utbetaling_uten_utbetaling" |
-| utbetalingId | NB, flere utbetalingId-er kan peke på samme fagsystemId |
-| fødselsnummer | | |
-| aktørId | | |
-| organisasjonsnummer | | |
-| fom | | |
-| tom | | |
-| forbrukteSykedager | Hvor mange virkesykedager er forbrukt totalt | |
-| gjenståendeSykedager | Hvor mange sykedager det er igjen til maksdato | |
-| automatiskBehandling | Ble utbetalingen utført automatisk? | |
-| arbeidsgiverOppdrag | _Se forklaring i egen tabell_ | |
-| type | En av `UTBETALING`, `ETTERUTBETALING`, `ANNULLERING` eller `REVURDERING`| |
-| utbetalingsdager | En liste av: | |
-| | **Felt** | **Forklaring** |
-| | dato | |
-| | type | _Se forklaring i egen tabell_ |
-| | begrunnelse | Begrunnelse av årsak til avvising, kun inkludert for avviste dager |
+| Felt                 | Forklaring                                                               |                                                                    |
+|----------------------|--------------------------------------------------------------------------|--------------------------------------------------------------------|
+| event                | "utbetaling_utbetalt" eller "utbetaling_uten_utbetaling"                 |
+| utbetalingId         | NB, flere utbetalingId-er kan peke på samme fagsystemId                  |
+| fødselsnummer        |                                                                          |                                                                    |
+| aktørId              |                                                                          |                                                                    |
+| organisasjonsnummer  |                                                                          |                                                                    |
+| fom                  |                                                                          |                                                                    |
+| tom                  |                                                                          |                                                                    |
+| forbrukteSykedager   | Hvor mange virkesykedager er forbrukt totalt                             |                                                                    |
+| gjenståendeSykedager | Hvor mange sykedager det er igjen til maksdato                           |                                                                    |
+| automatiskBehandling | Ble utbetalingen utført automatisk?                                      |                                                                    |
+| arbeidsgiverOppdrag  | _Se forklaring i egen tabell_                                            |                                                                    |
+| type                 | En av `UTBETALING`, `ETTERUTBETALING`, `ANNULLERING` eller `REVURDERING` |                                                                    |
+| utbetalingsdager     | En liste av:                                                             |                                                                    |
+|                      | **Felt**                                                                 | **Forklaring**                                                     |
+|                      | dato                                                                     |                                                                    |
+|                      | type                                                                     | _Se forklaring i egen tabell_                                      |
+|                      | begrunnelse                                                              | Begrunnelse av årsak til avvising, kun inkludert for avviste dager |
 
 #### Arbeidsgiveroppdrag ser slik ut:
 
-| Felt | Forklaring | |
-| --- | --- | --- |
-| mottaker | Organisasjonsnummer ved refusjon, eller fødselsnummer til mottakeren av utbetalingen | |
-| fagområde | `SP` hvis utbetalingen er til søker, eller `SPREF` hvis det er refusjon til arbeidsgiver | |
-| fagsystemId | ID i oppdragssystemet, for utbetalingsoppdraget. Oppdraget kan deles av flere "utbetalinger" | |
-| nettoBeløp | Totalt beløp til utbetaling for hele oppdraget | |
-| utbetalingslinjer | En liste, der hvert element inneholder følgende felter: | |
-| | **Felt** | **Forklaring** |
-| | fom | Fra-dato for denne kombinasjonen av dagsats og grad |
-| | tom | Til-dato |
-| | dagsats | Faktisk utbetalingsbeløp per dag, altså etter gradering |
-| | totalbeløp | Utregning av dagsats ganger antall stønadsdager |
-| | grad | Sykdomsgrad per dag |
-| | stønadsdager | Antall dager mellom FOM og TOM med utbetaling fra Nav. Helligdager er inkludert, men helgedager er ikke |
+| Felt              | Forklaring                                                                                   |                                                                                                         |
+|-------------------|----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| mottaker          | Organisasjonsnummer ved refusjon, eller fødselsnummer til mottakeren av utbetalingen         |                                                                                                         |
+| fagområde         | `SP` hvis utbetalingen er til søker, eller `SPREF` hvis det er refusjon til arbeidsgiver     |                                                                                                         |
+| fagsystemId       | ID i oppdragssystemet, for utbetalingsoppdraget. Oppdraget kan deles av flere "utbetalinger" |                                                                                                         |
+| nettoBeløp        | Totalt beløp til utbetaling for hele oppdraget                                               |                                                                                                         |
+| utbetalingslinjer | En liste, der hvert element inneholder følgende felter:                                      |                                                                                                         |
+|                   | **Felt**                                                                                     | **Forklaring**                                                                                          |
+|                   | fom                                                                                          | Fra-dato for denne kombinasjonen av dagsats og grad                                                     |
+|                   | tom                                                                                          | Til-dato                                                                                                |
+|                   | dagsats                                                                                      | Faktisk utbetalingsbeløp per dag, altså etter gradering                                                 |
+|                   | totalbeløp                                                                                   | Utregning av dagsats ganger antall stønadsdager                                                         |
+|                   | grad                                                                                         | Sykdomsgrad per dag                                                                                     |
+|                   | stønadsdager                                                                                 | Antall dager mellom FOM og TOM med utbetaling fra Nav. Helligdager er inkludert, men helgedager er ikke |
 
 OBS: på `aapen-helse-sporbar` inneholdt beløp-feltet "beløp til utbetaling per dag etter gradering", dette beløpet
 ligger nå i dagsats-feltet.
 
 #### Dagtypene:
 
-| Felt | Forklaring |
-| --- | --- |
-| NavDag | Utbetalingsdag fra Nav |
-| NavHelgDag | Ingen utbetaling grunnet helg, men registrert syk |
-| ArbeidsgiverperiodeDag | Beregnet at arbeidsgiver dekker sykepengeutbetaling |
-| Arbeidsdag | Arbeidstaker var på jobb |
-| Fridag | Arbeidstaker hadde fri |
-| Feriedag | Arbeidstaker hadde ferie |
-| Permisjonsdag | Arbeidstaker hadde permisjon |
-| AvvistDag | Arbeidstaker hadde ikke rett til sykepenger |
-| ForeldetDag | Dagen ligger for langt tilbake i tid til at man kan få sykepenger for den |
-| UkjentDag | Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag |
+| Felt                   | Forklaring                                                                      |
+|------------------------|---------------------------------------------------------------------------------|
+| NavDag                 | Utbetalingsdag fra Nav                                                          |
+| NavHelgDag             | Ingen utbetaling grunnet helg, men registrert syk                               |
+| ArbeidsgiverperiodeDag | Beregnet at arbeidsgiver dekker sykepengeutbetaling                             |
+| Arbeidsdag             | Arbeidstaker var på jobb                                                        |
+| Fridag                 | Arbeidstaker hadde fri                                                          |
+| Feriedag               | Arbeidstaker hadde ferie                                                        |
+| Permisjonsdag          | Arbeidstaker hadde permisjon                                                    |
+| AvvistDag              | Arbeidstaker hadde ikke rett til sykepenger                                     |
+| ForeldetDag            | Dagen ligger for langt tilbake i tid til at man kan få sykepenger for den       |
+| UkjentDag              | Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag |
 
 #### Begrunnelser:
 
-| Kode |
-| --- |
-| SykepengedagerOppbrukt |
-| SykepengedagerOppbruktOver67 |
-| MinimumInntekt |
-| MinimumInntektOver67 |
+| Kode                                  |
+|---------------------------------------|
+| SykepengedagerOppbrukt                |
+| SykepengedagerOppbruktOver67          |
+| MinimumInntekt                        |
+| MinimumInntektOver67                  |
 | EgenmeldingUtenforArbeidsgiverperiode |
-| MinimumSykdomsgrad |
-| EtterDødsdato |
-| ManglerOpptjening |
-| ManglerMedlemskap |
-| Over70 |
+| MinimumSykdomsgrad                    |
+| EtterDødsdato                         |
+| ManglerOpptjening                     |
+| ManglerMedlemskap                     |
+| Over70                                |
 
 Spør om noe er uklart :-)
 
