@@ -30,38 +30,44 @@ meldingene:
 | fom                                         |                                                                                                                                                                                                                                                   |
 | tom                                         |                                                                                                                                                                                                                                                   |
 | skjæringstidspunkt                          | Den første dagen i sykefraværet som går ut over arbeidsgiverperioden. Med andre ord dagen etter siste dag søker var på jobb før gjeldende sykefraværsperiode. Vilkårsprøving og fastsetting av sykepengegrunnlaget tar utgangspunkt i denne dagen |
-| dokumenter                                  | Liste av `dokumentId` og `type` til søknaden, sykmeldingen og eventuelt inntektsmeldingen                                                                                                                                                         |
+| hendelseIder                                |                                                                                                                                                                                                                                                   |
 | inntekt                                     | Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren (**Eller for det                                                                                                                                         |
-| aktuelle arbeidsforholdet??**)              |                                                                                                                                                                                                                                                   |
 | sykepengegrunnlag                           | Inntekten som er lagt til grunn for sykepenger, på årsnivå, begrenset oppad til 6G. Inntekter fra flere arbeidsgivere kan inngå i sykepengegrunnlaget.                                                                                            |
 | grunnlagForSykepengegrunnlag                | Den samlede årlige inntekten før evt. begrensning                                                                                                                                                                                                 |
 | grunnlagForSykepengegrunnlagPerArbeidsgiver | Et objekt med orgnummer -> årlig inntekt per arbeidsgiver `{"123456789": 500000.0, "987654321": 700000.0}`                                                                                                                                        |
 | begrensning                                 | Om sykepengegrunnlaget er 6G begrenset. En av disse: `ER_6G_BEGRENSET`, `ER_IKKE_6G_BEGRENSET`, `VURDERT_I_INFOTRYGD` og `VET_IKKE`                                                                                                               |
 | utbetalingId                                | Peker på en "utbetaling", det vil i praksis si en melding på utbetaling-topicen.                                                                                                                                                                  |
+| vedtakFattetTidspunkt                       | Tidspunkt for når vedtaket ble fattet.                                                                                                                                                                                                            |
 
 #### Meldinger på `tbd.utbetaling` inneholder disse feltene:
 
-| Felt                 | Forklaring                                                               |                                                                    |
-|----------------------|--------------------------------------------------------------------------|--------------------------------------------------------------------|
-| event                | "utbetaling_utbetalt" eller "utbetaling_uten_utbetaling"                 |
-| utbetalingId         | NB, flere utbetalingId-er kan peke på samme fagsystemId                  |
-| fødselsnummer        |                                                                          |                                                                    |
-| aktørId              |                                                                          |                                                                    |
-| organisasjonsnummer  |                                                                          |                                                                    |
-| fom                  |                                                                          |                                                                    |
-| tom                  |                                                                          |                                                                    |
-| forbrukteSykedager   | Hvor mange virkesykedager er forbrukt totalt                             |                                                                    |
-| gjenståendeSykedager | Hvor mange sykedager det er igjen til maksdato                           |                                                                    |
-| automatiskBehandling | Ble utbetalingen utført automatisk?                                      |                                                                    |
-| arbeidsgiverOppdrag  | _Se forklaring i egen tabell_                                            |                                                                    |
-| type                 | En av `UTBETALING`, `ETTERUTBETALING`, `ANNULLERING` eller `REVURDERING` |                                                                    |
-| utbetalingsdager     | En liste av:                                                             |                                                                    |
-|                      | **Felt**                                                                 | **Forklaring**                                                     |
-|                      | dato                                                                     |                                                                    |
-|                      | type                                                                     | _Se forklaring i egen tabell_                                      |
-|                      | begrunnelse                                                              | Begrunnelse av årsak til avvising, kun inkludert for avviste dager |
+| Felt                               | Forklaring                                                               |                                                                    |
+|------------------------------------|--------------------------------------------------------------------------|--------------------------------------------------------------------|
+| event                              | "utbetaling_utbetalt" eller "utbetaling_uten_utbetaling"                 |
+| utbetalingId                       | NB, flere utbetalingId-er kan peke på samme fagsystemId                  |
+| fødselsnummer                      |                                                                          |                                                                    |
+| korrelasjonsId                     |                                                                          |                                                                    |
+| aktørId                            |                                                                          |                                                                    |
+| organisasjonsnummer                |                                                                          |                                                                    |
+| fom                                |                                                                          |                                                                    |
+| tom                                |                                                                          |                                                                    |
+| forbrukteSykedager                 | Hvor mange virkesykedager er forbrukt totalt                             |                                                                    |
+| gjenståendeSykedager               | Hvor mange sykedager det er igjen til maksdato                           |                                                                    |
+| stønadsdager                       |                                                                          |                                                                    |
+| automatiskBehandling               | Ble utbetalingen utført automatisk?                                      |                                                                    |
+| arbeidsgiverOppdrag                | _Se forklaring i egen tabell_                                            |                                                                    |
+| personOppdrag                      | _Se forklaring i egen tabell_                                            |                                                                    |
+| type                               | En av `UTBETALING`, `ETTERUTBETALING`, `ANNULLERING` eller `REVURDERING` |                                                                    |
+| utbetalingsdager                   | En liste av:                                                             |                                                                    |
+|                                    | **Felt**                                                                 | **Forklaring**                                                     |
+|                                    | dato                                                                     |                                                                    |
+|                                    | type                                                                     | _Se forklaring i egen tabell_                                      |
+|                                    | begrunnelse                                                              | Begrunnelse av årsak til avvising, kun inkludert for avviste dager |
+| antallVedtak                       | Antall vedtak som ligger til grunn for utbetalingen.                     |                                                                    |
+| foreløpigBeregnetSluttPåSykepenger | Foreløig beregnet dato for slutt på sykepenger                           |                                                                    |
 
-#### Arbeidsgiveroppdrag ser slik ut:
+
+#### Arbeidsgiver- og Personoppdrag  ser slik ut:
 
 | Felt              | Forklaring                                                                                   |                                                                                                         |
 |-------------------|----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
