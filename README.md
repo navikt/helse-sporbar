@@ -64,7 +64,7 @@ meldingene:
 |                                    | type                                                                     | _Se forklaring i egen tabell_                                      |
 |                                    | begrunnelse                                                              | Begrunnelse av årsak til avvising, kun inkludert for avviste dager |
 | antallVedtak                       | Antall vedtak som ligger til grunn for utbetalingen.                     |                                                                    |
-| foreløpigBeregnetSluttPåSykepenger | Foreløig beregnet dato for slutt på sykepenger                           |                                                                    |
+| foreløpigBeregnetSluttPåSykepenger | Foreløpig beregnet dato for slutt på sykepenger                          |                                                                    |
 
 
 #### Arbeidsgiver- og Personoppdrag  ser slik ut:
