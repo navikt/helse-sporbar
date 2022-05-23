@@ -20,6 +20,8 @@ import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
 import java.util.*
+import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmelding
+import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmelding
 
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .registerModule(JavaTimeModule())
@@ -87,6 +89,8 @@ fun launchApplication(env: Environment) {
             UtbetalingUtbetaltRiver(this, utbetalingMediator)
             UtbetalingUtenUtbetalingRiver(this, utbetalingMediator)
             AnnulleringRiver(this, producer, aivenProducer)
+            TrengerInntektsmelding(this)
+            TrengerIkkeInntektsmelding(this)
             start()
         }
 }
