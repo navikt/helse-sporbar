@@ -32,7 +32,7 @@ internal class TrengerIkkeInntektsmelding(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        log.info("Trenger ikke inntektsmelding for vedtaksperiode: {}", packet["vedtaksperiodeId"].asText())
+        log.info("Trenger ikke inntektsmelding for vedtaksperiode ${packet["vedtaksperiodeId"].asText()}")
         lestEnMelding = true
     }
 
