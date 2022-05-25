@@ -10,6 +10,7 @@ Data om sykepenger kan konsumeres ved å lese inn en eller begge disse topic-ene
 
 * `tbd.vedtak`
 * `tbd.utbetaling`
+* WIP - `tbd.inntektsmelding`
 
 ### Tilgang
 
@@ -116,6 +117,20 @@ ligger nå i dagsats-feltet.
 | ManglerOpptjening                     |
 | ManglerMedlemskap                     |
 | Over70                                |
+
+#### WIP - Meldinger på `tbd.inntektsmelding` inneholder disse feltene:
+
+Merk at denne tabellen er under arbeid og kan ikke brukes til å implementere noe som helst enda.
+
+| Felt              | Forklaring                                                                                                                                  |
+|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| fnr               | Identifiserer den sykmeldte.                                                                                                                |
+| orgnummer         | Identifiserer arbeidsgiveren for dette syketilfellet. Om en sykmeldt har fler arbeidsgivere, kommer det fler meldinger.                     |
+| fom               | Første dag i perioden vi rapporterer for i denne meldingen. Det er ikke nødvendigvis den første dagen den sykmeldte var fraværende fra jobb |
+| tom               | Siste dag i perioden vi rapporterer for i denne meldingen. Det er ikke nødvendigvis den siste dagen den sykmeldte var fraværende fra jobb   |
+| hendelseId        | UUID som unikt identifiserer denne hendelsen                                                                                                |
+| hendelsetidspunkt | Timestamp (format HER) for når denne meldingen ble produsert                                                                                |
+| hendelse          | INNTEKTSMELDING_MANGLER eller INNTEKTSMELDING_MANGLER_IKKE eller PERIODEN_BEHANDLES_UTENFOR_OSS                                             |
 
 Spør om noe er uklart :-)
 
