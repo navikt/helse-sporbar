@@ -20,6 +20,7 @@ import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
 import java.util.*
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingDao
 import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmelding
 import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmelding
 
@@ -55,6 +56,7 @@ fun launchApplication(env: Environment) {
 
     val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     val vedtakDao = VedtakDao(dataSource)
+    val inntektsmeldingDao = InntektsmeldingDao(dataSource)
     val mediator = VedtaksperiodeMediator(
         vedtaksperiodeDao = vedtaksperiodeDao,
         vedtakDao = vedtakDao,
@@ -89,8 +91,8 @@ fun launchApplication(env: Environment) {
             UtbetalingUtbetaltRiver(this, utbetalingMediator)
             UtbetalingUtenUtbetalingRiver(this, utbetalingMediator)
             AnnulleringRiver(this, producer, aivenProducer)
-            TrengerInntektsmelding(this)
-            TrengerIkkeInntektsmelding(this)
+            TrengerInntektsmelding(this, inntektsmeldingDao)
+            TrengerIkkeInntektsmelding(this, inntektsmeldingDao)
             start()
         }
 }
