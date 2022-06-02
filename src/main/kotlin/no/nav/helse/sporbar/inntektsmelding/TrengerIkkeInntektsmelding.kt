@@ -42,17 +42,18 @@ internal class TrengerIkkeInntektsmelding(
 }
 
 internal fun JsonMessage.somMelding(trengerInntektsmelding: Boolean): InntektsmeldingPakke {
+    val id = UUID.randomUUID()
     val hendelseId = UUID.fromString(this["@id"].asText())
     val fødselsnummer = this["fødselsnummer"].asText()
     val aktørId = this["aktørId"].asText()
-    val vedtaksperiodeId = this["vedtaksperiodeId"].asText()
+    val vedtaksperiodeId = UUID.fromString(this["vedtaksperiodeId"].asText())
     val organisasjonsnummer = this["organisasjonsnummer"].asText()
     val fom = this["fom"].asLocalDate()
     val tom = this["tom"].asLocalDate()
     val opprettet = this["@opprettet"].asLocalDateTime()
-    val trengerInntektsmelding = trengerInntektsmelding
 
     return InntektsmeldingPakke(
+        id = id,
         hendelseId = hendelseId,
         fødselsnummer = fødselsnummer,
         aktørId = aktørId,
@@ -66,11 +67,12 @@ internal fun JsonMessage.somMelding(trengerInntektsmelding: Boolean): Inntektsme
     )
 }
 data class InntektsmeldingPakke(
+    val id: UUID,
     val hendelseId: UUID,
     val fødselsnummer: String,
     val aktørId: String,
     val organisasjonsnummer: String,
-    val vedtaksperiodeId: String,
+    val vedtaksperiodeId: UUID,
     val trengerInntektsmelding: Boolean,
     val fom: LocalDate,
     val tom: LocalDate,
