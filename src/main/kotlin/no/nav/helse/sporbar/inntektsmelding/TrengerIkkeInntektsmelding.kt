@@ -25,7 +25,7 @@ internal class TrengerIkkeInntektsmelding(
             validate {
                 it.requireValue("@event_name", "trenger_ikke_inntektsmelding")
                 it.requireKey("organisasjonsnummer", "fødselsnummer", "aktørId", "vedtaksperiodeId")
-                it.requireArray("søknadIder")
+                it.interestedIn("søknadIder")
                 it.require("@id") { id -> UUID.fromString(id.asText()) }
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
