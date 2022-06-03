@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Format på meldinger om mottatt eller ikke mottatt inntektsmelding for en gitt vedtaksperiode",
+  "description": "Kanskje dette burde være det som står i $title?",
+  "required": [
+    "status",
+    "sykmeldt",
+    "arbeidsgiver",
+    "vedtaksperiode",
+    "fom",
+    "tom",
+    "id",
+    "tidsstempel",
+    "versjon"
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "TRENGER_INNTEKTSMELDING",
+        "TRENGER_IKKE_INNTEKTSMELDING",
+        "BEHANDLES_UTENFOR_SPLEIS"
+      ]
+    },
+    "sykmeldt": {
+      "type": "string",
+      "description": "den sykmeldte identifisert med fnr, dnr eller npid"
+    },
+    "arbeidsgiver": {
+      "type": "string",
+      "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for den aktøren sykmeldte er sykmeldt fra"
+    },
+    "vedtaksperiode": {
+      "type": "string",
+      "format": "uuid",
+      "description": "identifserer unikt den vedtaksperioden som behandles"
+    },
+    "fom": {
+      "type": "string",
+      "format": "date",
+      "description": "første dag i vedtaksperioden denne statusen gjelder for"
+    },
+    "tom": {
+      "type": "string",
+      "format": "date",
+      "description": "siste dag i vedtaksperioden denne statusen gjelder for"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "identifiserer unikt denne status-oppdateringen"
+    },
+    "tidsstempel": {
+      "type": "string",
+      "format": "date_time",
+      "description": "tidspunktet denne meldingen ble laget"
+    },
+    "versjon": {
+      "type": "string",
+      "description": "schema-versjon for denne meldingen",
+      "enum": [
+        "1.0.0"
+      ]
+    }
+  }
+}
