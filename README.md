@@ -126,6 +126,7 @@ Merk at denne tabellen er under arbeid og kan ikke brukes til å implementere no
 |-------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
 | fnr               | Identifiserer den sykmeldte.                                                                                                                |
 | orgnummer         | Identifiserer arbeidsgiveren for dette syketilfellet. Om en sykmeldt har fler arbeidsgivere, kommer det fler meldinger.                     |
+| vedtaksperioeId   | Identifiserer vedtaksperioden                                                                                                               |
 | fom               | Første dag i perioden vi rapporterer for i denne meldingen. Det er ikke nødvendigvis den første dagen den sykmeldte var fraværende fra jobb |
 | tom               | Siste dag i perioden vi rapporterer for i denne meldingen. Det er ikke nødvendigvis den siste dagen den sykmeldte var fraværende fra jobb   |
 | hendelseId        | UUID som unikt identifiserer denne hendelsen                                                                                                |
