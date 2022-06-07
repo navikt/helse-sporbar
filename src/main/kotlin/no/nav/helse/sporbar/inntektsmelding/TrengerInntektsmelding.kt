@@ -3,6 +3,7 @@ package no.nav.helse.sporbar.inntektsmelding
 import com.fasterxml.jackson.databind.JsonNode
 import java.util.UUID
 import no.nav.helse.rapids_rivers.*
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.TRENGER_INNTEKTSMELDING
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -29,6 +30,6 @@ internal class TrengerInntektsmelding(
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         log.info("Trenger inntektsmelding for vedtaksperiode ${packet["vedtaksperiodeId"].asText()}")
-        inntektsmeldingDao.trengerInntektsmelding(packet.somMelding(trengerInntektsmelding = true))
+        inntektsmeldingDao.trengerInntektsmelding(packet.somInntektsmeldingPakke(status = TRENGER_INNTEKTSMELDING))
     }
 }

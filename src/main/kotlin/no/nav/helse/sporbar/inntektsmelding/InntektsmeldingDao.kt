@@ -4,14 +4,18 @@ import java.time.LocalDateTime
 import javax.sql.DataSource
 import kotliquery.queryOf
 import kotliquery.sessionOf
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.TRENGER_IKKE_INNTEKTSMELDING
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.TRENGER_INNTEKTSMELDING
 
 class InntektsmeldingDao(private val dataSource: DataSource) {
 
     internal fun trengerInntektsmelding(melding: InntektsmeldingPakke) {
+        require(melding.status == TRENGER_INNTEKTSMELDING)
         insert(melding, tabellNavn = "trenger_inntektsmelding")
     }
 
     internal fun trengerIkkeInntektsmelding(melding: InntektsmeldingPakke) {
+        require(melding.status == TRENGER_IKKE_INNTEKTSMELDING)
         insert(melding, tabellNavn = "trenger_ikke_inntektsmelding")
     }
 
