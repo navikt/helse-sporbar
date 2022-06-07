@@ -13,6 +13,7 @@ val hikariCPVersion = "4.0.2"
 val vaultjdbcVersion = "1.3.7"
 val flywaycoreVersion = "7.5.4"
 val jsonSchemaValidatorVersion = "1.0.70"
+val jsonassertVersion = "1.5.0"
 
 plugins {
     kotlin("jvm") version "1.6.21"
@@ -44,6 +45,8 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("com.networknt:json-schema-validator:$jsonSchemaValidatorVersion")
+    testImplementation("org.skyscreamer:jsonassert:$jsonassertVersion")
+
 }
 
 repositories {

@@ -6,11 +6,12 @@ import java.util.UUID
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.asLocalDateTime
+import org.intellij.lang.annotations.Language
 
-internal enum class InntektsmeldingStatus {
-    TRENGER_INNTEKTSMELDING,
-    TRENGER_IKKE_INNTEKTSMELDING,
-    BEHANDLES_UTENFOR_SPLEIS
+internal enum class InntektsmeldingStatus(internal val eksternDto: String) {
+    TRENGER_INNTEKTSMELDING("TRENGER_INNTEKTSMELDING"),
+    TRENGER_IKKE_INNTEKTSMELDING("TRENGER_IKKE_INNTEKTSMELDING"),
+    FORKASTET("BEHANDLES_UTENFOR_SPLEIS")
 }
 
 internal class InntektsmeldingPakke(
@@ -51,5 +52,22 @@ internal fun JsonMessage.somInntektsmeldingPakke(status: InntektsmeldingStatus):
         opprettet = opprettet,
         json = this
     )
+}
+
+@Language("JSON")
+internal fun Pair<UUID, InntektsmeldingPakke>.tilEksternDto() = let { (id, pakke) ->
+"""
+    {
+        "id": "$id",
+        "status": "${pakke.status.eksternDto}",
+        "sykmeldt": "${pakke.fødselsnummer}",
+        "arbeidsgiver": "${pakke.organisasjonsnummer}",
+        "vedtaksperiode": "${pakke.vedtaksperiodeId}",
+        "tidsstempel": "${pakke.opprettet}",
+        "fom": "${pakke.fom}",
+        "tom": "${pakke.tom}",
+        "versjon": "1.0.0"
+    }
+"""
 }
 
