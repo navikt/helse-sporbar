@@ -23,6 +23,8 @@ import java.util.*
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingDao
 import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmelding
 import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmelding
+import no.nav.helse.sporbar.vedtaksperiodeForkastet.VedtaksperiodeForkastet
+import no.nav.helse.sporbar.vedtaksperiodeForkastet.VedtaksperiodeForkastetDao
 
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .registerModule(JavaTimeModule())
@@ -57,6 +59,7 @@ fun launchApplication(env: Environment) {
     val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     val vedtakDao = VedtakDao(dataSource)
     val inntektsmeldingDao = InntektsmeldingDao(dataSource)
+    val vedtaksperiodeForkastetDao = VedtaksperiodeForkastetDao(dataSource)
     val mediator = VedtaksperiodeMediator(
         vedtaksperiodeDao = vedtaksperiodeDao,
         vedtakDao = vedtakDao,
@@ -93,6 +96,7 @@ fun launchApplication(env: Environment) {
             AnnulleringRiver(this, producer, aivenProducer)
             TrengerInntektsmelding(this, inntektsmeldingDao)
             TrengerIkkeInntektsmelding(this, inntektsmeldingDao)
+            VedtaksperiodeForkastet(this, vedtaksperiodeForkastetDao)
             start()
         }
 }
