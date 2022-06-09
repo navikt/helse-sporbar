@@ -1,4 +1,4 @@
-package no.nav.helse.sporbar
+package no.nav.helse.sporbar.inntektsmelding
 
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -7,9 +7,7 @@ import kotliquery.queryOf
 import kotliquery.sessionOf
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingDao
-import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmelding
-import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmelding
+import no.nav.helse.sporbar.TestDatabase
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
