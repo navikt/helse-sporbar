@@ -8,6 +8,7 @@ import kotliquery.sessionOf
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.helse.sporbar.TestDatabase
+import no.nav.helse.sporbar.vedtaksperiodeForkastet.VedtaksperiodeForkastetDao
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -23,10 +24,12 @@ class InntektsmeldingTest {
     private val opprettet = LocalDateTime.now()
 
     private val inntektsmeldingDao = InntektsmeldingDao(TestDatabase.dataSource)
+    private val vedtaksperiodeForkastetDao = VedtaksperiodeForkastetDao(TestDatabase.dataSource)
+    private val mediator = InntektsmeldingStatusMediator(inntektsmeldingDao, vedtaksperiodeForkastetDao)
 
     init {
-        TrengerInntektsmelding(testRapid, inntektsmeldingDao)
-        TrengerIkkeInntektsmelding(testRapid, inntektsmeldingDao)
+        TrengerInntektsmelding(testRapid, mediator)
+        TrengerIkkeInntektsmelding(testRapid, mediator)
     }
 
     @BeforeEach

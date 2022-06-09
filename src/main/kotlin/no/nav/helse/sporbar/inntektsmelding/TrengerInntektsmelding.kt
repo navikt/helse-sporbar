@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 
 internal class TrengerInntektsmelding(
     rapidsConnection: RapidsConnection,
-    private val inntektsmeldingDao: InntektsmeldingDao,
+    private val inntektsmeldingStatusMediator: InntektsmeldingStatusMediator
 ) : River.PacketListener{
 
     private val log: Logger = LoggerFactory.getLogger("sporbar")
@@ -30,6 +30,6 @@ internal class TrengerInntektsmelding(
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         log.info("Trenger inntektsmelding for vedtaksperiode ${packet["vedtaksperiodeId"].asText()}")
-        inntektsmeldingDao.trengerInntektsmelding(packet.somInntektsmeldingPakke(status = TRENGER_INNTEKTSMELDING))
+        inntektsmeldingStatusMediator.lagre(packet.somInntektsmeldingPakke(status = TRENGER_INNTEKTSMELDING))
     }
 }

@@ -9,21 +9,17 @@ import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.TRENGER_INNTEK
 
 class InntektsmeldingDao(private val dataSource: DataSource) {
 
-    internal fun trengerInntektsmelding(melding: InntektsmeldingPakke) {
-        require(melding.status == TRENGER_INNTEKTSMELDING)
-        insert(melding, tabellNavn = "trenger_inntektsmelding")
+    private fun InntektsmeldingPakke.tabell() = when (status) {
+        TRENGER_INNTEKTSMELDING -> "trenger_inntektsmelding"
+        TRENGER_IKKE_INNTEKTSMELDING -> "trenger_ikke_inntektsmelding"
+        else -> throw IllegalStateException("Ugyldig status $status")
     }
 
-    internal fun trengerIkkeInntektsmelding(melding: InntektsmeldingPakke) {
-        require(melding.status == TRENGER_IKKE_INNTEKTSMELDING)
-        insert(melding, tabellNavn = "trenger_ikke_inntektsmelding")
-    }
-
-    private fun insert(melding: InntektsmeldingPakke, tabellNavn: String) {
+    internal fun lagre(melding: InntektsmeldingPakke) {
         sessionOf(dataSource).use { session ->
             session.run(
                 queryOf(
-                    "INSERT INTO ${tabellNavn}(id, hendelse_id, hendelse_opprettet, fodselsnummer, orgnummer, vedtaksperiode_id, fom, tom, melding_innsatt, data)  " +
+                    "INSERT INTO ${melding.tabell()}(id, hendelse_id, hendelse_opprettet, fodselsnummer, orgnummer, vedtaksperiode_id, fom, tom, melding_innsatt, data)  " +
                             "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb) ON CONFLICT DO NOTHING",
                     melding.id,
                     melding.hendelseId,

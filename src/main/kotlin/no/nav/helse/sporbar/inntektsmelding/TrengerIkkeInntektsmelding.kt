@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 
 internal class TrengerIkkeInntektsmelding(
     rapidsConnection: RapidsConnection,
-    private val inntektsmeldingDao: InntektsmeldingDao
+    private val inntektsmeldingStatusMediator: InntektsmeldingStatusMediator
 ) : River.PacketListener {
 
     private val log: Logger = LoggerFactory.getLogger("sporbar")
@@ -35,7 +35,7 @@ internal class TrengerIkkeInntektsmelding(
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         log.info("Trenger ikke inntektsmelding for vedtaksperiode ${packet["vedtaksperiodeId"].asText()}")
-        inntektsmeldingDao.trengerIkkeInntektsmelding(packet.somInntektsmeldingPakke(status = TRENGER_IKKE_INNTEKTSMELDING))
+        inntektsmeldingStatusMediator.lagre(packet.somInntektsmeldingPakke(status = TRENGER_IKKE_INNTEKTSMELDING))
     }
 }
 

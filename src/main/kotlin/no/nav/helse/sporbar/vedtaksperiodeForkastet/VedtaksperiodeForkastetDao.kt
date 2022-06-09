@@ -7,7 +7,7 @@ import kotliquery.sessionOf
 
 internal class VedtaksperiodeForkastetDao(private val dataSource: DataSource) {
 
-    internal fun vedtakperiodeForkastet(melding: VedtaksperiodeForkastetPakke) {
+    internal fun lagre(melding: VedtaksperiodeForkastetPakke) {
         sessionOf(dataSource).use { session ->
             session.run(
                 queryOf(
