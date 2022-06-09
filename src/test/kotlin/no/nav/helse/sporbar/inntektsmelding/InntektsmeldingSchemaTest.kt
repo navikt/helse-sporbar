@@ -34,9 +34,11 @@ internal class InntektsmeldingSchemaTest {
             "status": "MANGLER_IKKE_INNTEKTSMELDING",
             "sykmeldt": "dette er et fødselsnummer",
             "arbeidsgiver": "flagg som sier at det er en brukerutbetaling",
-            "vedtaksperiode": "${UUID.randomUUID()}",
-            "fom": "${LocalDate.now()}",
-            "tom": "${LocalDate.now()}",
+            "vedtaksperiode": {
+              "id": "${UUID.randomUUID()}",
+              "fom": "${LocalDate.now()}",
+              "tom": "${LocalDate.now()}"
+            },
             "id": "${UUID.randomUUID()}",
             "tidsstempel": "${LocalDateTime.now()}",
             "versjon": "1.0.0"
@@ -68,10 +70,12 @@ internal class InntektsmeldingSchemaTest {
             "status": "MANGLER_INNTEKTSMELDING",
             "sykmeldt": "11111111111",
             "arbeidsgiver": "333333333",
-            "vedtaksperiode": "ed6a3551-a5d9-49ef-ada8-15a5eebbcf64",
+            "vedtaksperiode": {
+              "id": "ed6a3551-a5d9-49ef-ada8-15a5eebbcf64",
+              "fom": "2018-01-01",
+              "tom": "2018-05-05"
+            },
             "tidsstempel": "2022-06-07T10:56:41.356835",
-            "fom": "2018-01-01",
-            "tom": "2018-05-05",
             "versjon": "1.0.0"
         }
         """
@@ -103,10 +107,12 @@ internal class InntektsmeldingSchemaTest {
             "status": "MANGLER_IKKE_INNTEKTSMELDING",
             "sykmeldt": "11111111112",
             "arbeidsgiver": "333333334",
-            "vedtaksperiode": "1ae47dbc-eb0c-41cd-89c5-d6b404634955",
+            "vedtaksperiode": {
+              "id": "1ae47dbc-eb0c-41cd-89c5-d6b404634955",
+              "fom": "2019-01-01",
+              "tom": "2019-05-05"
+            },
             "tidsstempel": "2022-06-08T10:56:41.356835",
-            "fom": "2019-01-01",
-            "tom": "2019-05-05",
             "versjon": "1.0.0"
         }
         """
@@ -138,10 +144,12 @@ internal class InntektsmeldingSchemaTest {
             "status": "BEHANDLES_UTENFOR_SPLEIS",
             "sykmeldt": "11111111113",
             "arbeidsgiver": "333333335",
-            "vedtaksperiode": "7358b190-742c-4da0-8346-594c7caa61b3",
+            "vedtaksperiode": {
+              "id": "7358b190-742c-4da0-8346-594c7caa61b3",
+              "fom": "2021-01-01",
+              "tom": "2021-05-05"
+            },
             "tidsstempel": "2021-06-08T10:56:41.356835",
-            "fom": "2021-01-01",
-            "tom": "2021-05-05",
             "versjon": "1.0.0"
         }
         """

@@ -6,7 +6,6 @@ import java.util.UUID
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.asLocalDateTime
-import org.intellij.lang.annotations.Language
 
 internal enum class InntektsmeldingStatus(internal val eksternDto: String) {
     TRENGER_INNTEKTSMELDING("MANGLER_INNTEKTSMELDING"),
@@ -54,7 +53,6 @@ internal fun JsonMessage.somInntektsmeldingPakke(status: InntektsmeldingStatus):
     )
 }
 
-@Language("JSON")
 internal fun Pair<UUID, InntektsmeldingPakke>.tilEksternDto() = let { (id, pakke) ->
 """
     {
@@ -62,10 +60,12 @@ internal fun Pair<UUID, InntektsmeldingPakke>.tilEksternDto() = let { (id, pakke
         "status": "${pakke.status.eksternDto}",
         "sykmeldt": "${pakke.fødselsnummer}",
         "arbeidsgiver": "${pakke.organisasjonsnummer}",
-        "vedtaksperiode": "${pakke.vedtaksperiodeId}",
+        "vedtaksperiode": {
+            "id": "${pakke.vedtaksperiodeId}",
+            "fom": "${pakke.fom}",
+            "tom": "${pakke.tom}"
+        },
         "tidsstempel": "${pakke.opprettet}",
-        "fom": "${pakke.fom}",
-        "tom": "${pakke.tom}",
         "versjon": "1.0.0"
     }
 """

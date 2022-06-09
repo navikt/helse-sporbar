@@ -7,8 +7,6 @@
     "sykmeldt",
     "arbeidsgiver",
     "vedtaksperiode",
-    "fom",
-    "tom",
     "id",
     "tidsstempel",
     "versjon"
@@ -33,19 +31,24 @@
       "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for den aktøren sykmeldte er sykmeldt fra"
     },
     "vedtaksperiode": {
-      "type": "string",
-      "format": "uuid",
-      "description": "identifserer unikt den vedtaksperioden som behandles"
-    },
-    "fom": {
-      "type": "string",
-      "format": "date",
-      "description": "første dag i vedtaksperioden denne statusen gjelder for"
-    },
-    "tom": {
-      "type": "string",
-      "format": "date",
-      "description": "siste dag i vedtaksperioden denne statusen gjelder for"
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fom", "tom"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fom": {
+          "type": "string",
+          "format": "date"
+        },
+        "tom": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Informasjon om vedtaksperioden"
     },
     "id": {
       "type": "string",
