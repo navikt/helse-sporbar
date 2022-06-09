@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Format på meldinger om mottatt eller ikke mottatt inntektsmelding for en gitt vedtaksperiode",
-  "description": "Kanskje dette burde være det som står i $title?",
+  "title": "Mangler, eller ikke mangler inntektsmelding",
+  "description": "Format på meldinger som indikerer om en vedtaksperiode mangler inntektsmelding, ikke mangler inntektsmelding eller behandles utenfor Spleis",
   "required": [
     "status",
     "sykmeldt",
