@@ -9,8 +9,8 @@ import no.nav.helse.rapids_rivers.asLocalDateTime
 import org.intellij.lang.annotations.Language
 
 internal enum class InntektsmeldingStatus(internal val eksternDto: String) {
-    TRENGER_INNTEKTSMELDING("TRENGER_INNTEKTSMELDING"),
-    TRENGER_IKKE_INNTEKTSMELDING("TRENGER_IKKE_INNTEKTSMELDING"),
+    TRENGER_INNTEKTSMELDING("MANGLER_INNTEKTSMELDING"),
+    TRENGER_IKKE_INNTEKTSMELDING("MANGLER_IKKE_INNTEKTSMELDING"),
     FORKASTET("BEHANDLES_UTENFOR_SPLEIS")
 }
 

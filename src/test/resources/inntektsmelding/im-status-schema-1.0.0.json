@@ -19,8 +19,8 @@
     "status": {
       "type": "string",
       "enum": [
-        "TRENGER_INNTEKTSMELDING",
-        "TRENGER_IKKE_INNTEKTSMELDING",
+        "MANGLER_INNTEKTSMELDING",
+        "MANGLER_IKKE_INNTEKTSMELDING",
         "BEHANDLES_UTENFOR_SPLEIS"
       ]
     },

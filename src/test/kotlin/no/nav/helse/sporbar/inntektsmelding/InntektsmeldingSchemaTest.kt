@@ -31,7 +31,7 @@ internal class InntektsmeldingSchemaTest {
         @Language("JSON")
         val json = """
         {
-            "status": "TRENGER_IKKE_INNTEKTSMELDING",
+            "status": "MANGLER_IKKE_INNTEKTSMELDING",
             "sykmeldt": "dette er et fødselsnummer",
             "arbeidsgiver": "flagg som sier at det er en brukerutbetaling",
             "vedtaksperiode": "${UUID.randomUUID()}",
@@ -65,7 +65,7 @@ internal class InntektsmeldingSchemaTest {
         val forventet = """
         {
             "id": "a7172c5b-e40c-4e08-a9a9-17948393c5c8",
-            "status": "TRENGER_INNTEKTSMELDING",
+            "status": "MANGLER_INNTEKTSMELDING",
             "sykmeldt": "11111111111",
             "arbeidsgiver": "333333333",
             "vedtaksperiode": "ed6a3551-a5d9-49ef-ada8-15a5eebbcf64",
@@ -100,7 +100,7 @@ internal class InntektsmeldingSchemaTest {
         val forventet = """
         {
             "id": "42ff2da7-e62f-4e45-8f84-86cbb7e2d148",
-            "status": "TRENGER_IKKE_INNTEKTSMELDING",
+            "status": "MANGLER_IKKE_INNTEKTSMELDING",
             "sykmeldt": "11111111112",
             "arbeidsgiver": "333333334",
             "vedtaksperiode": "1ae47dbc-eb0c-41cd-89c5-d6b404634955",
