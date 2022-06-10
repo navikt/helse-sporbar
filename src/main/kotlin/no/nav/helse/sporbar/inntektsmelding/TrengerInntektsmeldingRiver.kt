@@ -2,6 +2,7 @@ package no.nav.helse.sporbar.inntektsmelding
 
 import com.fasterxml.jackson.databind.JsonNode
 import java.util.UUID
+import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.rapids_rivers.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -11,7 +12,7 @@ internal class TrengerInntektsmeldingRiver(
     private val inntektsmeldingStatusMediator: InntektsmeldingStatusMediator
 ) : River.PacketListener{
 
-    private val log: Logger = LoggerFactory.getLogger("sporbar")
+    private val log: Logger = LoggerFactory.getLogger("inntektsmeldingStatus")
 
     init {
         River(rapidsConnection).apply {
@@ -28,7 +29,7 @@ internal class TrengerInntektsmeldingRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        log.info("Trenger inntektsmelding for vedtaksperiode ${packet["vedtaksperiodeId"].asText()}")
+        log.info("Trenger inntektsmelding for vedtaksperiode {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
         inntektsmeldingStatusMediator.lagre(packet.somManglerInntektsmelding())
     }
 

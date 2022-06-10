@@ -41,12 +41,6 @@ internal class InntektsmeldingStatusTest {
     }
     private val mediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao, testProducer)
 
-    private val schema by lazy {
-        JsonSchemaFactory
-            .getInstance(SpecVersion.VersionFlag.V7)
-            .getSchema(InntektsmeldingStatusTest::class.java.getResource("/inntektsmelding/im-status-schema-1.0.0.json")!!.toURI())
-    }
-
     init {
         TrengerInntektsmeldingRiver(testRapid, mediator)
         TrengerIkkeInntektsmeldingRiver(testRapid, mediator)
@@ -175,22 +169,11 @@ internal class InntektsmeldingStatusTest {
         }
     }
 
-    private fun assertSchema(json: JsonNode, status: String) {
-        val valideringsfeil = schema.validate(json)
-        assertEquals(emptySet<ValidationMessage>(), valideringsfeil)
-        assertEquals(status, json.path("status").asText())
-        assertEquals(fom, LocalDate.parse(json.path("vedtaksperiode").path("fom").asText()))
-        assertEquals(tom, LocalDate.parse(json.path("vedtaksperiode").path("tom").asText()))
-        assertEquals(fnr, json.path("sykmeldt").asText())
-        assertEquals(orgnr, json.path("arbeidsgiver").asText())
-        assertEquals(LocalDateTime.parse("$opprettet".dropLast(3)), LocalDateTime.parse(json.path("tidspunkt").asText()))
-    }
-
     private companion object {
         private val fnr = "12345678910"
         private val aktørId = "1427484794278"
         private val orgnr = "987654321"
-        private val opprettet = LocalDateTime.now()
+        private val opprettet = LocalDateTime.parse("2022-06-10T19:06:26.765")
         private val fom = LocalDate.now()
         private val tom = fom.plusDays(10)
 
@@ -235,5 +218,22 @@ internal class InntektsmeldingStatusTest {
                 "tom" to tom
             ).plus(extra)
         ).toJson()
+
+        private val schema by lazy {
+            JsonSchemaFactory
+                .getInstance(SpecVersion.VersionFlag.V7)
+                .getSchema(InntektsmeldingStatusTest::class.java.getResource("/inntektsmelding/im-status-schema-1.0.0.json")!!.toURI())
+        }
+
+        private fun assertSchema(json: JsonNode, status: String) {
+            val valideringsfeil = schema.validate(json)
+            assertEquals(emptySet<ValidationMessage>(), valideringsfeil)
+            assertEquals(status, json.path("status").asText())
+            assertEquals(fom, LocalDate.parse(json.path("vedtaksperiode").path("fom").asText()))
+            assertEquals(tom, LocalDate.parse(json.path("vedtaksperiode").path("tom").asText()))
+            assertEquals(fnr, json.path("sykmeldt").asText())
+            assertEquals(orgnr, json.path("arbeidsgiver").asText())
+            assertEquals(opprettet, LocalDateTime.parse(json.path("tidspunkt").asText()))
+        }
     }
 }
