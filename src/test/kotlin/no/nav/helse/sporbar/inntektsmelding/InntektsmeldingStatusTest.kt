@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar.inntektsmelding
 
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -8,8 +9,11 @@ import kotliquery.sessionOf
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.helse.sporbar.TestDatabase
+import no.nav.helse.sporbar.uuid
+import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -17,7 +21,13 @@ internal class InntektsmeldingStatusTest {
 
     private val testRapid = TestRapid()
     private val inntektsmeldingStatusDao = InntektsmeldingStatusDao(TestDatabase.dataSource)
-    private val mediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao)
+    private val testProducer = object : Producer {
+        val meldinger = mutableMapOf<String, String>()
+        override fun send(key: String, value: String) {
+            meldinger[key] = value
+        }
+    }
+    private val mediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao, testProducer)
 
     init {
         TrengerInntektsmeldingRiver(testRapid, mediator)
@@ -29,6 +39,7 @@ internal class InntektsmeldingStatusTest {
     @BeforeEach
     fun setup() {
         testRapid.reset()
+        testProducer.meldinger.clear()
     }
 
     @Test
@@ -75,8 +86,40 @@ internal class InntektsmeldingStatusTest {
         assertNull(status(vedtaksperiodeId))
     }
 
+    @Test
+    fun `publiserer først melding når status har vært gjeldende i ett minutt`() {
+        val vedtaksperiodeId = UUID.randomUUID()
+        testRapid.sendTestMessage(trengerInntektsmeldingEvent(vedtaksperiodeId))
+        mediator.publiser()
+        assertTrue(testProducer.meldinger.isEmpty())
+        manipulerMeldingInnsatt(vedtaksperiodeId, Duration.ofSeconds(59))
+        mediator.publiser()
+        assertTrue(testProducer.meldinger.isEmpty())
+        manipulerMeldingInnsatt(vedtaksperiodeId, Duration.ofSeconds(2))
+        mediator.publiser()
+        assertEquals(1, testProducer.meldinger.size)
+        mediator.publiser()
+        assertEquals(1, testProducer.meldinger.size)
+    }
+
     private fun status(vedtaksperiodeId: UUID): String? = sessionOf(TestDatabase.dataSource).use { session ->
         session.run(queryOf("SELECT status FROM inntektsmelding_status WHERE vedtaksperiode_id = ? ORDER BY melding_innsatt DESC", vedtaksperiodeId).map { it.string("status") }.asSingle)
+    }
+
+    private fun manipulerMeldingInnsatt(vedtaksperiodeId: UUID, trekkFra: Duration = Duration.ofSeconds(61)) {
+        sessionOf(TestDatabase.dataSource).use { session ->
+            session.run(queryOf("SELECT id FROM inntektsmelding_status WHERE vedtaksperiode_id = ?", vedtaksperiodeId).map { row -> row.uuid("id") }.asList)
+        }.forEach { id ->
+            @Language("PostgreSQL")
+            val sql = """
+                UPDATE inntektsmelding_status 
+                SET melding_innsatt = (SELECT melding_innsatt FROM inntektsmelding_status WHERE id = ?) - INTERVAL '${trekkFra.seconds} SECONDS' 
+                WHERE id = ?
+            """
+            sessionOf(TestDatabase.dataSource).use { session ->
+                require(session.run(queryOf(sql, id, id).asUpdate) == 1)
+            }
+        }
     }
 
     private companion object {

@@ -32,30 +32,28 @@ internal class TrengerInntektsmeldingRiver(
         inntektsmeldingStatusMediator.lagre(packet.somManglerInntektsmelding())
     }
 
-    internal companion object {
-        internal fun JsonMessage.somManglerInntektsmelding(): ManglerInntektsmelding {
-            val id = UUID.randomUUID()
-            val hendelseId = UUID.fromString(this["@id"].asText())
-            val fødselsnummer = this["fødselsnummer"].asText()
-            val aktørId = this["aktørId"].asText()
-            val vedtaksperiodeId = UUID.fromString(this["vedtaksperiodeId"].asText())
-            val organisasjonsnummer = this["organisasjonsnummer"].asText()
-            val fom = this["fom"].asLocalDate()
-            val tom = this["tom"].asLocalDate()
-            val opprettet = this["@opprettet"].asLocalDateTime()
+    private fun JsonMessage.somManglerInntektsmelding(): ManglerInntektsmelding {
+        val id = UUID.randomUUID()
+        val hendelseId = UUID.fromString(this["@id"].asText())
+        val fødselsnummer = this["fødselsnummer"].asText()
+        val aktørId = this["aktørId"].asText()
+        val vedtaksperiodeId = UUID.fromString(this["vedtaksperiodeId"].asText())
+        val organisasjonsnummer = this["organisasjonsnummer"].asText()
+        val fom = this["fom"].asLocalDate()
+        val tom = this["tom"].asLocalDate()
+        val opprettet = this["@opprettet"].asLocalDateTime()
 
-            return ManglerInntektsmelding(
-                id = id,
-                hendelseId = hendelseId,
-                fødselsnummer = fødselsnummer,
-                aktørId = aktørId,
-                organisasjonsnummer = organisasjonsnummer,
-                vedtaksperiodeId = vedtaksperiodeId,
-                fom = fom,
-                tom = tom,
-                opprettet = opprettet,
-                json = this
-            )
-        }
+        return ManglerInntektsmelding(
+            id = id,
+            hendelseId = hendelseId,
+            fødselsnummer = fødselsnummer,
+            aktørId = aktørId,
+            organisasjonsnummer = organisasjonsnummer,
+            vedtaksperiodeId = vedtaksperiodeId,
+            fom = fom,
+            tom = tom,
+            opprettet = opprettet,
+            json = this
+        )
     }
 }

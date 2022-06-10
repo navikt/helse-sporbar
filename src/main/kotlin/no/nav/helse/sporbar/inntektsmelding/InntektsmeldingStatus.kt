@@ -69,3 +69,19 @@ internal class TrengerIkkeInntektsmelding(
     override val opprettet: LocalDateTime,
     override val json: JsonMessage
 ) : InntektsmeldingStatus
+
+internal data class InntektsmeldingStatusForEksternDto(
+    val id: UUID,
+    val sykmeldt: String,
+    val arbeidsgiver: String,
+    val vedtaksperiode: VedtaksperiodeForEksternDto,
+    val tidspunkt: LocalDateTime,
+    val status: String
+) {
+    val versjon = "1.0.0"
+    data class VedtaksperiodeForEksternDto(
+        val id: UUID,
+        val fom: LocalDate,
+        val tom: LocalDate
+    )
+}
