@@ -1,0 +1,3 @@
+DROP TABLE trenger_inntektsmelding;
+DROP TABLE trenger_ikke_inntektsmelding;
+DROP TABLE vedtaksperiode_forkastet;

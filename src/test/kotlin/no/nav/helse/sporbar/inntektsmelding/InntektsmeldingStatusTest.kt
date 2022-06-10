@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar.inntektsmelding
 
-import io.mockk.mockk
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -18,7 +17,7 @@ internal class InntektsmeldingStatusTest {
 
     private val testRapid = TestRapid()
     private val inntektsmeldingStatusDao = InntektsmeldingStatusDao(TestDatabase.dataSource)
-    private val mediator = InntektsmeldingStatusMediator(mockk(relaxed = true), mockk(relaxed = true), inntektsmeldingStatusDao)
+    private val mediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao)
 
     init {
         TrengerInntektsmeldingRiver(testRapid, mediator)

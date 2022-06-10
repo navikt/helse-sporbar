@@ -8,7 +8,6 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.asLocalDateTime
-import no.nav.helse.sporbar.inntektsmelding.Status.TRENGER_IKKE_INNTEKTSMELDING
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -35,7 +34,6 @@ internal class TrengerIkkeInntektsmeldingRiver(
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         log.info("Trenger ikke inntektsmelding for vedtaksperiode ${packet["vedtaksperiodeId"].asText()}")
-        inntektsmeldingStatusMediator.lagre(packet.somInntektsmeldingPakke(status = TRENGER_IKKE_INNTEKTSMELDING))
         inntektsmeldingStatusMediator.lagre(packet.somHarInntektsmelding())
     }
 

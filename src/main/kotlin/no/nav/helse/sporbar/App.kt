@@ -5,13 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import io.ktor.http.*
+import io.ktor.http.ContentType
 import io.ktor.serialization.jackson.JacksonConverter
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.routing.routing
+import java.util.Properties
 import no.nav.helse.rapids_rivers.RapidApplication
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusDao
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusMediator
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeEndretRiver
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeForkastetRiver
+import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmeldingRiver
+import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmeldingRiver
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -19,16 +26,6 @@ import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
-import java.util.*
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingDao
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusDao
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusMediator
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeEndretRiver
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeForkastetRiver
-import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmeldingRiver
-import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmeldingRiver
-import no.nav.helse.sporbar.vedtaksperiodeForkastet.VedtaksperiodeForkastet
-import no.nav.helse.sporbar.vedtaksperiodeForkastet.VedtaksperiodeForkastetDao
 
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .registerModule(JavaTimeModule())
@@ -62,10 +59,8 @@ fun launchApplication(env: Environment) {
 
     val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     val vedtakDao = VedtakDao(dataSource)
-    val inntektsmeldingDao = InntektsmeldingDao(dataSource)
-    val vedtaksperiodeForkastetDao = VedtaksperiodeForkastetDao(dataSource)
     val inntektsmeldingStatusDao = InntektsmeldingStatusDao(dataSource)
-    val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(inntektsmeldingDao, vedtaksperiodeForkastetDao, inntektsmeldingStatusDao)
+    val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao)
     val mediator = VedtaksperiodeMediator(
         vedtaksperiodeDao = vedtaksperiodeDao,
         vedtakDao = vedtakDao,
@@ -104,7 +99,6 @@ fun launchApplication(env: Environment) {
             TrengerIkkeInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
             InntektsmeldingStatusVedtaksperiodeForkastetRiver(this, inntektsmeldingStatusMediator)
             InntektsmeldingStatusVedtaksperiodeEndretRiver(this, inntektsmeldingStatusMediator)
-            VedtaksperiodeForkastet(this, inntektsmeldingStatusMediator)
             start()
         }
 }
