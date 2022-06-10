@@ -22,9 +22,9 @@ internal class InntektsmeldingStatusTest {
     private val testRapid = TestRapid()
     private val inntektsmeldingStatusDao = InntektsmeldingStatusDao(TestDatabase.dataSource)
     private val testProducer = object : Producer {
-        val meldinger = mutableMapOf<String, String>()
+        val meldinger = mutableListOf<String>()
         override fun send(key: String, value: String) {
-            meldinger[key] = value
+            meldinger.add(value)
         }
     }
     private val mediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao, testProducer)
@@ -96,6 +96,18 @@ internal class InntektsmeldingStatusTest {
         mediator.publiser()
         assertTrue(testProducer.meldinger.isEmpty())
         manipulerMeldingInnsatt(vedtaksperiodeId, Duration.ofSeconds(2))
+        mediator.publiser()
+        assertEquals(1, testProducer.meldinger.size)
+        mediator.publiser()
+        assertEquals(1, testProducer.meldinger.size)
+    }
+
+    @Test
+    fun `publiserer ikke gammel status på inntektsmelding`() {
+        val vedtaksperiodeId = UUID.randomUUID()
+        testRapid.sendTestMessage(trengerIkkeInntektsmeldingEvent(vedtaksperiodeId))
+        testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "AVSLUTTET_UTEN_UTBETALING"))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiser()
         assertEquals(1, testProducer.meldinger.size)
         mediator.publiser()

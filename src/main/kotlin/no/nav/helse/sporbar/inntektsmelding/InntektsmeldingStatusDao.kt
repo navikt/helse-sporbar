@@ -9,14 +9,14 @@ import no.nav.helse.sporbar.uuid
 import org.intellij.lang.annotations.Language
 
 internal class InntektsmeldingStatusDao(
-    private val dataSource: DataSource,
+    private val dataSource: DataSource
 ) {
     internal fun hent(statusTimeout: Duration): List<InntektsmeldingStatusForEksternDto> {
         @Language("PostgreSQL")
         val sql = """
             SELECT DISTINCT ON(vedtaksperiode_id) vedtaksperiode_id, id, fom, tom, fodselsnummer, orgnummer, status, hendelse_opprettet 
             FROM inntektsmelding_status 
-            WHERE melding_publisert IS NULL AND melding_innsatt < now() - INTERVAL '${statusTimeout.seconds} SECONDS' 
+            WHERE melding_publisert IS NULL AND melding_ignorert IS NULL AND melding_innsatt < now() - INTERVAL '${statusTimeout.seconds} SECONDS' 
             ORDER BY vedtaksperiode_id, melding_innsatt DESC
         """
         return sessionOf(dataSource).use { session ->
