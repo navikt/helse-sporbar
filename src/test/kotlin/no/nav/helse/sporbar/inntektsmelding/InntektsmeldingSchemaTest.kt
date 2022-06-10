@@ -9,9 +9,9 @@ import java.time.LocalDateTime
 import java.util.UUID
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageProblems
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.FORKASTET
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.TRENGER_IKKE_INNTEKTSMELDING
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.TRENGER_INNTEKTSMELDING
+import no.nav.helse.sporbar.inntektsmelding.Status.FORKASTET
+import no.nav.helse.sporbar.inntektsmelding.Status.TRENGER_IKKE_INNTEKTSMELDING
+import no.nav.helse.sporbar.inntektsmelding.Status.TRENGER_INNTEKTSMELDING
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

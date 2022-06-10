@@ -21,9 +21,12 @@ import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
 import java.util.*
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingDao
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusDao
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusMediator
-import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmelding
-import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmelding
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeEndretRiver
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeForkastetRiver
+import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmeldingRiver
+import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmeldingRiver
 import no.nav.helse.sporbar.vedtaksperiodeForkastet.VedtaksperiodeForkastet
 import no.nav.helse.sporbar.vedtaksperiodeForkastet.VedtaksperiodeForkastetDao
 
@@ -61,7 +64,8 @@ fun launchApplication(env: Environment) {
     val vedtakDao = VedtakDao(dataSource)
     val inntektsmeldingDao = InntektsmeldingDao(dataSource)
     val vedtaksperiodeForkastetDao = VedtaksperiodeForkastetDao(dataSource)
-    val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(inntektsmeldingDao, vedtaksperiodeForkastetDao)
+    val inntektsmeldingStatusDao = InntektsmeldingStatusDao(dataSource)
+    val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(inntektsmeldingDao, vedtaksperiodeForkastetDao, inntektsmeldingStatusDao)
     val mediator = VedtaksperiodeMediator(
         vedtaksperiodeDao = vedtaksperiodeDao,
         vedtakDao = vedtakDao,
@@ -96,8 +100,10 @@ fun launchApplication(env: Environment) {
             UtbetalingUtbetaltRiver(this, utbetalingMediator)
             UtbetalingUtenUtbetalingRiver(this, utbetalingMediator)
             AnnulleringRiver(this, producer, aivenProducer)
-            TrengerInntektsmelding(this, inntektsmeldingStatusMediator)
-            TrengerIkkeInntektsmelding(this, inntektsmeldingStatusMediator)
+            TrengerInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
+            TrengerIkkeInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
+            InntektsmeldingStatusVedtaksperiodeForkastetRiver(this, inntektsmeldingStatusMediator)
+            InntektsmeldingStatusVedtaksperiodeEndretRiver(this, inntektsmeldingStatusMediator)
             VedtaksperiodeForkastet(this, inntektsmeldingStatusMediator)
             start()
         }

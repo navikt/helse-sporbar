@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar.inntektsmelding
 
+import io.mockk.mockk
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -25,11 +26,11 @@ class InntektsmeldingTest {
 
     private val inntektsmeldingDao = InntektsmeldingDao(TestDatabase.dataSource)
     private val vedtaksperiodeForkastetDao = VedtaksperiodeForkastetDao(TestDatabase.dataSource)
-    private val mediator = InntektsmeldingStatusMediator(inntektsmeldingDao, vedtaksperiodeForkastetDao)
+    private val mediator = InntektsmeldingStatusMediator(inntektsmeldingDao, vedtaksperiodeForkastetDao, mockk(relaxed = true))
 
     init {
-        TrengerInntektsmelding(testRapid, mediator)
-        TrengerIkkeInntektsmelding(testRapid, mediator)
+        TrengerInntektsmeldingRiver(testRapid, mediator)
+        TrengerIkkeInntektsmeldingRiver(testRapid, mediator)
     }
 
     @BeforeEach

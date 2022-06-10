@@ -8,11 +8,11 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.asLocalDateTime
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.TRENGER_IKKE_INNTEKTSMELDING
+import no.nav.helse.sporbar.inntektsmelding.Status.TRENGER_IKKE_INNTEKTSMELDING
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-internal class TrengerIkkeInntektsmelding(
+internal class TrengerIkkeInntektsmeldingRiver(
     rapidsConnection: RapidsConnection,
     private val inntektsmeldingStatusMediator: InntektsmeldingStatusMediator
 ) : River.PacketListener {
@@ -36,6 +36,34 @@ internal class TrengerIkkeInntektsmelding(
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         log.info("Trenger ikke inntektsmelding for vedtaksperiode ${packet["vedtaksperiodeId"].asText()}")
         inntektsmeldingStatusMediator.lagre(packet.somInntektsmeldingPakke(status = TRENGER_IKKE_INNTEKTSMELDING))
+        inntektsmeldingStatusMediator.lagre(packet.somHarInntektsmelding())
+    }
+
+    internal companion object {
+        internal fun JsonMessage.somHarInntektsmelding(): HarInntektsmelding {
+            val id = UUID.randomUUID()
+            val hendelseId = UUID.fromString(this["@id"].asText())
+            val fødselsnummer = this["fødselsnummer"].asText()
+            val aktørId = this["aktørId"].asText()
+            val vedtaksperiodeId = UUID.fromString(this["vedtaksperiodeId"].asText())
+            val organisasjonsnummer = this["organisasjonsnummer"].asText()
+            val fom = this["fom"].asLocalDate()
+            val tom = this["tom"].asLocalDate()
+            val opprettet = this["@opprettet"].asLocalDateTime()
+
+            return HarInntektsmelding(
+                id = id,
+                hendelseId = hendelseId,
+                fødselsnummer = fødselsnummer,
+                aktørId = aktørId,
+                organisasjonsnummer = organisasjonsnummer,
+                vedtaksperiodeId = vedtaksperiodeId,
+                fom = fom,
+                tom = tom,
+                opprettet = opprettet,
+                json = this
+            )
+        }
     }
 }
 

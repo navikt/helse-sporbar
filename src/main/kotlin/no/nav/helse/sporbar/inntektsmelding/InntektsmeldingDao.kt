@@ -4,8 +4,8 @@ import java.time.LocalDateTime
 import javax.sql.DataSource
 import kotliquery.queryOf
 import kotliquery.sessionOf
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.TRENGER_IKKE_INNTEKTSMELDING
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatus.TRENGER_INNTEKTSMELDING
+import no.nav.helse.sporbar.inntektsmelding.Status.TRENGER_IKKE_INNTEKTSMELDING
+import no.nav.helse.sporbar.inntektsmelding.Status.TRENGER_INNTEKTSMELDING
 
 class InntektsmeldingDao(private val dataSource: DataSource) {
 

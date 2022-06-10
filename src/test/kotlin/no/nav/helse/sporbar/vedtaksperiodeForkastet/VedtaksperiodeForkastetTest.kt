@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
+import io.mockk.mockk
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -44,7 +45,7 @@ class VedtaksperiodeForkastetTest {
     }
     private val inntektsmeldingDao = InntektsmeldingDao(TestDatabase.dataSource)
     private val vedtaksperiodeForkastetDao = VedtaksperiodeForkastetDao(TestDatabase.dataSource)
-    private val mediator = InntektsmeldingStatusMediator(inntektsmeldingDao, vedtaksperiodeForkastetDao, testProducer)
+    private val mediator = InntektsmeldingStatusMediator(inntektsmeldingDao, vedtaksperiodeForkastetDao, mockk(relaxed = true), testProducer)
 
     init {
         VedtaksperiodeForkastet(testRapid, mediator)

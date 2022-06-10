@@ -7,7 +7,7 @@ import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.asLocalDateTime
 
-internal enum class InntektsmeldingStatus(internal val eksternDto: String) {
+internal enum class Status(internal val eksternDto: String) {
     TRENGER_INNTEKTSMELDING("MANGLER_INNTEKTSMELDING"),
     TRENGER_IKKE_INNTEKTSMELDING("MANGLER_IKKE_INNTEKTSMELDING"),
     FORKASTET("BEHANDLES_UTENFOR_SPLEIS")
@@ -20,14 +20,14 @@ internal class InntektsmeldingPakke(
     val aktørId: String,
     val organisasjonsnummer: String,
     val vedtaksperiodeId: UUID,
-    val status: InntektsmeldingStatus,
+    val status: Status,
     val fom: LocalDate,
     val tom: LocalDate,
     val opprettet: LocalDateTime,
     val json: JsonMessage
 )
 
-internal fun JsonMessage.somInntektsmeldingPakke(status: InntektsmeldingStatus): InntektsmeldingPakke {
+internal fun JsonMessage.somInntektsmeldingPakke(status: Status): InntektsmeldingPakke {
     val id = UUID.randomUUID()
     val hendelseId = UUID.fromString(this["@id"].asText())
     val fødselsnummer = this["fødselsnummer"].asText()

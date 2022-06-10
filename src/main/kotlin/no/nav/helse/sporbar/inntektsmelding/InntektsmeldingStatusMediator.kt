@@ -7,8 +7,12 @@ import org.intellij.lang.annotations.Language
 internal class InntektsmeldingStatusMediator(
     private val inntektsmeldingDao: InntektsmeldingDao,
     private val vedtaksperiodeForkastetDao: VedtaksperiodeForkastetDao,
+    private val inntektsmeldingStatusDao: InntektsmeldingStatusDao,
     private val producer: Producer? = null
 ) {
+    internal fun lagre(inntektsmeldingStatus: InntektsmeldingStatus) {
+        inntektsmeldingStatusDao.lagre(inntektsmeldingStatus)
+    }
 
     internal fun lagre(inntektsmeldingPakke: InntektsmeldingPakke) {
         inntektsmeldingDao.lagre(inntektsmeldingPakke)
