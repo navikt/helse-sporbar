@@ -1,5 +1,9 @@
 package no.nav.helse.sporbar.inntektsmelding
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.networknt.schema.JsonSchemaFactory
+import com.networknt.schema.SpecVersion
+import com.networknt.schema.ValidationMessage
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -9,6 +13,7 @@ import kotliquery.sessionOf
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.helse.sporbar.TestDatabase
+import no.nav.helse.sporbar.objectMapper
 import no.nav.helse.sporbar.uuid
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -22,10 +27,17 @@ internal class InntektsmeldingStatusTest {
     private val testRapid = TestRapid()
     private val inntektsmeldingStatusDao = InntektsmeldingStatusDao(TestDatabase.dataSource)
     private val testProducer = object : Producer {
-        val meldinger = mutableListOf<String>()
+        private val meldinger = mutableListOf<JsonNode>()
         override fun send(key: String, value: String) {
-            meldinger.add(value)
+            val melding = objectMapper.readTree(value)
+            val sykmeldt = melding.path("sykmeldt").asText()
+            check(key == sykmeldt) { "Meldingen skal publiseres med sykmeldt som key. key=$key, sykmeldt=$sykmeldt" }
+            meldinger.add(melding)
         }
+        fun publisertMeldingFor(vedtaksperiodeId: UUID) = meldinger.single { it.path("vedtaksperiode").path("id").asText() == "$vedtaksperiodeId" }
+        fun antallPubliserteMeldinger() = meldinger.size
+        fun ingenPubliserteMeldinger () = meldinger.isEmpty()
+        fun reset() = meldinger.clear()
     }
     private val mediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao, testProducer)
 
@@ -39,7 +51,7 @@ internal class InntektsmeldingStatusTest {
     @BeforeEach
     fun setup() {
         testRapid.reset()
-        testProducer.meldinger.clear()
+        testProducer.reset()
     }
 
     @Test
@@ -91,15 +103,15 @@ internal class InntektsmeldingStatusTest {
         val vedtaksperiodeId = UUID.randomUUID()
         testRapid.sendTestMessage(trengerInntektsmeldingEvent(vedtaksperiodeId))
         mediator.publiser()
-        assertTrue(testProducer.meldinger.isEmpty())
+        assertTrue(testProducer.ingenPubliserteMeldinger())
         manipulerMeldingInnsatt(vedtaksperiodeId, Duration.ofSeconds(59))
         mediator.publiser()
-        assertTrue(testProducer.meldinger.isEmpty())
+        assertTrue(testProducer.ingenPubliserteMeldinger())
         manipulerMeldingInnsatt(vedtaksperiodeId, Duration.ofSeconds(2))
         mediator.publiser()
-        assertEquals(1, testProducer.meldinger.size)
+        assertEquals(1, testProducer.antallPubliserteMeldinger())
         mediator.publiser()
-        assertEquals(1, testProducer.meldinger.size)
+        assertEquals(1, testProducer.antallPubliserteMeldinger())
     }
 
     @Test
@@ -109,9 +121,32 @@ internal class InntektsmeldingStatusTest {
         testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "AVSLUTTET_UTEN_UTBETALING"))
         manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiser()
-        assertEquals(1, testProducer.meldinger.size)
+        assertEquals(1, testProducer.antallPubliserteMeldinger())
         mediator.publiser()
-        assertEquals(1, testProducer.meldinger.size)
+        assertEquals(1, testProducer.antallPubliserteMeldinger())
+    }
+
+    @Test
+    fun `schema på meldinger som sendes ut`() {
+        val vedtaksperiode1 = UUID.randomUUID()
+        testRapid.sendTestMessage(trengerInntektsmeldingEvent(vedtaksperiode1))
+        manipulerMeldingInnsatt(vedtaksperiode1)
+        val vedtaksperiode2 = UUID.randomUUID()
+        testRapid.sendTestMessage(trengerIkkeInntektsmeldingEvent(vedtaksperiode2))
+        manipulerMeldingInnsatt(vedtaksperiode2)
+        val vedtaksperiode3 = UUID.randomUUID()
+        testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiode3, "AVSLUTTET_UTEN_UTBETALING"))
+        manipulerMeldingInnsatt(vedtaksperiode3)
+        val vedtaksperiode4 = UUID.randomUUID()
+        testRapid.sendTestMessage(vedtaksperiodeForkastetEvent(vedtaksperiode4))
+        manipulerMeldingInnsatt(vedtaksperiode4)
+
+        mediator.publiser()
+        assertEquals(4, testProducer.antallPubliserteMeldinger())
+        assertSchema(testProducer.publisertMeldingFor(vedtaksperiode1), "MANGLER_INNTEKTSMELDING")
+        assertSchema(testProducer.publisertMeldingFor(vedtaksperiode2), "HAR_INNTEKTSMELDING")
+        assertSchema(testProducer.publisertMeldingFor(vedtaksperiode3), "TRENGER_IKKE_INNTEKTSMELDING")
+        assertSchema(testProducer.publisertMeldingFor(vedtaksperiode4), "BEHANDLES_UTENFOR_SPLEIS")
     }
 
     private fun status(vedtaksperiodeId: UUID): String? = sessionOf(TestDatabase.dataSource).use { session ->
@@ -183,5 +218,22 @@ internal class InntektsmeldingStatusTest {
                 "tom" to tom
             ).plus(extra)
         ).toJson()
+
+        private val schema by lazy {
+            JsonSchemaFactory
+                .getInstance(SpecVersion.VersionFlag.V7)
+                .getSchema(InntektsmeldingStatusTest::class.java.getResource("/inntektsmelding/im-status-schema-1.0.0.json")!!.toURI())
+        }
+
+        private fun assertSchema(json: JsonNode, status: String) {
+            val valideringsfeil = schema.validate(json)
+            assertEquals(emptySet<ValidationMessage>(), valideringsfeil)
+            assertEquals(status, json.path("status").asText())
+            assertEquals(fom, LocalDate.parse(json.path("vedtaksperiode").path("fom").asText()))
+            assertEquals(tom, LocalDate.parse(json.path("vedtaksperiode").path("tom").asText()))
+            assertEquals(fnr, json.path("sykmeldt").asText())
+            assertEquals(orgnr, json.path("arbeidsgiver").asText())
+            assertEquals(LocalDateTime.parse("$opprettet".dropLast(3)), LocalDateTime.parse(json.path("tidspunkt").asText()))
+        }
     }
 }

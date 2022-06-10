@@ -8,7 +8,7 @@
     "arbeidsgiver",
     "vedtaksperiode",
     "id",
-    "tidsstempel",
+    "tidspunkt",
     "versjon"
   ],
   "type": "object",
@@ -18,7 +18,8 @@
       "type": "string",
       "enum": [
         "MANGLER_INNTEKTSMELDING",
-        "MANGLER_IKKE_INNTEKTSMELDING",
+        "HAR_INNTEKTSMELDING",
+        "TRENGER_IKKE_INNTEKTSMELDING",
         "BEHANDLES_UTENFOR_SPLEIS"
       ]
     },
@@ -55,7 +56,7 @@
       "format": "uuid",
       "description": "identifiserer unikt denne status-oppdateringen"
     },
-    "tidsstempel": {
+    "tidspunkt": {
       "type": "string",
       "format": "date_time",
       "description": "tidspunktet denne meldingen ble laget"
