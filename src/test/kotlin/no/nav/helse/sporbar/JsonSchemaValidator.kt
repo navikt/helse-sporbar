@@ -8,6 +8,7 @@ import com.networknt.schema.ValidationMessage
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusTest
 import no.nav.helse.sporbar.inntektsmelding.Producer.Melding
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.header.Headers
 import org.junit.jupiter.api.Assertions.assertEquals
 
 internal object JsonSchemaValidator {
@@ -29,6 +30,7 @@ internal object JsonSchemaValidator {
     private fun Melding.hentSchema(): Triple<String, Meldingstype, JsonSchema> = when (topic) {
         "tbd.inntektsmeldingstatus" -> Triple("sykmeldt", Meldingstype.Inntektsmeldingstatus, inntektsmeldingstatusSchema)
         "tbd.vedtak" -> Triple("fødselsnummer", Meldingstype.Vedtak, vedtakSchema)
+        "aapen-helse-sporbar" -> Triple("fødselsnummer", Meldingstype.Annullering, annulleringSchema)
         "tbd.utbetaling" -> when (json.path("event").asText()) {
             "utbetaling_annullert" -> Triple("fødselsnummer", Meldingstype.Annullering, annulleringSchema)
             "utbetaling_uten_utbetaling" -> Triple("fødselsnummer", Meldingstype.UtenUtbetaling, utbetalingSchema)
@@ -37,8 +39,12 @@ internal object JsonSchemaValidator {
         else -> throw IllegalStateException("Mangler schema for topic $topic")
     }.let { Triple(json.path(it.first).asText(), it.second, it.third) }
 
+    private fun Melding.udokumentertMelding() = (topic == "aapen-helse-sporbar" && meldingstype != Meldingstype.Annullering).also { if (it) {
+        println("⚠️ Melding $meldingstype på $topic er ikke dokumentert, og blir ikke validert.")
+    }}
+
     internal fun Melding.validertJson(): JsonNode {
-        if (!topic.startsWith("tbd.")) return json
+        if (udokumentertMelding()) return json
         val (forventetFødselsnummer, forventetMeldingstype, schema) = hentSchema()
         assertEquals(forventetFødselsnummer, key) { "Meldinger skal publiseres med fødselsnummer som key. Key=$key, Fødselsnummer=$forventetFødselsnummer" }
         assertEquals(forventetMeldingstype, meldingstype)
@@ -46,9 +52,14 @@ internal object JsonSchemaValidator {
         return json
     }
 
+    private fun Headers.meldingstypeOrNull() =
+        map { it.key() to String(it.value()) }
+        .singleOrNull { it.first == "type" }
+        ?.let { Meldingstype.valueOf(it.second) }
+
     internal fun ProducerRecord<String, JsonNode>.validertJson() = Melding(
         topic = topic(),
-        meldingstype = Meldingstype.valueOf(String(headers().lastHeader("type").value())),
+        meldingstype = headers().meldingstypeOrNull() ?: Meldingstype.Vedtak.also { require(topic() == "tbd.vedtak") },
         key = key(),
         json = value()
     ).validertJson()
