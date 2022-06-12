@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Annullerte utbetalinger",
+  "description": "Utbetalinger som er gjort i Spleis og senere annullert\n\nTopic: tbd.utbetaling\n\nKey: Fødselsnummer\n\nHeader[type]: Annullering",
+  "required": [
+    "event",
+    "utbetalingId",
+    "korrelasjonsId",
+    "organisasjonsnummer",
+    "orgnummer",
+    "tidsstempel",
+    "fødselsnummer",
+    "fom",
+    "tom",
+    "arbeidsgiverFagsystemId",
+    "personFagsystemId"
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event": {
+      "type": "string",
+      "enum": ["utbetaling_annullert"]
+    },
+    "utbetalingId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "korrelasjonsId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "fødselsnummer": {
+      "type": "string"
+    },
+    "organisasjonsnummer": {
+      "type": "string"
+    },
+    "orgnummer": {
+      "type": "string",
+      "description": "Deprecated: Bruk organisasjonsnummer"
+    },
+    "tidsstempel": {
+      "type": "string",
+      "pattern": "^(\\d{4,})-(\\d{2})-(\\d{2})[T](\\d{2}):(\\d{2}):(\\d{2}\\.\\d{3,6})$",
+      "description": "Tidspunkt annulleringen ble gjennomført. Tidsstempel uten sone. Oslo tidspunkt.",
+      "examples": ["2022-06-10T19:06:26.765"]
+    },
+    "fom": {
+      "type": "string",
+      "format": "date"
+    },
+    "tom": {
+      "type": "string",
+      "format": "date"
+    },
+    "arbeidsgiverFagsystemId": {
+      "type": ["string", "null"],
+      "description": "Er satt om det er annullert på arbeidsgiveroppdraget.\n\nMinst en av arbeidsgiverFagsystemId eller arbeidsgiverFagsystemId er satt"
+    },
+    "personFagsystemId": {
+      "type": ["string", "null"],
+      "description": "Er satt om det er annullert på personoppdraget\n\nMinst en av arbeidsgiverFagsystemId eller arbeidsgiverFagsystemId er satt"
+    }
+  }
+}

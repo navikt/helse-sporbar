@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Vedtak som blir fattet i Spleis",
+  "description": "Alle vedtak om sykepenger som blir fattet i Spleis\n\nTopic: tbd.vedtak\n\nKey: Fødselsnummer\n\nHeader[type]: Vedtak",
+  "required": [
+    "fødselsnummer",
+    "aktørId",
+    "organisasjonsnummer",
+    "skjæringstidspunkt",
+    "dokumenter",
+    "inntekt",
+    "sykepengegrunnlag",
+    "grunnlagForSykepengegrunnlag",
+    "fom",
+    "tom",
+    "vedtakFattetTidspunkt",
+    "begrensning",
+    "utbetalingId",
+    "grunnlagForSykepengegrunnlagPerArbeidsgiver"
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "fødselsnummer": {
+      "type": "string"
+    },
+    "aktørId": {
+      "type": "string"
+    },
+    "organisasjonsnummer": {
+      "type": "string"
+    },
+    "fom": {
+      "type": "string",
+      "format": "date"
+    },
+    "tom": {
+      "type": "string",
+      "format": "date"
+    },
+    "skjæringstidspunkt": {
+      "type": "string",
+      "format": "date",
+      "description": "Den første dagen i sykefraværet som går ut over arbeidsgiverperioden. Med andre ord dagen etter siste dag søker var på jobb før gjeldende sykefraværsperiode. Vilkårsprøving og fastsetting av sykepengegrunnlaget tar utgangspunkt i denne dagen."
+    },
+    "inntekt": {
+      "type": "number",
+      "description": "Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren."
+    },
+    "sykepengegrunnlag": {
+      "type": "number",
+      "description": "Inntekten som er lagt til grunn for sykepenger, på årsnivå, begrenset oppad til 6G. Inntekter fra flere arbeidsgivere kan inngå i sykepengegrunnlaget."
+    },
+    "grunnlagForSykepengegrunnlag": {
+      "type": "number",
+      "description": "Den samlede årlige inntekten før evt. begrensning."
+    },
+    "vedtakFattetTidspunkt": {
+      "type": "string",
+      "pattern": "^(\\d{4,})-(\\d{2})-(\\d{2})[T](\\d{2}):(\\d{2}):(\\d{2}\\.\\d{3,6})$",
+      "description": "Tidspunkt for når vedtaket ble fattet. Tidsstempel uten sone. Oslo tidspunkt.",
+      "examples": ["2022-06-10T19:06:26.765"]
+    },
+    "begrensning": {
+      "type": "string",
+      "description": "Om sykepengegrunnlaget er 6G begrenset.",
+      "enum": [
+        "ER_6G_BEGRENSET",
+        "ER_IKKE_6G_BEGRENSET",
+        "VURDERT_I_INFOTRYGD",
+        "VET_IKKE"
+      ]
+    },
+    "dokumenter": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "dokumentId",
+          "type"
+        ],
+        "properties": {
+          "dokumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "format": "string",
+            "enum": [
+              "Sykmelding",
+              "Søknad",
+              "Inntektsmelding"
+            ]
+          }
+        }
+      }
+    },
+    "utbetalingId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Peker på en 'utbetaling', det vil i praksis si en melding på utbetaling-topicen.\n\nOptional da det ikke nødvendigvis er gjort en utbetaling på vedtaket."
+    },
+    "grunnlagForSykepengegrunnlagPerArbeidsgiver": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$" : {
+          "type": "number"
+        }
+      }
+    }
+  }
+}
