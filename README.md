@@ -10,7 +10,7 @@ Data om sykepenger kan konsumeres ved å lese inn en eller begge disse topic-ene
 
 * `tbd.vedtak`
 * `tbd.utbetaling`
-* WIP - `tbd.inntektsmelding`
+* WIP - `tbd.inntektsmeldingstatus`
 
 ### Tilgang
 
@@ -21,120 +21,25 @@ tilgangen.
 Informasjon om sykepenger må eventuelt sammenstilles fra de to topic-ene. Her er en beskrivelse av innholdet i
 meldingene:
 
-#### Meldinger på `tbd.vedtak` inneholder disse feltene:
+### Format på meldingene
 
-| Felt                                        | Forklaring                                                                                                                                                                                                                                        |
-|---------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| fødselsnummer                               |                                                                                                                                                                                                                                                   |
-| aktørId                                     |                                                                                                                                                                                                                                                   |
-| organisasjonsnummer                         |                                                                                                                                                                                                                                                   |
-| fom                                         |                                                                                                                                                                                                                                                   |
-| tom                                         |                                                                                                                                                                                                                                                   |
-| skjæringstidspunkt                          | Den første dagen i sykefraværet som går ut over arbeidsgiverperioden. Med andre ord dagen etter siste dag søker var på jobb før gjeldende sykefraværsperiode. Vilkårsprøving og fastsetting av sykepengegrunnlaget tar utgangspunkt i denne dagen |
-| hendelseIder                                |                                                                                                                                                                                                                                                   |
-| inntekt                                     | Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren (**Eller for det                                                                                                                                         |
-| sykepengegrunnlag                           | Inntekten som er lagt til grunn for sykepenger, på årsnivå, begrenset oppad til 6G. Inntekter fra flere arbeidsgivere kan inngå i sykepengegrunnlaget.                                                                                            |
-| grunnlagForSykepengegrunnlag                | Den samlede årlige inntekten før evt. begrensning                                                                                                                                                                                                 |
-| grunnlagForSykepengegrunnlagPerArbeidsgiver | Et objekt med orgnummer -> årlig inntekt per arbeidsgiver `{"123456789": 500000.0, "987654321": 700000.0}`                                                                                                                                        |
-| begrensning                                 | Om sykepengegrunnlaget er 6G begrenset. En av disse: `ER_6G_BEGRENSET`, `ER_IKKE_6G_BEGRENSET`, `VURDERT_I_INFOTRYGD` og `VET_IKKE`                                                                                                               |
-| utbetalingId                                | Peker på en "utbetaling", det vil i praksis si en melding på utbetaling-topicen.                                                                                                                                                                  |
-| vedtakFattetTidspunkt                       | Tidspunkt for når vedtaket ble fattet.                                                                                                                                                                                                            |
+`OBS:` Om det nylig er gjort endringer på skjemaet kan det ta noen minutter før det oppdaterer seg på linkene ettersom Github cacher `raw`-domenet. Om man laster skjemaet fra commit hash forcer en oppdatert versjon. Tilsvarende kan man gjøre om man faktisk ønsker å se en eldre versjon av meldingen.
 
-#### Meldinger på `tbd.utbetaling` inneholder disse feltene:
+#### tbd.vedtak
 
-| Felt                               | Forklaring                                                               |                                                                    |
-|------------------------------------|--------------------------------------------------------------------------|--------------------------------------------------------------------|
-| event                              | "utbetaling_utbetalt" eller "utbetaling_uten_utbetaling"                 |
-| utbetalingId                       | NB, flere utbetalingId-er kan peke på samme fagsystemId                  |
-| fødselsnummer                      |                                                                          |                                                                    |
-| korrelasjonsId                     |                                                                          |                                                                    |
-| aktørId                            |                                                                          |                                                                    |
-| organisasjonsnummer                |                                                                          |                                                                    |
-| fom                                |                                                                          |                                                                    |
-| tom                                |                                                                          |                                                                    |
-| forbrukteSykedager                 | Hvor mange virkesykedager er forbrukt totalt                             |                                                                    |
-| gjenståendeSykedager               | Hvor mange sykedager det er igjen til maksdato                           |                                                                    |
-| stønadsdager                       |                                                                          |                                                                    |
-| automatiskBehandling               | Ble utbetalingen utført automatisk?                                      |                                                                    |
-| arbeidsgiverOppdrag                | _Se forklaring i egen tabell_                                            |                                                                    |
-| personOppdrag                      | _Se forklaring i egen tabell_                                            |                                                                    |
-| type                               | En av `UTBETALING`, `ETTERUTBETALING`, `ANNULLERING` eller `REVURDERING` |                                                                    |
-| utbetalingsdager                   | En liste av:                                                             |                                                                    |
-|                                    | **Felt**                                                                 | **Forklaring**                                                     |
-|                                    | dato                                                                     |                                                                    |
-|                                    | type                                                                     | _Se forklaring i egen tabell_                                      |
-|                                    | begrunnelse                                                              | Begrunnelse av årsak til avvising, kun inkludert for avviste dager |
-| antallVedtak                       | Antall vedtak som ligger til grunn for utbetalingen.                     |                                                                    |
-| foreløpigBeregnetSluttPåSykepenger | Foreløpig beregnet dato for slutt på sykepenger                          |                                                                    |
+[JSON Schema for vedtak](https://json-schema.app/view/%23?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnavikt%2Fhelse-sporbar%2Fjsonschema%2Fsrc%2Ftest%2Fresources%2Fjson-schema%2Ftbd.vedtak.json)
 
+#### tbd.utbetaling
 
-#### Arbeidsgiver- og Personoppdrag  ser slik ut:
+[JSON Schema for utbetaling](https://json-schema.app/view/%23?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnavikt%2Fhelse-sporbar%2Fjsonschema%2Fsrc%2Ftest%2Fresources%2Fjson-schema%2Ftbd.utbetaling.json)
 
-| Felt              | Forklaring                                                                                   |                                                                                                         |
-|-------------------|----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| mottaker          | Organisasjonsnummer ved refusjon, eller fødselsnummer til mottakeren av utbetalingen         |                                                                                                         |
-| fagområde         | `SP` hvis utbetalingen er til søker, eller `SPREF` hvis det er refusjon til arbeidsgiver     |                                                                                                         |
-| fagsystemId       | ID i oppdragssystemet, for utbetalingsoppdraget. Oppdraget kan deles av flere "utbetalinger" |                                                                                                         |
-| nettoBeløp        | Totalt beløp til utbetaling for hele oppdraget                                               |                                                                                                         |
-| utbetalingslinjer | En liste, der hvert element inneholder følgende felter:                                      |                                                                                                         |
-|                   | **Felt**                                                                                     | **Forklaring**                                                                                          |
-|                   | fom                                                                                          | Fra-dato for denne kombinasjonen av dagsats og grad                                                     |
-|                   | tom                                                                                          | Til-dato                                                                                                |
-|                   | dagsats                                                                                      | Faktisk utbetalingsbeløp per dag, altså etter gradering                                                 |
-|                   | totalbeløp                                                                                   | Utregning av dagsats ganger antall stønadsdager                                                         |
-|                   | grad                                                                                         | Sykdomsgrad per dag                                                                                     |
-|                   | stønadsdager                                                                                 | Antall dager mellom FOM og TOM med utbetaling fra Nav. Helligdager er inkludert, men helgedager er ikke |
+[JSON Schema for annullering](https://json-schema.app/view/%23?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnavikt%2Fhelse-sporbar%2Fjsonschema%2Fsrc%2Ftest%2Fresources%2Fjson-schema%2Ftbd.utbetaling__annullering.json) (gjelder også for annulleringer på `aapen-helse-sporbar`)
 
-OBS: på `aapen-helse-sporbar` inneholdt beløp-feltet "beløp til utbetaling per dag etter gradering", dette beløpet
-ligger nå i dagsats-feltet.
+`OBS:` på `aapen-helse-sporbar` inneholdt beløp-feltet "beløp til utbetaling per dag etter gradering", dette beløpet ligger nå i dagsats-feltet.
 
-#### Dagtypene:
+#### tbd.inntektsmeldingstatus
 
-| Felt                   | Forklaring                                                                      |
-|------------------------|---------------------------------------------------------------------------------|
-| NavDag                 | Utbetalingsdag fra Nav                                                          |
-| NavHelgDag             | Ingen utbetaling grunnet helg, men registrert syk                               |
-| ArbeidsgiverperiodeDag | Beregnet at arbeidsgiver dekker sykepengeutbetaling                             |
-| Arbeidsdag             | Arbeidstaker var på jobb                                                        |
-| Fridag                 | Arbeidstaker hadde fri                                                          |
-| Feriedag               | Arbeidstaker hadde ferie                                                        |
-| Permisjonsdag          | Arbeidstaker hadde permisjon                                                    |
-| AvvistDag              | Arbeidstaker hadde ikke rett til sykepenger                                     |
-| ForeldetDag            | Dagen ligger for langt tilbake i tid til at man kan få sykepenger for den       |
-| UkjentDag              | Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag |
-
-#### Begrunnelser:
-
-| Kode                                  |
-|---------------------------------------|
-| SykepengedagerOppbrukt                |
-| SykepengedagerOppbruktOver67          |
-| MinimumInntekt                        |
-| MinimumInntektOver67                  |
-| EgenmeldingUtenforArbeidsgiverperiode |
-| MinimumSykdomsgrad                    |
-| EtterDødsdato                         |
-| ManglerOpptjening                     |
-| ManglerMedlemskap                     |
-| Over70                                |
-
-#### WIP - Meldinger på `tbd.inntektsmelding` inneholder disse feltene:
-
-Merk at denne tabellen er under arbeid og kan ikke brukes til å implementere noe som helst enda.
-
-| Felt              | Forklaring                                                                                                                                  |
-|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| fnr               | Identifiserer den sykmeldte.                                                                                                                |
-| orgnummer         | Identifiserer arbeidsgiveren for dette syketilfellet. Om en sykmeldt har fler arbeidsgivere, kommer det fler meldinger.                     |
-| vedtaksperioeId   | Identifiserer vedtaksperioden                                                                                                               |
-| fom               | Første dag i perioden vi rapporterer for i denne meldingen. Det er ikke nødvendigvis den første dagen den sykmeldte var fraværende fra jobb |
-| tom               | Siste dag i perioden vi rapporterer for i denne meldingen. Det er ikke nødvendigvis den siste dagen den sykmeldte var fraværende fra jobb   |
-| hendelseId        | UUID som unikt identifiserer denne hendelsen                                                                                                |
-| hendelsetidspunkt | Timestamp (format HER) for når denne meldingen ble produsert                                                                                |
-| hendelse          | INNTEKTSMELDING_MANGLER eller INNTEKTSMELDING_MANGLER_IKKE eller PERIODEN_BEHANDLES_UTENFOR_OSS                                             |
-
-Spør om noe er uklart :-)
-
+[JSON Schema for inntektsmeldingstatus](https://json-schema.app/view/%23?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnavikt%2Fhelse-sporbar%2Fjsonschema%2Fsrc%2Ftest%2Fresources%2Fjson-schema%2Ftbd.inntektsmeldingstatus.json)
 
 ## Oppgradering av gradle wrapper
 Finn nyeste versjon av gradle her: https://gradle.org/releases/
