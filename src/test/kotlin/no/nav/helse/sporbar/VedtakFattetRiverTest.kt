@@ -18,6 +18,7 @@ import org.junit.jupiter.api.TestInstance
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class VedtakFattetRiverTest {
@@ -87,7 +88,7 @@ internal class VedtakFattetRiverTest {
         val vedtakFattet = captureSlot.last()
         assertEquals(FØDSELSNUMMER, vedtakFattet.key())
 
-        val vedtakFattetJson = vedtakFattet.value()
+        val vedtakFattetJson = vedtakFattet.validertJson()
         assertEquals(FØDSELSNUMMER, vedtakFattetJson["fødselsnummer"].textValue())
         assertEquals(AKTØRID, vedtakFattetJson["aktørId"].textValue())
         assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
@@ -121,7 +122,7 @@ internal class VedtakFattetRiverTest {
         val vedtakFattet = captureSlot.last()
         assertEquals(FØDSELSNUMMER, vedtakFattet.key())
 
-        val vedtakFattetJson = vedtakFattet.value()
+        val vedtakFattetJson = vedtakFattet.validertJson()
         assertEquals(FØDSELSNUMMER, vedtakFattetJson["fødselsnummer"].textValue())
         assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
         assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())

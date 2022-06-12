@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 
 class AnnulleringRiverTest {
 
@@ -52,7 +53,7 @@ class AnnulleringRiverTest {
         val annullering = captureSlot.captured
         assertEquals(fødselsnummer, annullering.key())
 
-        val annulleringJson = annullering.value()
+        val annulleringJson = annullering.validertJson()
         assertEquals(fødselsnummer, annulleringJson["fødselsnummer"].textValue())
         assertEquals(organisasjonsnummer, annulleringJson["organisasjonsnummer"].textValue())
         assertEquals(organisasjonsnummer, annulleringJson["orgnummer"].textValue())
@@ -77,7 +78,7 @@ class AnnulleringRiverTest {
         val annullering = captureSlot.captured
         assertEquals(fødselsnummer, annullering.key())
 
-        val annulleringJson = annullering.value()
+        val annulleringJson = annullering.validertJson()
         assertEquals(fødselsnummer, annulleringJson["fødselsnummer"].textValue())
         assertEquals(organisasjonsnummer, annulleringJson["organisasjonsnummer"].textValue())
         assertEquals(organisasjonsnummer, annulleringJson["orgnummer"].textValue())
@@ -102,7 +103,7 @@ class AnnulleringRiverTest {
         val annullering = captureSlot.captured
         assertEquals(fødselsnummer, annullering.key())
 
-        val annulleringJson = annullering.value()
+        val annulleringJson = annullering.validertJson()
         assertEquals(fødselsnummer, annulleringJson["fødselsnummer"].textValue())
         assertEquals(organisasjonsnummer, annulleringJson["organisasjonsnummer"].textValue())
         assertEquals(organisasjonsnummer, annulleringJson["orgnummer"].textValue())

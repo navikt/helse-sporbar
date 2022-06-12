@@ -16,6 +16,7 @@ import org.junit.jupiter.api.TestInstance
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class UtbetalingTest {
@@ -96,8 +97,8 @@ internal class UtbetalingTest {
 
         assertEquals(FØDSELSNUMMER, utbetalingUtbetalt.key())
 
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.value()
-        val vedtakFattetJson = vedtakFattet.value()
+        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
+        val vedtakFattetJson = vedtakFattet.validertJson()
 
         assertEquals(idSett.utbetalingId, utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText())})
         assertEquals(idSett.korrelasjonsId, utbetalingUtbetaltJson["korrelasjonsId"].let { UUID.fromString(it.asText())})
@@ -127,7 +128,7 @@ internal class UtbetalingTest {
         verify { producerMock.send( capture(captureSlot) ) }
 
         val utbetalingUtbetalt = captureSlot.last()
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.value()
+        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
 
         val avvistDag = utbetalingUtbetaltJson.path("utbetalingsdager").toList().last()
             .path("begrunnelser").toList().map { it.asText() }
@@ -144,7 +145,7 @@ internal class UtbetalingTest {
         verify { producerMock.send( capture(captureSlot) ) }
 
         val utbetalingUtbetalt = captureSlot.last()
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.value()
+        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
 
         val antallVedtak = utbetalingUtbetaltJson.path("antallVedtak").asInt()
         assertEquals(2, antallVedtak)
@@ -157,7 +158,7 @@ internal class UtbetalingTest {
         verify { producerMock.send( capture(captureSlot) ) }
 
         val utbetalingUtenUtbetaling = captureSlot.last()
-        val utbetalingUtenUtbetalingJson = utbetalingUtenUtbetaling.value()
+        val utbetalingUtenUtbetalingJson = utbetalingUtenUtbetaling.validertJson()
 
         val antallVedtak = utbetalingUtenUtbetalingJson.path("antallVedtak").asInt()
 
@@ -182,7 +183,7 @@ internal class UtbetalingTest {
 
         val utbetalingUtbetalt = captureSlot.last()
         assertEquals(FØDSELSNUMMER, utbetalingUtbetalt.key())
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.value()
+        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
 
         assertEquals("utbetaling_uten_utbetaling", utbetalingUtbetaltJson["event"].textValue())
     }
@@ -489,11 +490,11 @@ internal class UtbetalingTest {
         },
         {
           "dato": "2021-05-08",
-          "type": "NavHelgeDag"
+          "type": "NavHelgDag"
         },
         {
           "dato": "2021-05-09",
-          "type": "NavHelgeDag"
+          "type": "NavHelgDag"
         },
         {
           "dato": "2021-05-10",

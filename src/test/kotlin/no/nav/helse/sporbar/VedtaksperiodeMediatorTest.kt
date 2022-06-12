@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 import java.util.UUID
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 
 private const val FNR = "fnr"
 private const val ORGNUMMER = "orgnr"
@@ -46,7 +47,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -62,7 +63,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -78,7 +79,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -94,7 +95,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -110,7 +111,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -126,7 +127,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -142,7 +143,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.Ferdigbehandlet,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -158,7 +159,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvsluttetInnenforArbeidsgiverperioden,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -174,7 +175,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.UnderBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -190,7 +191,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -206,7 +207,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerTidligerePeriode,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 
@@ -222,7 +223,7 @@ internal class VedtaksperiodeMediatorTest {
 
         assertEquals(
             VedtaksperiodeDto.TilstandDto.ManuellBehandling,
-            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.value()["tilstand"].asText())
+            VedtaksperiodeDto.TilstandDto.valueOf(slot.captured.validertJson()["tilstand"].asText())
         )
     }
 

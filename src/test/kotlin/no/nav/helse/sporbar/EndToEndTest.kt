@@ -17,6 +17,7 @@ import org.junit.jupiter.api.TestInstance
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.*
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import kotlin.streams.asSequence
 
 private const val FNR = "12020052345"
@@ -59,7 +60,7 @@ internal class EndToEndTest {
         sykmeldingSendt()
 
         verify(exactly = 1) { producer.send(capture(slot)) }
-        val vedtaksperiodeDto = slot.last().value()
+        val vedtaksperiodeDto = slot.last().validertJson()
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
             VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto["tilstand"].asText())
@@ -75,7 +76,7 @@ internal class EndToEndTest {
         søknadSendt()
 
         verify { producer.send(capture(slot)) }
-        val vedtaksperiodeDto = slot.last().value()
+        val vedtaksperiodeDto = slot.last().validertJson()
         assertEquals(
             VedtaksperiodeDto.TilstandDto.AvventerDokumentasjon,
             VedtaksperiodeDto.TilstandDto.valueOf(vedtaksperiodeDto["tilstand"].asText())
@@ -96,7 +97,7 @@ internal class EndToEndTest {
         verify { producer.send(capture(captures)) }
         val vedtakMelding = captures.find {
             Meldingstype.Vedtak.name.toByteArray().contentEquals(it.headers().lastHeader("type").value())
-        }!!.value()
+        }!!.validertJson()
 
         assertEquals(3, vedtakMelding["dokumenter"].size())
         assertEquals(ORGNUMMER, vedtakMelding["organisasjonsnummer"].asText())
@@ -114,7 +115,7 @@ internal class EndToEndTest {
         utbetalt(automatiskBehandling = true)
 
         verify(exactly = 5) { producer.send(capture(slot)) }
-        assertTrue(slot.last().value()["automatiskBehandling"].asBoolean())
+        assertTrue(slot.last().validertJson()["automatiskBehandling"].asBoolean())
     }
 
     @Test
@@ -129,7 +130,7 @@ internal class EndToEndTest {
         utbetalt(idSett1)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.last().value()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+        assertTrue(slot.last().validertJson()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett1.søknadDokumentId))
 
         sykmeldingSendt(idSett2)
@@ -137,7 +138,7 @@ internal class EndToEndTest {
         utbetalt(idSett2)
 
         verify { producer.send(capture(slot)) }
-        assertTrue(slot.last().value()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+        assertTrue(slot.last().validertJson()["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett2.søknadDokumentId))
     }
 
@@ -164,7 +165,7 @@ internal class EndToEndTest {
         )
 
         verify { producer.send(capture(slot)) }
-        assertEquals(5, slot.last().value()["dokumenter"].size())
+        assertEquals(5, slot.last().validertJson()["dokumenter"].size())
     }
 
     private fun sykmeldingSendt(
