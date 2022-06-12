@@ -1,9 +1,6 @@
 package no.nav.helse.sporbar.inntektsmelding
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.networknt.schema.JsonSchemaFactory
-import com.networknt.schema.SpecVersion
-import com.networknt.schema.ValidationMessage
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -12,8 +9,9 @@ import kotliquery.queryOf
 import kotliquery.sessionOf
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import no.nav.helse.sporbar.TestDatabase
-import no.nav.helse.sporbar.objectMapper
+import no.nav.helse.sporbar.inntektsmelding.Producer.Melding
 import no.nav.helse.sporbar.uuid
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,18 +25,18 @@ internal class InntektsmeldingStatusTest {
     private val testRapid = TestRapid()
     private val inntektsmeldingStatusDao = InntektsmeldingStatusDao(TestDatabase.dataSource)
     private val testProducer = object : Producer {
-        private val meldinger = mutableListOf<JsonNode>()
-        override fun send(key: String, value: String) {
-            val melding = objectMapper.readTree(value)
-            val sykmeldt = melding.path("sykmeldt").asText()
-            check(key == sykmeldt) { "Meldingen skal publiseres med sykmeldt som key. key=$key, sykmeldt=$sykmeldt" }
+        private val meldinger = mutableListOf<Melding>()
+        override fun send(melding: Melding) {
             meldinger.add(melding)
         }
-        fun publisertMeldingFor(vedtaksperiodeId: UUID) = meldinger.single { it.path("vedtaksperiode").path("id").asText() == "$vedtaksperiodeId" }
+        fun publisertMeldingFor(vedtaksperiodeId: UUID) = meldinger.single {
+            it.json.path("vedtaksperiode").path("id").asText() == "$vedtaksperiodeId"
+        }.validertJson()
         fun antallPubliserteMeldinger() = meldinger.size
         fun ingenPubliserteMeldinger () = meldinger.isEmpty()
         fun reset() = meldinger.clear()
     }
+
     private val mediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao, testProducer)
 
     init {
@@ -143,10 +141,10 @@ internal class InntektsmeldingStatusTest {
 
         mediator.publiser()
         assertEquals(4, testProducer.antallPubliserteMeldinger())
-        assertSchema(testProducer.publisertMeldingFor(vedtaksperiode1), "MANGLER_INNTEKTSMELDING")
-        assertSchema(testProducer.publisertMeldingFor(vedtaksperiode2), "HAR_INNTEKTSMELDING")
-        assertSchema(testProducer.publisertMeldingFor(vedtaksperiode3), "TRENGER_IKKE_INNTEKTSMELDING")
-        assertSchema(testProducer.publisertMeldingFor(vedtaksperiode4), "BEHANDLES_UTENFOR_SPLEIS")
+        assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode1), "MANGLER_INNTEKTSMELDING")
+        assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode2), "HAR_INNTEKTSMELDING")
+        assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode3), "TRENGER_IKKE_INNTEKTSMELDING")
+        assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode4), "BEHANDLES_UTENFOR_SPLEIS")
     }
 
     private fun status(vedtaksperiodeId: UUID): String? = sessionOf(TestDatabase.dataSource).use { session ->
@@ -219,15 +217,7 @@ internal class InntektsmeldingStatusTest {
             ).plus(extra)
         ).toJson()
 
-        private val schema by lazy {
-            JsonSchemaFactory
-                .getInstance(SpecVersion.VersionFlag.V7)
-                .getSchema(InntektsmeldingStatusTest::class.java.getResource("/inntektsmelding/im-status-schema-1.0.0.json")!!.toURI())
-        }
-
-        private fun assertSchema(json: JsonNode, status: String) {
-            val valideringsfeil = schema.validate(json)
-            assertEquals(emptySet<ValidationMessage>(), valideringsfeil)
+        private fun assertMeldingsinnhold(json: JsonNode, status: String) {
             assertEquals(status, json.path("status").asText())
             assertEquals(fom, LocalDate.parse(json.path("vedtaksperiode").path("fom").asText()))
             assertEquals(tom, LocalDate.parse(json.path("vedtaksperiode").path("tom").asText()))
