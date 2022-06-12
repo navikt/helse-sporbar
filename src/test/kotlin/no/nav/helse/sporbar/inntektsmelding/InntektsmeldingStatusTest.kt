@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
 import java.util.UUID
 import kotliquery.queryOf
 import kotliquery.sessionOf
@@ -223,7 +226,9 @@ internal class InntektsmeldingStatusTest {
             assertEquals(tom, LocalDate.parse(json.path("vedtaksperiode").path("tom").asText()))
             assertEquals(fnr, json.path("sykmeldt").asText())
             assertEquals(orgnr, json.path("arbeidsgiver").asText())
-            assertEquals(opprettet, LocalDateTime.parse(json.path("tidspunkt").asText()))
+            val tidspunkt = json.path("tidspunkt").asText()
+            assertEquals(opprettet, ZonedDateTime.parse(tidspunkt).toLocalDateTime())
+            assertEquals(ISO_OFFSET_DATE_TIME.format(ZonedDateTime.of(opprettet, ZoneId.of("Europe/Oslo"))), tidspunkt)
         }
     }
 }

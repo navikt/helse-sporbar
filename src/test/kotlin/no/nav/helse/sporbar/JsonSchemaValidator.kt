@@ -26,7 +26,7 @@ internal object JsonSchemaValidator {
     internal fun Melding.validertJson(): JsonNode {
         if (!topic.startsWith("tbd.")) return json
         val (fødselsnummerKey, schema) = when (topic) {
-            "tbd.inntektsmelding-status" -> "sykmeldt" to inntektsmeldingstatusSchema
+            "tbd.inntektsmeldingstatus" -> "sykmeldt" to inntektsmeldingstatusSchema
             else -> throw IllegalStateException("Mangler schema for topic $topic")
         }
         assertEquals(json.path(fødselsnummerKey).asText(), key) { "Meldinger skal publiseres med fødselsnummer som key." }
@@ -39,5 +39,5 @@ internal object JsonSchemaValidator {
         meldingstype = Meldingstype.valueOf(String(headers().lastHeader("type").value())),
         key = key(),
         json = value()
-    )
+    ).validertJson()
 }

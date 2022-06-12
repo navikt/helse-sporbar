@@ -28,7 +28,7 @@ internal class InntektsmeldingStatusMediator(
         statuser.forEach { status ->
             val json = objectMapper.valueToTree<JsonNode>(status)
             producer?.send(Melding(
-                topic = "tbd.inntektsmelding-status",
+                topic = "tbd.inntektsmeldingstatus",
                 meldingstype = Meldingstype.Inntektsmeldingstatus,
                 key = status.sykmeldt,
                 json = json

@@ -2,6 +2,7 @@ package no.nav.helse.sporbar.inntektsmelding
 
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.UUID
 import no.nav.helse.rapids_rivers.JsonMessage
 
@@ -75,7 +76,7 @@ internal data class InntektsmeldingStatusForEksternDto(
     val sykmeldt: String,
     val arbeidsgiver: String,
     val vedtaksperiode: VedtaksperiodeForEksternDto,
-    val tidspunkt: LocalDateTime,
+    val tidspunkt: ZonedDateTime,
     val status: String
 ) {
     val versjon = "1.0.0"

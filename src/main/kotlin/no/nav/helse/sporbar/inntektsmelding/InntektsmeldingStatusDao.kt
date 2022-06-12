@@ -2,6 +2,8 @@ package no.nav.helse.sporbar.inntektsmelding
 
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import javax.sql.DataSource
 import kotliquery.queryOf
 import kotliquery.sessionOf
@@ -31,7 +33,7 @@ internal class InntektsmeldingStatusDao(
                     sykmeldt = row.string("fodselsnummer"),
                     arbeidsgiver = row.string("orgnummer"),
                     status = row.string("status"),
-                    tidspunkt = row.localDateTime("hendelse_opprettet")
+                    tidspunkt = ZonedDateTime.of(row.localDateTime("hendelse_opprettet"), ZoneId.of("Europe/Oslo"))
                 )
             }.asList)
         }
