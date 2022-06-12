@@ -1,0 +1,232 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Utbetalinger som blir gjort i Spleis",
+  "description": "Utbetalinger som er gjort i Spleis\n\nTopic: tbd.utbetaling\n\nKey: Fødselsnummer\n\nHeader[type]: Utbetaling/UtenUtbetaling",
+  "required": [
+    "event",
+    "utbetalingId",
+    "korrelasjonsId",
+    "fødselsnummer",
+    "aktørId",
+    "organisasjonsnummer",
+    "tom",
+    "fom",
+    "forbrukteSykedager",
+    "gjenståendeSykedager",
+    "stønadsdager",
+    "automatiskBehandling",
+    "type",
+    "foreløpigBeregnetSluttPåSykepenger",
+    "utbetalingsdager"
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event": {
+      "type": "string",
+      "enum": [
+        "utbetaling_utbetalt",
+        "utbetaling_uten_utbetaling"
+      ]
+    },
+    "utbetalingId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "NB, flere utbetalingId-er kan peke på samme fagsystemId."
+    },
+    "korrelasjonsId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "fødselsnummer": {
+      "type": "string"
+    },
+    "aktørId": {
+      "type": "string"
+    },
+    "organisasjonsnummer": {
+      "type": "string"
+    },
+    "fom": {
+      "type": "string",
+      "format": "date"
+    },
+    "tom": {
+      "type": "string",
+      "format": "date"
+    },
+    "forbrukteSykedager": {
+      "type": "integer",
+      "description": "Hvor mange virkesykedager er forbrukt totalt."
+    },
+    "gjenståendeSykedager": {
+      "type": "integer",
+      "description": "Hvor mange sykedager det er igjen til maksdato."
+    },
+    "stønadsdager": {
+      "type": "integer"
+    },
+    "automatiskBehandling": {
+      "type": "boolean",
+      "description": "Ble utbetalingen utført automatisk?"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "UTBETALING",
+        "ETTERUTBETALING",
+        "ANNULLERING",
+        "REVURDERING"
+      ]
+    },
+    "antallVedtak": {
+      "type": ["integer", "null"],
+      "description": "Antall vedtak som ligger til grunn for utbetalingen."
+    },
+    "foreløpigBeregnetSluttPåSykepenger": {
+      "type": "string",
+      "format": "date"
+    },
+    "utbetalingsdager": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dato",
+          "type",
+          "begrunnelser"
+        ],
+        "properties": {
+          "dato": {
+            "type": "string",
+            "format": "date"
+          },
+          "begrunnelser": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "SykepengedagerOppbrukt",
+                "SykepengedagerOppbruktOver67",
+                "MinimumInntekt",
+                "MinimumInntektOver67",
+                "EgenmeldingUtenforArbeidsgiverperiode",
+                "MinimumSykdomsgrad",
+                "EtterDødsdato",
+                "ManglerOpptjening",
+                "ManglerMedlemskap",
+                "Over70"
+              ]
+            }
+          },
+          "type": {
+            "type": "string",
+            "description": "AvvistDag: Vil ha innhold i begrunnelser for hvorfor den er avvist\n\nUkjentDag: Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag",
+            "enum": [
+              "NavDag",
+              "NavHelgDag",
+              "ArbeidsgiverperiodeDag",
+              "Arbeidsdag",
+              "Fridag",
+              "Feriedag",
+              "Permisjonsdag",
+              "AvvistDag",
+              "ForeldetDag",
+              "UkjentDag"
+            ]
+          }
+        }
+      }
+    },
+    "arbeidsgiverOppdrag": {
+      "$ref": "#/definitions/oppdrag"
+    },
+    "personOppdrag": {
+      "$ref": "#/definitions/oppdrag"
+    }
+  },
+  "definitions": {
+    "utbetalingslinje": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fom",
+        "tom",
+        "dagsats",
+        "totalbeløp",
+        "grad",
+        "stønadsdager"
+      ],
+      "properties": {
+        "fom": {
+          "type": "string",
+          "format": "date"
+        },
+        "tom": {
+          "type": "string",
+          "format": "date"
+        },
+        "dagsats": {
+          "type": "integer"
+        },
+        "totalbeløp": {
+          "type": "integer"
+        },
+        "grad": {
+          "type": "number"
+        },
+        "stønadsdager": {
+          "type": "integer"
+        }
+      }
+    },
+    "oppdrag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mottaker",
+        "fagområde",
+        "fagsystemId",
+        "nettoBeløp",
+        "stønadsdager",
+        "fom",
+        "tom",
+        "utbetalingslinjer"
+      ],
+      "properties": {
+        "mottaker": {
+          "type": "string"
+        },
+        "fagområde": {
+          "type": "string",
+          "description": "SPREF for refusjon til arbeidsgiver\n\nSP for utbetaling til sykmeldt",
+          "enum": ["SPREF", "SP"]
+        },
+        "fagsystemId": {
+          "type": "string"
+        },
+        "nettoBeløp": {
+          "type": "integer"
+        },
+        "stønadsdager": {
+          "type": "integer"
+        },
+        "fom": {
+          "type": "string",
+          "format": "date"
+        },
+        "tom": {
+          "type": "string",
+          "format": "date"
+        },
+        "utbetalingslinjer": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/utbetalingslinje"
+          }
+        }
+      }
+    }
+  }
+}
