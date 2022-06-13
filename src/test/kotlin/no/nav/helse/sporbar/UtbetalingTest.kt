@@ -631,7 +631,7 @@ internal class UtbetalingTest {
   },
   "personOppdrag": {
     "mottaker": "123456789",
-    "fagområde": "SPREF",
+    "fagområde": "SP",
     "linjer": [],
     "fagsystemId": "123",
     "endringskode": "NY",

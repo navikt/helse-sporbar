@@ -24,20 +24,24 @@
     },
     "utbetalingId": {
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "examples": ["446eca54-befd-4851-acc3-ec300a20932a"]
     },
     "korrelasjonsId": {
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "examples": ["a43696c7-e824-4140-b8a7-348efe7128cc"]
     },
     "fødselsnummer": {
       "type": "string"
     },
     "organisasjonsnummer": {
-      "type": "string"
+      "type": "string",
+      "examples": ["999263550"]
     },
     "orgnummer": {
       "type": "string",
+      "examples": ["999263550"],
       "description": "Deprecated: Bruk organisasjonsnummer"
     },
     "tidsstempel": {
@@ -48,18 +52,22 @@
     },
     "fom": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "examples": ["2018-01-01"]
     },
     "tom": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "examples": ["2018-01-31"]
     },
     "arbeidsgiverFagsystemId": {
       "type": ["string", "null"],
+      "examples": ["XI2MMEZAJZBVJL2E4K7UM4BQBY"],
       "description": "Er satt om det er annullert på arbeidsgiveroppdraget.\n\nMinst en av arbeidsgiverFagsystemId eller arbeidsgiverFagsystemId er satt"
     },
     "personFagsystemId": {
       "type": ["string", "null"],
+      "examples": ["L52NYV4KE5BEPILU4L2ERGAVYU"],
       "description": "Er satt om det er annullert på personoppdraget\n\nMinst en av arbeidsgiverFagsystemId eller arbeidsgiverFagsystemId er satt"
     }
   }

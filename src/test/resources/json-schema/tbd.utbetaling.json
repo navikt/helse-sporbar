@@ -32,11 +32,13 @@
     "utbetalingId": {
       "type": "string",
       "format": "uuid",
+      "examples": ["446eca54-befd-4851-acc3-ec300a20932a"],
       "description": "NB, flere utbetalingId-er kan peke på samme fagsystemId."
     },
     "korrelasjonsId": {
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "examples": ["a43696c7-e824-4140-b8a7-348efe7128cc"]
     },
     "fødselsnummer": {
       "type": "string"
@@ -45,26 +47,32 @@
       "type": "string"
     },
     "organisasjonsnummer": {
-      "type": "string"
+      "type": "string",
+      "examples": ["999263550"]
     },
     "fom": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "examples": ["2018-01-01"]
     },
     "tom": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "examples": ["2018-01-31"]
     },
     "forbrukteSykedager": {
       "type": "integer",
-      "description": "Hvor mange virkesykedager er forbrukt totalt."
+      "description": "Hvor mange virkesykedager er forbrukt totalt.",
+      "examples": [70]
     },
     "gjenståendeSykedager": {
       "type": "integer",
-      "description": "Hvor mange sykedager det er igjen til maksdato."
+      "description": "Hvor mange sykedager det er igjen til maksdato.",
+      "examples": [178]
     },
     "stønadsdager": {
-      "type": "integer"
+      "type": "integer",
+      "examples": [70]
     },
     "automatiskBehandling": {
       "type": "boolean",
@@ -81,11 +89,13 @@
     },
     "antallVedtak": {
       "type": ["integer", "null"],
-      "description": "Antall vedtak som ligger til grunn for utbetalingen."
+      "description": "Antall vedtak som ligger til grunn for utbetalingen.",
+      "examples": [1]
     },
     "foreløpigBeregnetSluttPåSykepenger": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "examples": ["2018-12-31"]
     },
     "utbetalingsdager": {
       "type": "array",
@@ -100,7 +110,8 @@
         "properties": {
           "dato": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "examples": ["2018-01-01"]
           },
           "begrunnelser": {
             "type": "array",
@@ -124,14 +135,14 @@
             "type": "string",
             "description": "AvvistDag: Vil ha innhold i begrunnelser for hvorfor den er avvist\n\nUkjentDag: Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag",
             "enum": [
-              "NavDag",
+              "AvvistDag",
               "NavHelgDag",
               "ArbeidsgiverperiodeDag",
               "Arbeidsdag",
               "Fridag",
               "Feriedag",
               "Permisjonsdag",
-              "AvvistDag",
+              "NavDag",
               "ForeldetDag",
               "UkjentDag"
             ]
@@ -140,10 +151,108 @@
       }
     },
     "arbeidsgiverOppdrag": {
-      "$ref": "#/definitions/oppdrag"
+      "type": ["object","null"],
+      "additionalProperties": false,
+      "required": [
+        "mottaker",
+        "fagområde",
+        "fagsystemId",
+        "nettoBeløp",
+        "stønadsdager",
+        "fom",
+        "tom",
+        "utbetalingslinjer"
+      ],
+      "properties": {
+        "mottaker": {
+          "type": "string",
+          "description": "Arbeidsgiver."
+        },
+        "fagområde": {
+          "type": "string",
+          "enum": ["SPREF"]
+        },
+        "fagsystemId": {
+          "type": "string",
+          "examples": ["XI2MMEZAJZBVJL2E4K7UM4BQBY"]
+        },
+        "nettoBeløp": {
+          "type": "integer",
+          "examples": [7155]
+        },
+        "stønadsdager": {
+          "type": "integer",
+          "examples": [20]
+        },
+        "fom": {
+          "type": "string",
+          "format": "date",
+          "examples": ["2018-01-01"]
+        },
+        "tom": {
+          "type": "string",
+          "format": "date",
+          "examples": ["2018-01-31"]
+        },
+        "utbetalingslinjer": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/utbetalingslinje"
+          }
+        }
+      }
     },
     "personOppdrag": {
-      "$ref": "#/definitions/oppdrag"
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "mottaker",
+        "fagområde",
+        "fagsystemId",
+        "nettoBeløp",
+        "stønadsdager",
+        "fom",
+        "tom",
+        "utbetalingslinjer"
+      ],
+      "properties": {
+        "mottaker": {
+          "type": "string",
+          "description": "Sykmeldt."
+        },
+        "fagområde": {
+          "type": "string",
+          "enum": ["SP"]
+        },
+        "fagsystemId": {
+          "type": "string",
+          "examples": ["L52NYV4KE5BEPILU4L2ERGAVYU"]
+        },
+        "nettoBeløp": {
+          "type": "integer",
+          "examples": [7155]
+        },
+        "stønadsdager": {
+          "type": "integer",
+          "examples": [20]
+        },
+        "fom": {
+          "type": "string",
+          "format": "date",
+          "examples": ["2018-01-01"]
+        },
+        "tom": {
+          "type": "string",
+          "format": "date",
+          "examples": ["2018-01-31"]
+        },
+        "utbetalingslinjer": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/utbetalingslinje"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -161,70 +270,29 @@
       "properties": {
         "fom": {
           "type": "string",
-          "format": "date"
+          "format": "date",
+          "examples": ["2018-01-01"]
         },
         "tom": {
           "type": "string",
-          "format": "date"
+          "format": "date",
+          "examples": ["2018-01-31"]
         },
         "dagsats": {
-          "type": "integer"
+          "type": "integer",
+          "examples": [1431]
         },
         "totalbeløp": {
-          "type": "integer"
+          "type": "integer",
+          "examples": [14310]
         },
         "grad": {
-          "type": "number"
+          "type": "number",
+          "examples": [50.5]
         },
         "stønadsdager": {
-          "type": "integer"
-        }
-      }
-    },
-    "oppdrag": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "mottaker",
-        "fagområde",
-        "fagsystemId",
-        "nettoBeløp",
-        "stønadsdager",
-        "fom",
-        "tom",
-        "utbetalingslinjer"
-      ],
-      "properties": {
-        "mottaker": {
-          "type": "string"
-        },
-        "fagområde": {
-          "type": "string",
-          "description": "SPREF for refusjon til arbeidsgiver\n\nSP for utbetaling til sykmeldt",
-          "enum": ["SPREF", "SP"]
-        },
-        "fagsystemId": {
-          "type": "string"
-        },
-        "nettoBeløp": {
-          "type": "integer"
-        },
-        "stønadsdager": {
-          "type": "integer"
-        },
-        "fom": {
-          "type": "string",
-          "format": "date"
-        },
-        "tom": {
-          "type": "string",
-          "format": "date"
-        },
-        "utbetalingslinjer": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/utbetalingslinje"
-          }
+          "type": "integer",
+          "examples": [20]
         }
       }
     }

@@ -28,31 +28,38 @@
       "type": "string"
     },
     "organisasjonsnummer": {
-      "type": "string"
+      "type": "string",
+      "examples": ["999263550"]
     },
     "fom": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "examples": ["2018-01-01"]
     },
     "tom": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "examples": ["2018-01-31"]
     },
     "skjæringstidspunkt": {
       "type": "string",
       "format": "date",
+      "examples": ["2018-01-01"],
       "description": "Den første dagen i sykefraværet som går ut over arbeidsgiverperioden. Med andre ord dagen etter siste dag søker var på jobb før gjeldende sykefraværsperiode. Vilkårsprøving og fastsetting av sykepengegrunnlaget tar utgangspunkt i denne dagen."
     },
     "inntekt": {
       "type": "number",
+      "examples": [28620.55],
       "description": "Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren."
     },
     "sykepengegrunnlag": {
       "type": "number",
+      "examples": [343446.60],
       "description": "Inntekten som er lagt til grunn for sykepenger, på årsnivå, begrenset oppad til 6G. Inntekter fra flere arbeidsgivere kan inngå i sykepengegrunnlaget."
     },
     "grunnlagForSykepengegrunnlag": {
       "type": "number",
+      "examples": [343446.60],
       "description": "Den samlede årlige inntekten før evt. begrensning."
     },
     "vedtakFattetTidspunkt": {
@@ -82,7 +89,8 @@
         "properties": {
           "dokumentId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "examples": ["874ac40a-7a9d-4248-aea1-8957148c8506"]
           },
           "type": {
             "format": "string",
@@ -98,15 +106,21 @@
     "utbetalingId": {
       "type": ["string", "null"],
       "format": "uuid",
+      "examples": ["446eca54-befd-4851-acc3-ec300a20932a"],
       "description": "Peker på en 'utbetaling', det vil i praksis si en melding på utbetaling-topicen.\n\nOptional da det ikke nødvendigvis er gjort en utbetaling på vedtaket."
     },
     "grunnlagForSykepengegrunnlagPerArbeidsgiver": {
       "type": "object",
+      "description": "Grunnlag per arbeidsgiver hvor arbeidsgiver er nøkkel og beløpet er value i mapet.",
       "patternProperties": {
         "^.*$" : {
           "type": "number"
         }
-      }
+      },
+      "examples": [{
+        "999263550": 161723.30,
+        "974652269": 181723.30
+      }]
     }
   }
 }
