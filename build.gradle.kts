@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 
 val mainClass = "no.nav.helse.sporbar.AppKt"
 val jvmTarget = "17"
@@ -72,6 +73,10 @@ tasks {
         useJUnitPlatform()
         testLogging {
             events("skipped", "failed")
+            exceptionFormat = FULL
+            showExceptions = true
+            showCauses = true
+            showStackTraces = true
         }
     }
 
