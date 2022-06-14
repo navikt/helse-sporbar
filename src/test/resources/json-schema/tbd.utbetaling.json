@@ -16,8 +16,11 @@
     "stønadsdager",
     "automatiskBehandling",
     "type",
+    "antallVedtak",
     "foreløpigBeregnetSluttPåSykepenger",
-    "utbetalingsdager"
+    "utbetalingsdager",
+    "personOppdrag",
+    "arbeidsgiverOppdrag"
   ],
   "type": "object",
   "additionalProperties": false,
@@ -151,8 +154,9 @@
       }
     },
     "arbeidsgiverOppdrag": {
-      "type": ["object","null"],
+      "type": ["object", "null"],
       "additionalProperties": false,
+      "description": "Optional. Oppdraget som gjelder utbetaling til arbeidsgiver.",
       "required": [
         "mottaker",
         "fagområde",
@@ -166,7 +170,8 @@
       "properties": {
         "mottaker": {
           "type": "string",
-          "description": "Arbeidsgiver."
+          "description": "Arbeidsgiver",
+          "examples": ["999263550"]
         },
         "fagområde": {
           "type": "string",
@@ -205,6 +210,7 @@
     "personOppdrag": {
       "type": ["object", "null"],
       "additionalProperties": false,
+      "description": "Optional. Oppdraget som gjelder utbetaling til sykmeldt.",
       "required": [
         "mottaker",
         "fagområde",
@@ -218,7 +224,7 @@
       "properties": {
         "mottaker": {
           "type": "string",
-          "description": "Sykmeldt."
+          "description": "Sykmeldt"
         },
         "fagområde": {
           "type": "string",
