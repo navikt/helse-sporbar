@@ -17,6 +17,7 @@ import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusDao
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusMediator
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeEndretRiver
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeForkastetRiver
+import no.nav.helse.sporbar.inntektsmelding.Kafka
 import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmeldingRiver
 import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmeldingRiver
 import org.apache.kafka.clients.CommonClientConfigs
@@ -60,7 +61,10 @@ fun launchApplication(env: Environment) {
     val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
     val vedtakDao = VedtakDao(dataSource)
     val inntektsmeldingStatusDao = InntektsmeldingStatusDao(dataSource)
-    val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao)
+    val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(
+        inntektsmeldingStatusDao = inntektsmeldingStatusDao,
+        producer = Kafka(aivenProducer)
+    )
     val mediator = VedtaksperiodeMediator(
         vedtaksperiodeDao = vedtaksperiodeDao,
         vedtakDao = vedtakDao,

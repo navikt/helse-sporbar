@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 
 internal class InntektsmeldingStatusMediator(
     private val inntektsmeldingStatusDao: InntektsmeldingStatusDao,
-    private val producer: Producer? = null,
+    private val producer: Producer,
     private val statusTimeout: Duration = Duration.ofMinutes(1)
 ) {
     init {
@@ -27,7 +27,7 @@ internal class InntektsmeldingStatusMediator(
         sikkerLogg.info("Publiserer ${statuser.size} inntektsmeldingstatuser.")
         statuser.forEach { status ->
             val json = objectMapper.valueToTree<JsonNode>(status)
-            producer?.send(Melding(
+            producer.send(Melding(
                 topic = "tbd.inntektsmeldingstatus",
                 meldingstype = Meldingstype.Inntektsmeldingstatus,
                 key = status.sykmeldt,
