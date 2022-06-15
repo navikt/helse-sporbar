@@ -41,6 +41,7 @@ internal class InntektsmeldingStatusTest {
     }
 
     private val mediator = InntektsmeldingStatusMediator(inntektsmeldingStatusDao, testProducer)
+    private fun InntektsmeldingStatusMediator.publiserMedEttMinuttStatustimeout() = publiser(Duration.ofMinutes(1))
 
     init {
         TrengerInntektsmeldingRiver(testRapid, mediator)
@@ -103,15 +104,15 @@ internal class InntektsmeldingStatusTest {
     fun `publiserer først melding når status har vært gjeldende i ett minutt`() {
         val vedtaksperiodeId = UUID.randomUUID()
         testRapid.sendTestMessage(trengerInntektsmeldingEvent(vedtaksperiodeId))
-        mediator.publiser()
+        mediator.publiserMedEttMinuttStatustimeout()
         assertTrue(testProducer.ingenPubliserteMeldinger())
         manipulerMeldingInnsatt(vedtaksperiodeId, Duration.ofSeconds(59))
-        mediator.publiser()
+        mediator.publiserMedEttMinuttStatustimeout()
         assertTrue(testProducer.ingenPubliserteMeldinger())
         manipulerMeldingInnsatt(vedtaksperiodeId, Duration.ofSeconds(2))
-        mediator.publiser()
+        mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
-        mediator.publiser()
+        mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
     }
 
@@ -121,9 +122,9 @@ internal class InntektsmeldingStatusTest {
         testRapid.sendTestMessage(trengerIkkeInntektsmeldingEvent(vedtaksperiodeId))
         testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "AVSLUTTET_UTEN_UTBETALING"))
         manipulerMeldingInnsatt(vedtaksperiodeId)
-        mediator.publiser()
+        mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
-        mediator.publiser()
+        mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
     }
 
@@ -142,7 +143,7 @@ internal class InntektsmeldingStatusTest {
         testRapid.sendTestMessage(vedtaksperiodeForkastetEvent(vedtaksperiode4))
         manipulerMeldingInnsatt(vedtaksperiode4)
 
-        mediator.publiser()
+        mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(4, testProducer.antallPubliserteMeldinger())
         assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode1), "MANGLER_INNTEKTSMELDING")
         assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode2), "HAR_INNTEKTSMELDING")

@@ -11,19 +11,15 @@ import org.slf4j.LoggerFactory
 
 internal class InntektsmeldingStatusMediator(
     private val inntektsmeldingStatusDao: InntektsmeldingStatusDao,
-    private val producer: Producer,
-    private val statusTimeout: Duration = Duration.ofMinutes(1)
+    private val producer: Producer
 ) {
-    init {
-        require(statusTimeout.seconds > 0) { "statusTimeout må settes til minst 1 sekund." }
-    }
 
     internal fun lagre(inntektsmeldingStatus: InntektsmeldingStatus) {
         inntektsmeldingStatusDao.lagre(inntektsmeldingStatus)
     }
 
-    internal fun publiser() {
-        val statuser = inntektsmeldingStatusDao.hent(statusTimeout)
+    internal fun publiser(statustimeout: Duration) {
+        val statuser = inntektsmeldingStatusDao.hent(statustimeout)
         sikkerLogg.info("Publiserer ${statuser.size} inntektsmeldingstatuser.")
         statuser.forEach { status ->
             val json = objectMapper.valueToTree<JsonNode>(status)

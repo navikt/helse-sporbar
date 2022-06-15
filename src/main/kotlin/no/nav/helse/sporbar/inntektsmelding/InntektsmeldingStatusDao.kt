@@ -13,13 +13,13 @@ import org.intellij.lang.annotations.Language
 internal class InntektsmeldingStatusDao(
     private val dataSource: DataSource
 ) {
-    internal fun hent(statusTimeout: Duration): List<InntektsmeldingStatusForEksternDto> {
+    internal fun hent(statustimeout: Duration): List<InntektsmeldingStatusForEksternDto> {
         @Language("PostgreSQL")
         val sql = """
             SELECT DISTINCT ON(vedtaksperiode_id) vedtaksperiode_id, id, fom, tom, fodselsnummer, orgnummer, status, hendelse_opprettet 
             FROM inntektsmelding_status 
-            WHERE melding_publisert IS NULL AND melding_ignorert IS NULL AND melding_innsatt < now() - INTERVAL '${statusTimeout.seconds} SECONDS' 
-            ORDER BY vedtaksperiode_id, melding_innsatt DESC
+            WHERE melding_publisert IS NULL AND melding_ignorert IS NULL AND melding_innsatt < now() - INTERVAL '${statustimeout.seconds} SECONDS' 
+            ORDER BY vedtaksperiode_id, melding_innsatt DESC LIMIT 500
         """
         return sessionOf(dataSource).use { session ->
             session.run(queryOf(sql).map { row ->
