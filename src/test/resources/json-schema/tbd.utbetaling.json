@@ -16,11 +16,8 @@
     "stønadsdager",
     "automatiskBehandling",
     "type",
-    "antallVedtak",
     "foreløpigBeregnetSluttPåSykepenger",
-    "utbetalingsdager",
-    "personOppdrag",
-    "arbeidsgiverOppdrag"
+    "utbetalingsdager"
   ],
   "type": "object",
   "additionalProperties": false,

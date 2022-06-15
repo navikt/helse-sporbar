@@ -11,9 +11,7 @@
     "tidsstempel",
     "fødselsnummer",
     "fom",
-    "tom",
-    "arbeidsgiverFagsystemId",
-    "personFagsystemId"
+    "tom"
   ],
   "type": "object",
   "additionalProperties": false,

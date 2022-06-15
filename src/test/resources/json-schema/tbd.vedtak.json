@@ -15,7 +15,6 @@
     "tom",
     "vedtakFattetTidspunkt",
     "begrensning",
-    "utbetalingId",
     "grunnlagForSykepengegrunnlagPerArbeidsgiver"
   ],
   "type": "object",
