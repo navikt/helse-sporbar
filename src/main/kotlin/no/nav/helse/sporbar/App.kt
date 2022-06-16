@@ -44,9 +44,6 @@ fun main() {
     }
 }
 
-private fun Environment.publiserInntektsmeldingstatus() =
-    raw["PUBLISERE_INNTEKTSMELDINGSTATUS"]?.toBoolean() ?: false
-
 fun launchApplication(env: Environment) {
     val dataSource = DataSourceBuilder(env.db)
         .apply(DataSourceBuilder::migrate)
@@ -107,9 +104,7 @@ fun launchApplication(env: Environment) {
             TrengerIkkeInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
             InntektsmeldingStatusVedtaksperiodeForkastetRiver(this, inntektsmeldingStatusMediator)
             InntektsmeldingStatusVedtaksperiodeEndretRiver(this, inntektsmeldingStatusMediator)
-            if (env.publiserInntektsmeldingstatus()) {
-                InntektsmeldingStatusPubliserer(this, inntektsmeldingStatusMediator)
-            }
+            InntektsmeldingStatusPubliserer(this, inntektsmeldingStatusMediator)
             start()
         }
 }

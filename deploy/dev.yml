@@ -62,5 +62,3 @@ spec:
     value: postgresql/preprod-fss/
   - name: NULLE_UT_TOMME_OPPDRAG
     value: "true"
-  - name: PUBLISERE_INNTEKTSMELDINGSTATUS
-    value: "true"

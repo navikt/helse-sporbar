@@ -9,6 +9,7 @@ import no.nav.helse.sporbar.inntektsmelding.Producer.Melding
 import no.nav.helse.sporbar.objectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.system.measureTimeMillis
 
 internal class InntektsmeldingStatusMediator(
     private val inntektsmeldingStatusDao: InntektsmeldingStatusDao,
@@ -21,18 +22,21 @@ internal class InntektsmeldingStatusMediator(
 
     internal fun publiser(statustimeout: Duration) {
         val statuser = inntektsmeldingStatusDao.hent(statustimeout).takeUnless { it.isEmpty() } ?: return
-        logg.info("Publiserer ${statuser.size} inntektsmeldingstatuser. Se sikkerlogg for detaljer.")
-        statuser.forEach { status ->
-            val json = objectMapper.valueToTree<JsonNode>(status)
-            producer.send(Melding(
-                topic = "tbd.inntektsmeldingstatus",
-                meldingstype = Meldingstype.Inntektsmeldingstatus,
-                key = status.sykmeldt,
-                json = json
-            ))
-            sikkerLogg.info("Publiserer inntektsmeldingstatus for {} fra ${ISO_OFFSET_DATE_TIME.format(status.tidspunkt)}:\n\t$json", keyValue("vedtaksperiodeId", status.vedtaksperiode.id))
+        logg.info("Starter publisering av ${statuser.size} inntektsmeldingstatuser. Se sikkerlogg for detaljer.")
+        val tidsbruk = measureTimeMillis {
+            statuser.forEach { status ->
+                val json = objectMapper.valueToTree<JsonNode>(status)
+                producer.send(Melding(
+                    topic = "tbd.inntektsmeldingstatus",
+                    meldingstype = Meldingstype.Inntektsmeldingstatus,
+                    key = status.sykmeldt,
+                    json = json
+                ))
+                sikkerLogg.info("Publiserer inntektsmeldingstatus for {} fra ${ISO_OFFSET_DATE_TIME.format(status.tidspunkt)}:\n\t$json", keyValue("vedtaksperiodeId", status.vedtaksperiode.id))
+            }
+            inntektsmeldingStatusDao.publisert(statuser)
         }
-        inntektsmeldingStatusDao.publisert(statuser)
+        logg.info("Ferdigstilt publisering av ${statuser.size} inntektsmeldingstatuser på $tidsbruk millisekunder.")
     }
 
     private companion object {
