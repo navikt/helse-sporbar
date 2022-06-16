@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Status på inntektsmelding for en vedtaksperiode",
-  "description": "Status på inntektsmelding for en vedtaksperiode i Spleis. Siste melding er gjeldende\n\nTopic: tbd.inntektsmeldingstatus\n\nKey: Sykmeldt\n\nHeader[type]: Inntektsmeldingstatus",
+  "description": "Status på inntektsmelding for en vedtaksperiode i Spleis. Siste melding (utifra `tidspunkt`) er gjeldende per `vedtaksperiode.id`\n\nTopic: tbd.inntektsmeldingstatus\n\nKey: Sykmeldt\n\nHeader[type]: Inntektsmeldingstatus",
   "required": [
     "status",
     "sykmeldt",

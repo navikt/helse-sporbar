@@ -29,7 +29,7 @@ internal class InntektsmeldingStatusMediator(
                 key = status.sykmeldt,
                 json = json
             ))
-            sikkerLogg.info("Publiserer inntektsmeldingstatus:\n\t$json", keyValue("vedtaksperiodeId", status.vedtaksperiode.id))
+            sikkerLogg.info("Publiserer inntektsmeldingstatus fra ${status.tidspunkt}:\n\t$json", keyValue("vedtaksperiodeId", status.vedtaksperiode.id))
         }
         inntektsmeldingStatusDao.publisert(statuser)
     }

@@ -15,6 +15,7 @@ import java.util.Properties
 import no.nav.helse.rapids_rivers.RapidApplication
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusDao
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusMediator
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusPubliserer
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeEndretRiver
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeForkastetRiver
 import no.nav.helse.sporbar.inntektsmelding.Kafka
@@ -42,6 +43,9 @@ fun main() {
         throw e
     }
 }
+
+private fun Environment.publiserInntektsmeldingstatus() =
+    raw["PUBLISERE_INNTEKTSMELDINGSTATUS"]?.toBoolean() ?: false
 
 fun launchApplication(env: Environment) {
     val dataSource = DataSourceBuilder(env.db)
@@ -103,6 +107,9 @@ fun launchApplication(env: Environment) {
             TrengerIkkeInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
             InntektsmeldingStatusVedtaksperiodeForkastetRiver(this, inntektsmeldingStatusMediator)
             InntektsmeldingStatusVedtaksperiodeEndretRiver(this, inntektsmeldingStatusMediator)
+            if (env.publiserInntektsmeldingstatus()) {
+                InntektsmeldingStatusPubliserer(this, inntektsmeldingStatusMediator)
+            }
             start()
         }
 }
