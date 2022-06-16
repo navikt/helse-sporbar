@@ -35,6 +35,7 @@ internal class InntektsmeldingStatusTest {
         fun publisertMeldingFor(vedtaksperiodeId: UUID) = meldinger.single {
             it.json.path("vedtaksperiode").path("id").asText() == "$vedtaksperiodeId"
         }.validertJson()
+        fun publisertStatusFor(vedtaksperiodeId: UUID) = publisertMeldingFor(vedtaksperiodeId).path("status").asText()
         fun antallPubliserteMeldinger() = meldinger.size
         fun ingenPubliserteMeldinger () = meldinger.isEmpty()
         fun reset() = meldinger.clear()
@@ -66,6 +67,9 @@ internal class InntektsmeldingStatusTest {
         assertEquals("HAR_INNTEKTSMELDING", status(vedtaksperiodeId))
         testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "AVSLUTTET_UTEN_UTBETALING"))
         assertEquals("TRENGER_IKKE_INNTEKTSMELDING", status(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals("TRENGER_IKKE_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
     }
 
     @Test
@@ -74,6 +78,9 @@ internal class InntektsmeldingStatusTest {
         assertNull(status(vedtaksperiodeId))
         testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "AVVENTER_BLOKKERENDE_PERIODE"))
         assertEquals("HAR_INNTEKTSMELDING", status(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals("HAR_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
     }
 
     @Test
@@ -82,6 +89,9 @@ internal class InntektsmeldingStatusTest {
         assertNull(status(vedtaksperiodeId))
         testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "AVSLUTTET_UTEN_UTBETALING"))
         assertEquals("TRENGER_IKKE_INNTEKTSMELDING", status(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals("TRENGER_IKKE_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
     }
 
     @Test
@@ -90,6 +100,9 @@ internal class InntektsmeldingStatusTest {
         assertNull(status(vedtaksperiodeId))
         testRapid.sendTestMessage(vedtaksperiodeForkastetEvent(vedtaksperiodeId))
         assertEquals("BEHANDLES_UTENFOR_SPLEIS", status(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals("BEHANDLES_UTENFOR_SPLEIS", testProducer.publisertStatusFor(vedtaksperiodeId))
     }
 
     @Test
@@ -98,6 +111,9 @@ internal class InntektsmeldingStatusTest {
         assertNull(status(vedtaksperiodeId))
         testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "AVSLUTTET"))
         assertNull(status(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertTrue(testProducer.ingenPubliserteMeldinger())
     }
 
     @Test
@@ -112,6 +128,7 @@ internal class InntektsmeldingStatusTest {
         manipulerMeldingInnsatt(vedtaksperiodeId, Duration.ofSeconds(2))
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
+        assertEquals("MANGLER_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
     }
@@ -124,8 +141,21 @@ internal class InntektsmeldingStatusTest {
         manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
+        assertEquals("TRENGER_IKKE_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
+    }
+
+    @Test
+    fun `sender kun siste inntektsmeldingstatus for vedtaksperiode`() {
+        val vedtaksperiodeId = UUID.randomUUID()
+        testRapid.sendTestMessage(trengerInntektsmeldingEvent(vedtaksperiodeId))
+        testRapid.sendTestMessage(trengerIkkeInntektsmeldingEvent(vedtaksperiodeId))
+        testRapid.sendTestMessage(vedtaksperiodeForkastetEvent(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals(1, testProducer.antallPubliserteMeldinger())
+        assertEquals("BEHANDLES_UTENFOR_SPLEIS", testProducer.publisertStatusFor(vedtaksperiodeId))
     }
 
     @Test
