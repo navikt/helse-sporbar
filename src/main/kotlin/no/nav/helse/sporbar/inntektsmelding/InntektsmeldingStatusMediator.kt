@@ -2,6 +2,7 @@ package no.nav.helse.sporbar.inntektsmelding
 
 import com.fasterxml.jackson.databind.JsonNode
 import java.time.Duration
+import java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.sporbar.Meldingstype
 import no.nav.helse.sporbar.inntektsmelding.Producer.Melding
@@ -19,8 +20,8 @@ internal class InntektsmeldingStatusMediator(
     }
 
     internal fun publiser(statustimeout: Duration) {
-        val statuser = inntektsmeldingStatusDao.hent(statustimeout)
-        sikkerLogg.info("Publiserer ${statuser.size} inntektsmeldingstatuser.")
+        val statuser = inntektsmeldingStatusDao.hent(statustimeout).takeUnless { it.isEmpty() } ?: return
+        logg.info("Publiserer ${statuser.size} inntektsmeldingstatuser. Se sikkerlogg for detaljer.")
         statuser.forEach { status ->
             val json = objectMapper.valueToTree<JsonNode>(status)
             producer.send(Melding(
@@ -29,12 +30,13 @@ internal class InntektsmeldingStatusMediator(
                 key = status.sykmeldt,
                 json = json
             ))
-            sikkerLogg.info("Publiserer inntektsmeldingstatus fra ${status.tidspunkt}:\n\t$json", keyValue("vedtaksperiodeId", status.vedtaksperiode.id))
+            sikkerLogg.info("Publiserer inntektsmeldingstatus for {} fra ${ISO_OFFSET_DATE_TIME.format(status.tidspunkt)}:\n\t$json", keyValue("vedtaksperiodeId", status.vedtaksperiode.id))
         }
         inntektsmeldingStatusDao.publisert(statuser)
     }
 
     private companion object {
         private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
+        private val logg: Logger = LoggerFactory.getLogger("inntektsmeldingstatus")
     }
 }

@@ -21,7 +21,7 @@ internal class InntektsmeldingStatusVedtaksperiodeEndretRiver(
     private val inntektsmeldingStatusMediator: InntektsmeldingStatusMediator
 ): River.PacketListener {
 
-    private val log: Logger = LoggerFactory.getLogger("inntektsmeldingStatus")
+    private val log: Logger = LoggerFactory.getLogger("inntektsmeldingstatus")
 
     init {
         River(rapidsConnection).apply {
