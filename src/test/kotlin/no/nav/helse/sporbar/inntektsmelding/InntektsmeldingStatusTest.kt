@@ -181,6 +181,20 @@ internal class InntektsmeldingStatusTest {
         assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode4), "BEHANDLES_UTENFOR_SPLEIS")
     }
 
+    @Test
+    fun `publiserer ikke status som har timet ut når vi har mottatt en ny status som ikke har timet ut enda`() {
+        val vedtaksperiodeId = UUID.randomUUID()
+        testRapid.sendTestMessage(trengerInntektsmeldingEvent(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId) // Her blir "MANGLER_INNTEKTSMELDING" klar til å publiseres
+        testRapid.sendTestMessage(trengerIkkeInntektsmeldingEvent(vedtaksperiodeId)) // Mottar "HAR_INNTEKTSMELDING" som ikke er klar til å publiseres
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertTrue(testProducer.ingenPubliserteMeldinger()) // "MANGLER_INNTEKTSMELDING" skal ikke publiseres
+        manipulerMeldingInnsatt(vedtaksperiodeId) // Her blir "HAR_INNTEKTSMELDING" klar til å publiseres
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals(1, testProducer.antallPubliserteMeldinger())
+        assertEquals("HAR_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
+    }
+
     private fun status(vedtaksperiodeId: UUID): String? = sessionOf(TestDatabase.dataSource).use { session ->
         session.run(queryOf("SELECT status FROM inntektsmelding_status WHERE vedtaksperiode_id = ? ORDER BY melding_innsatt DESC", vedtaksperiodeId).map { it.string("status") }.asSingle)
     }
