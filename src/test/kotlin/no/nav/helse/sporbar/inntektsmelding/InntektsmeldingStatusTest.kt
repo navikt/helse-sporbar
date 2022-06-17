@@ -22,20 +22,36 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.opentest4j.AssertionFailedError
 
 internal class InntektsmeldingStatusTest {
 
     private val testRapid = TestRapid()
-    private val inntektsmeldingStatusDao = InntektsmeldingStatusDao(TestDatabase.dataSource)
+    private val inntektsmeldingStatusDao = object: InntektsmeldingStatusDao {
+        private val postgres = PostgresInntektsmeldingStatusDao(TestDatabase.dataSource)
+        private val førLagrePublisert = mutableMapOf<UUID,() -> Unit>()
+        override fun lagre(inntektsmeldingStatus: InntektsmeldingStatus) = postgres.lagre(inntektsmeldingStatus)
+        override fun hent(statustimeout: Duration) = postgres.hent(statustimeout)
+        override fun publisert(statuser: List<InntektsmeldingStatusForEksternDto>) {
+            val publisert = statuser.map { it.vedtaksperiode.id }
+            førLagrePublisert.filterKeys { it in publisert }.forEach { (_, action) -> action() }
+            postgres.publisert(statuser)
+        }
+        fun førLagrePublisert(vedtaksperiodeId: UUID, action: () -> Unit) {
+            førLagrePublisert[vedtaksperiodeId] = action
+        }
+    }
     private val testProducer = object : Producer {
         private val meldinger = mutableListOf<Melding>()
         override fun send(melding: Melding) {
             meldinger.add(melding)
         }
-        fun publisertMeldingFor(vedtaksperiodeId: UUID) = meldinger.single {
-            it.json.path("vedtaksperiode").path("id").asText() == "$vedtaksperiodeId"
-        }.validertJson()
-        fun publisertStatusFor(vedtaksperiodeId: UUID) = publisertMeldingFor(vedtaksperiodeId).path("status").asText()
+        private fun Melding.gjelder(vedtaksperiodeId: UUID) = json.path("vedtaksperiode").path("id").asText() == "$vedtaksperiodeId"
+        fun enestePubliserteMeldingFor(vedtaksperiodeId: UUID) = meldinger.single { it.gjelder(vedtaksperiodeId) }.validertJson()
+        private fun sistePubliserteMeldingFor(vedtaksperiodeId: UUID) = meldinger.filter { it.gjelder(vedtaksperiodeId) }.also { require(it.size > 1) }.last().validertJson()
+        fun enestePubliserteStatusFor(vedtaksperiodeId: UUID) = enestePubliserteMeldingFor(vedtaksperiodeId).path("status").asText()
+        fun sistePubliserteStatusFor(vedtaksperiodeId: UUID) = sistePubliserteMeldingFor(vedtaksperiodeId).path("status").asText()
         fun antallPubliserteMeldinger() = meldinger.size
         fun ingenPubliserteMeldinger () = meldinger.isEmpty()
         fun reset() = meldinger.clear()
@@ -69,7 +85,7 @@ internal class InntektsmeldingStatusTest {
         assertEquals("TRENGER_IKKE_INNTEKTSMELDING", status(vedtaksperiodeId))
         manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiserMedEttMinuttStatustimeout()
-        assertEquals("TRENGER_IKKE_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
+        assertEquals("TRENGER_IKKE_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
     }
 
     @Test
@@ -80,7 +96,7 @@ internal class InntektsmeldingStatusTest {
         assertEquals("HAR_INNTEKTSMELDING", status(vedtaksperiodeId))
         manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiserMedEttMinuttStatustimeout()
-        assertEquals("HAR_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
+        assertEquals("HAR_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
     }
 
     @Test
@@ -91,7 +107,7 @@ internal class InntektsmeldingStatusTest {
         assertEquals("TRENGER_IKKE_INNTEKTSMELDING", status(vedtaksperiodeId))
         manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiserMedEttMinuttStatustimeout()
-        assertEquals("TRENGER_IKKE_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
+        assertEquals("TRENGER_IKKE_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
     }
 
     @Test
@@ -102,7 +118,7 @@ internal class InntektsmeldingStatusTest {
         assertEquals("BEHANDLES_UTENFOR_SPLEIS", status(vedtaksperiodeId))
         manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiserMedEttMinuttStatustimeout()
-        assertEquals("BEHANDLES_UTENFOR_SPLEIS", testProducer.publisertStatusFor(vedtaksperiodeId))
+        assertEquals("BEHANDLES_UTENFOR_SPLEIS", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
     }
 
     @Test
@@ -128,7 +144,7 @@ internal class InntektsmeldingStatusTest {
         manipulerMeldingInnsatt(vedtaksperiodeId, Duration.ofSeconds(2))
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
-        assertEquals("MANGLER_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
+        assertEquals("MANGLER_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
     }
@@ -141,7 +157,7 @@ internal class InntektsmeldingStatusTest {
         manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
-        assertEquals("TRENGER_IKKE_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
+        assertEquals("TRENGER_IKKE_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
     }
@@ -155,7 +171,7 @@ internal class InntektsmeldingStatusTest {
         manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
-        assertEquals("BEHANDLES_UTENFOR_SPLEIS", testProducer.publisertStatusFor(vedtaksperiodeId))
+        assertEquals("BEHANDLES_UTENFOR_SPLEIS", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
     }
 
     @Test
@@ -175,10 +191,10 @@ internal class InntektsmeldingStatusTest {
 
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(4, testProducer.antallPubliserteMeldinger())
-        assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode1), "MANGLER_INNTEKTSMELDING")
-        assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode2), "HAR_INNTEKTSMELDING")
-        assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode3), "TRENGER_IKKE_INNTEKTSMELDING")
-        assertMeldingsinnhold(testProducer.publisertMeldingFor(vedtaksperiode4), "BEHANDLES_UTENFOR_SPLEIS")
+        assertMeldingsinnhold(testProducer.enestePubliserteMeldingFor(vedtaksperiode1), "MANGLER_INNTEKTSMELDING")
+        assertMeldingsinnhold(testProducer.enestePubliserteMeldingFor(vedtaksperiode2), "HAR_INNTEKTSMELDING")
+        assertMeldingsinnhold(testProducer.enestePubliserteMeldingFor(vedtaksperiode3), "TRENGER_IKKE_INNTEKTSMELDING")
+        assertMeldingsinnhold(testProducer.enestePubliserteMeldingFor(vedtaksperiode4), "BEHANDLES_UTENFOR_SPLEIS")
     }
 
     @Test
@@ -192,7 +208,41 @@ internal class InntektsmeldingStatusTest {
         manipulerMeldingInnsatt(vedtaksperiodeId) // Her blir "HAR_INNTEKTSMELDING" klar til å publiseres
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals(1, testProducer.antallPubliserteMeldinger())
-        assertEquals("HAR_INNTEKTSMELDING", testProducer.publisertStatusFor(vedtaksperiodeId))
+        assertEquals("HAR_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
+    }
+
+    @Test
+    fun `markerer ikke inntektsmeldingstatus som ignorert når den er mottatt i tidsrommet mellom henting fra database og oppdatering av database`() {
+        /**
+         *  1. podA) Henter siste status for vedtaksperioder fra db
+         *  2. podA) Looper alle og sender hver enkelt vedtaksperiode ut på kafka, bl.a. vedtaksperiode X
+         *  3. podB) Lagrer nyere status for vedtaksperiode X
+         *  4. podA) update tabell set publisert where vedtaksperiodeId = X
+         *
+         *  Dette medfører at podA setter den nyeste statusen fra podB som ignorert.
+         *  Ideelt sett burde ikke denne oppdateres hverken med `melding_publisert` eller `melding_ignorert`
+         *  ettersom den burde publiseres når den i sin tur har nådd statustimeouten.
+         *  Om `hent()` og `publisert()` i DAOen begge får inn tidspunkt for når publiseringen startet kan begge
+         *  spørringene ha `melding_innsatt < now() - INTERVAL '${statustimeout.seconds} SECONDS` slik at man unngår dette.
+         *  Da settes kun `melding_ignorert` på det utvalget man fikk fra `hent()` som ikke er blitt publisert.
+         *
+         *  Ettersom rapiden er key'et på fødselsnummer skal ikke to poder behandle samme person samtidig,
+         *  så det **burde** ikke kunne skje...
+         */
+
+        val vedtaksperiodeId = UUID.randomUUID()
+        testRapid.sendTestMessage(trengerInntektsmeldingEvent(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        inntektsmeldingStatusDao.førLagrePublisert(vedtaksperiodeId) {
+            testRapid.sendTestMessage(trengerIkkeInntektsmeldingEvent(vedtaksperiodeId))
+        }
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals(1, testProducer.antallPubliserteMeldinger())
+        assertEquals("MANGLER_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertThrows<AssertionFailedError> { assertEquals(2, testProducer.antallPubliserteMeldinger()) }
+        assertThrows<IllegalArgumentException> { assertEquals("HAR_INNTEKTSMELDING", testProducer.sistePubliserteStatusFor(vedtaksperiodeId)) }
     }
 
     private fun status(vedtaksperiodeId: UUID): String? = sessionOf(TestDatabase.dataSource).use { session ->
@@ -222,6 +272,7 @@ internal class InntektsmeldingStatusTest {
         private val opprettet = LocalDateTime.parse("2022-06-10T19:06:26.765")
         private val fom = LocalDate.now()
         private val tom = fom.plusDays(10)
+        private val specialCaseVedtaksperiodeId = UUID.randomUUID()
 
         private fun trengerInntektsmeldingEvent(vedtaksperiodeId: UUID) = event(
             event = "trenger_inntektsmelding",

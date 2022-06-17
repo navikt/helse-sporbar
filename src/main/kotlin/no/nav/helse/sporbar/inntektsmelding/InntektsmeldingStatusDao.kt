@@ -10,10 +10,16 @@ import kotliquery.sessionOf
 import no.nav.helse.sporbar.uuid
 import org.intellij.lang.annotations.Language
 
-internal class InntektsmeldingStatusDao(
+internal interface InntektsmeldingStatusDao {
+    fun lagre(inntektsmeldingStatus: InntektsmeldingStatus)
+    fun hent(statustimeout: Duration): List<InntektsmeldingStatusForEksternDto>
+    fun publisert(statuser: List<InntektsmeldingStatusForEksternDto>)
+}
+
+internal class PostgresInntektsmeldingStatusDao(
     private val dataSource: DataSource
-) {
-    internal fun hent(statustimeout: Duration): List<InntektsmeldingStatusForEksternDto> {
+): InntektsmeldingStatusDao {
+    override fun hent(statustimeout: Duration): List<InntektsmeldingStatusForEksternDto> {
         @Language("PostgreSQL")
         val sql = """
             SELECT * FROM (
@@ -43,7 +49,7 @@ internal class InntektsmeldingStatusDao(
         }
     }
 
-    internal fun publisert(statuser: List<InntektsmeldingStatusForEksternDto>) {
+    override fun publisert(statuser: List<InntektsmeldingStatusForEksternDto>) {
         if (statuser.isEmpty()) return
         val now = LocalDateTime.now()
         val ider = statuser.map { it.id }
@@ -54,7 +60,7 @@ internal class InntektsmeldingStatusDao(
         }
     }
 
-    internal fun lagre(inntektsmeldingStatus: InntektsmeldingStatus) {
+    override fun lagre(inntektsmeldingStatus: InntektsmeldingStatus) {
         sessionOf(dataSource).use { session ->
             session.run(
                 queryOf(
