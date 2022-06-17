@@ -245,6 +245,21 @@ internal class InntektsmeldingStatusTest {
         assertThrows<IllegalArgumentException> { assertEquals("HAR_INNTEKTSMELDING", testProducer.sistePubliserteStatusFor(vedtaksperiodeId)) }
     }
 
+    @Test
+    fun `publiserer ny status om vi får en oppdatert status`() {
+        val vedtaksperiodeId = UUID.randomUUID()
+        testRapid.sendTestMessage(trengerInntektsmeldingEvent(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals(1, testProducer.antallPubliserteMeldinger())
+        assertEquals("MANGLER_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
+        testRapid.sendTestMessage(trengerIkkeInntektsmeldingEvent(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals(2, testProducer.antallPubliserteMeldinger())
+        assertEquals("HAR_INNTEKTSMELDING", testProducer.sistePubliserteStatusFor(vedtaksperiodeId))
+    }
+
     private fun status(vedtaksperiodeId: UUID): String? = sessionOf(TestDatabase.dataSource).use { session ->
         session.run(queryOf("SELECT status FROM inntektsmelding_status WHERE vedtaksperiode_id = ? ORDER BY melding_innsatt DESC", vedtaksperiodeId).map { it.string("status") }.asSingle)
     }

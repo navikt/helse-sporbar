@@ -1,6 +1,7 @@
 package no.nav.helse.sporbar.inntektsmelding
 
 import com.fasterxml.jackson.databind.JsonNode
+import java.lang.System.currentTimeMillis
 import java.time.Duration
 import java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
 import net.logstash.logback.argument.StructuredArguments.keyValue
@@ -20,8 +21,14 @@ internal class InntektsmeldingStatusMediator(
         inntektsmeldingStatusDao.lagre(inntektsmeldingStatus)
     }
 
+    private fun hent(statustimeout: Duration): Pair<Long, List<InntektsmeldingStatusForEksternDto>>? {
+        val start = currentTimeMillis()
+        val statuser = inntektsmeldingStatusDao.hent(statustimeout).takeUnless { it.isEmpty() } ?: return null
+        return currentTimeMillis() - start to statuser
+    }
+
     internal fun publiser(statustimeout: Duration) {
-        val statuser = inntektsmeldingStatusDao.hent(statustimeout).takeUnless { it.isEmpty() } ?: return
+        val (databasetidsbruk, statuser) = hent(statustimeout) ?: return
         logg.info("Starter publisering av ${statuser.size} inntektsmeldingstatuser. Se sikkerlogg for detaljer.")
         val tidsbruk = measureTimeMillis {
             statuser.forEach { status ->
@@ -36,7 +43,7 @@ internal class InntektsmeldingStatusMediator(
             }
             inntektsmeldingStatusDao.publisert(statuser)
         }
-        logg.info("Ferdigstilt publisering av ${statuser.size} inntektsmeldingstatuser på $tidsbruk millisekunder.")
+        logg.info("Ferdigstilt publisering av ${statuser.size} inntektsmeldingstatuser på ${tidsbruk + databasetidsbruk} millisekunder.")
     }
 
     private companion object {
