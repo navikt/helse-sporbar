@@ -53,10 +53,23 @@ internal class PostgresInntektsmeldingStatusDao(
         if (statuser.isEmpty()) return
         val now = LocalDateTime.now()
         val ider = statuser.map { it.id }
-        val vedtaksperiodeIder = statuser.map { it.vedtaksperiode.id     }
+        val vedtaksperiodeIder = statuser.map { it.vedtaksperiode.id }
         sessionOf(dataSource).use { session ->
-            session.run(queryOf("UPDATE inntektsmelding_status SET melding_publisert = ? WHERE id IN (${ider.joinToString { "?" }})", now, *ider.toTypedArray()).asUpdate)
-            session.run(queryOf("UPDATE inntektsmelding_status SET melding_ignorert = ? WHERE id NOT IN (${ider.joinToString { "?" }}) AND vedtaksperiode_id IN (${vedtaksperiodeIder.joinToString { "?" }})", now, *ider.toTypedArray(), *vedtaksperiodeIder.toTypedArray()).asUpdate)
+            session.transaction { transactionalSession ->
+                @Language("PostgreSQL")
+                val meldingPublisertSql = """
+                    UPDATE inntektsmelding_status SET melding_publisert = ? 
+                    WHERE id IN (${ider.joinToString { "?" }})
+                """
+                transactionalSession.run(queryOf(meldingPublisertSql, now, *ider.toTypedArray()).asUpdate)
+                @Language("PostgreSQL")
+                val meldingIgnorertSql = """
+                    UPDATE inntektsmelding_status SET melding_ignorert = ? 
+                    WHERE id NOT IN (${ider.joinToString { "?" }}) 
+                    AND vedtaksperiode_id IN (${vedtaksperiodeIder.joinToString { "?" }})
+                """
+                transactionalSession.run(queryOf(meldingIgnorertSql, now, *ider.toTypedArray(), *vedtaksperiodeIder.toTypedArray()).asUpdate)
+            }
         }
     }
 

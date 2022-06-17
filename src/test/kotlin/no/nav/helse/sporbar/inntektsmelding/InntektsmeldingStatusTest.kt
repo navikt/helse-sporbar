@@ -71,6 +71,7 @@ internal class InntektsmeldingStatusTest {
     fun setup() {
         testRapid.reset()
         testProducer.reset()
+        tømTabell()
     }
 
     @Test
@@ -280,6 +281,10 @@ internal class InntektsmeldingStatusTest {
         }
     }
 
+    private fun tømTabell() = sessionOf(TestDatabase.dataSource).use { session ->
+        session.run(queryOf("DELETE FROM inntektsmelding_status").asExecute)
+    }
+
     private companion object {
         private val fnr = "12345678910"
         private val aktørId = "1427484794278"
@@ -287,7 +292,6 @@ internal class InntektsmeldingStatusTest {
         private val opprettet = LocalDateTime.parse("2022-06-10T19:06:26.765")
         private val fom = LocalDate.now()
         private val tom = fom.plusDays(10)
-        private val specialCaseVedtaksperiodeId = UUID.randomUUID()
 
         private fun trengerInntektsmeldingEvent(vedtaksperiodeId: UUID) = event(
             event = "trenger_inntektsmelding",
