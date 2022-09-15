@@ -45,3 +45,6 @@ spec:
         - team: aap
           application: sykepengedager
           access: read
+        - team: team-esyfo
+          application: esyfovarsel
+          access: read
