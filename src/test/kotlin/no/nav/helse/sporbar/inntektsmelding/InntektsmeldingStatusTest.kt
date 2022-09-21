@@ -15,7 +15,6 @@ import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import no.nav.helse.sporbar.TestDatabase
 import no.nav.helse.sporbar.inntektsmelding.Producer.Melding
-import no.nav.helse.sporbar.uuid
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -90,6 +89,19 @@ internal class InntektsmeldingStatusTest {
     }
 
     @Test
+    fun `fra AvventerInntektsmeldingEllerHistorikk til AvventerBlokkerendePeriode - trenger ikke IM`() {
+        val vedtaksperiodeId = UUID.randomUUID()
+        assertNull(status(vedtaksperiodeId))
+        testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK"))
+        assertNull(status(vedtaksperiodeId))
+        testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "AVVENTER_BLOKKERENDE_PERIODE"))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals("HAR_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
+    }
+
+
+    @Test
     fun `rett fra Start til AvventerBlokkerendePeriode`() {
         val vedtaksperiodeId = UUID.randomUUID()
         assertNull(status(vedtaksperiodeId))
@@ -99,7 +111,6 @@ internal class InntektsmeldingStatusTest {
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals("HAR_INNTEKTSMELDING", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
     }
-
     @Test
     fun `rett fra Start til AvsluttetUtenUtbetaling`() {
         val vedtaksperiodeId = UUID.randomUUID()
