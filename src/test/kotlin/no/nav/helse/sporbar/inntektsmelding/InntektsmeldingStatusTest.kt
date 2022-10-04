@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.opentest4j.AssertionFailedError
@@ -128,6 +129,20 @@ internal class InntektsmeldingStatusTest {
         assertNull(status(vedtaksperiodeId))
         testRapid.sendTestMessage(vedtaksperiodeForkastetEvent(vedtaksperiodeId))
         assertEquals("BEHANDLES_UTENFOR_SPLEIS", status(vedtaksperiodeId))
+        manipulerMeldingInnsatt(vedtaksperiodeId)
+        mediator.publiserMedEttMinuttStatustimeout()
+        assertEquals("BEHANDLES_UTENFOR_SPLEIS", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
+    }
+
+    @Disabled
+    @Test
+    fun `forkastet vedtaksperiode i AvventerInntektsmeldingEllerHistorikk`() {
+        // burde publisere BEHANDLES_UTENFOR_SPLEIS men det gjør vi ikke
+        val vedtaksperiodeId = UUID.randomUUID()
+        assertNull(status(vedtaksperiodeId))
+        testRapid.sendTestMessage(vedtaksperiodeForkastetEvent(vedtaksperiodeId))
+        testRapid.sendTestMessage(trengerIkkeInntektsmeldingEvent(vedtaksperiodeId))
+        testRapid.sendTestMessage(vedtaksperiodeEndretEvent(vedtaksperiodeId, "TIL_INFOTRYGD"))
         manipulerMeldingInnsatt(vedtaksperiodeId)
         mediator.publiserMedEttMinuttStatustimeout()
         assertEquals("BEHANDLES_UTENFOR_SPLEIS", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
