@@ -31,6 +31,7 @@ internal class InntektsmeldingStatusTest {
     private val inntektsmeldingStatusDao = object: InntektsmeldingStatusDao {
         private val postgres = PostgresInntektsmeldingStatusDao(TestDatabase.dataSource)
         private val førLagrePublisert = mutableMapOf<UUID,() -> Unit>()
+        override fun erBehandletUtenforSpleis(vedtaksperiodeId: UUID) = postgres.erBehandletUtenforSpleis(vedtaksperiodeId)
         override fun lagre(inntektsmeldingStatus: InntektsmeldingStatus) = postgres.lagre(inntektsmeldingStatus)
         override fun hent(statustimeout: Duration) = postgres.hent(statustimeout)
         override fun publisert(statuser: List<InntektsmeldingStatusForEksternDto>) {
@@ -134,10 +135,8 @@ internal class InntektsmeldingStatusTest {
         assertEquals("BEHANDLES_UTENFOR_SPLEIS", testProducer.enestePubliserteStatusFor(vedtaksperiodeId))
     }
 
-    @Disabled
     @Test
     fun `forkastet vedtaksperiode i AvventerInntektsmeldingEllerHistorikk`() {
-        // burde publisere BEHANDLES_UTENFOR_SPLEIS men det gjør vi ikke
         val vedtaksperiodeId = UUID.randomUUID()
         assertNull(status(vedtaksperiodeId))
         testRapid.sendTestMessage(vedtaksperiodeForkastetEvent(vedtaksperiodeId))

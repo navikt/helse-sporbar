@@ -18,6 +18,13 @@ internal class InntektsmeldingStatusMediator(
 ) {
 
     internal fun lagre(inntektsmeldingStatus: InntektsmeldingStatus) {
+        // finnes det en inntektsmelindg status med terminal-tilstand: return
+        if (inntektsmeldingStatusDao.erBehandletUtenforSpleis(inntektsmeldingStatus.vedtaksperiodeId)) {
+            return logg.info(
+                "Ignorerer å lagre inntektsmeldingStatus ${inntektsmeldingStatus::class.simpleName} for {} fordi den allerede er behandlet utenfor spleis",
+                keyValue("vedtaksperiodeId", inntektsmeldingStatus.vedtaksperiodeId)
+            )
+        }
         inntektsmeldingStatusDao.lagre(inntektsmeldingStatus)
     }
 

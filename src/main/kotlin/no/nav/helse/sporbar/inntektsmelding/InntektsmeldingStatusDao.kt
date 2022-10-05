@@ -4,21 +4,36 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.util.UUID
 import javax.sql.DataSource
 import kotliquery.queryOf
 import kotliquery.sessionOf
 import no.nav.helse.sporbar.uuid
+import org.flywaydb.core.internal.database.postgresql.PostgreSQLAdvisoryLockTemplate
 import org.intellij.lang.annotations.Language
 
 internal interface InntektsmeldingStatusDao {
     fun lagre(inntektsmeldingStatus: InntektsmeldingStatus)
     fun hent(statustimeout: Duration): List<InntektsmeldingStatusForEksternDto>
     fun publisert(statuser: List<InntektsmeldingStatusForEksternDto>)
+    fun erBehandletUtenforSpleis(vedtaksperiodeId: UUID): Boolean
 }
 
 internal class PostgresInntektsmeldingStatusDao(
     private val dataSource: DataSource
 ): InntektsmeldingStatusDao {
+
+    override fun erBehandletUtenforSpleis(vedtaksperiodeId: UUID): Boolean {
+        @Language("PostgreSQL")
+        val sql = """
+            SELECT 1 FROM inntektsmelding_status
+            WHERE vedtaksperiode_id = :vedtaksperiodeId AND status = 'BEHANDLES_UTENFOR_SPLEIS'
+        """
+        return sessionOf(dataSource).use { session ->
+            session.run(queryOf(sql, mapOf("vedtaksperiodeId" to vedtaksperiodeId)).map { it }.asList).isNotEmpty()
+        }
+    }
+
     override fun hent(statustimeout: Duration): List<InntektsmeldingStatusForEksternDto> {
         @Language("PostgreSQL")
         val sql = """
