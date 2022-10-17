@@ -48,3 +48,6 @@ spec:
         - team: team-esyfo
           application: esyfovarsel
           access: read
+        - team: tbd
+          application: spokelse
+          access: read
