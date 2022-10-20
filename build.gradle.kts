@@ -4,7 +4,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 val mainClass = "no.nav.helse.sporbar.AppKt"
 val jvmTarget = "17"
 
-val rapidsAndRiversVersion = "2022.05.25-08.39.8025c775ad8e"
+val rapidsAndRiversVersion = "2022100711511665136276.49acbaae4ed4"
 val ktorVersion = "2.0.1"
 val junitJupiterVersion = "5.9.0"
 val testcontainersVersion = "1.17.3"
