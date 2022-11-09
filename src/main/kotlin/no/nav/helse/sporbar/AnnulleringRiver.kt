@@ -15,7 +15,6 @@ private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
 
 class AnnulleringRiver(
     rapidsConnection: RapidsConnection,
-    private val producer: KafkaProducer<String, JsonNode>,
     private val aivenProducer: KafkaProducer<String, JsonNode>,
 ):
     River.PacketListener {
@@ -55,16 +54,6 @@ class AnnulleringRiver(
             personFagsystemId = packet["personFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText()
         )
         val annulleringDto = objectMapper.valueToTree<JsonNode>(annullering)
-
-        producer.send(
-            ProducerRecord(
-                "aapen-helse-sporbar",
-                null,
-                fødselsnummer,
-                annulleringDto,
-                listOf(Meldingstype.Annullering.header())
-            )
-        )
         aivenProducer.send(
             ProducerRecord(
                 "tbd.utbetaling",

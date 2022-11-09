@@ -37,7 +37,7 @@ class AnnulleringRiverTest {
     private val aivenProducerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
 
     init {
-        AnnulleringRiver(testRapid, mockk(relaxed = true), aivenProducerMock)
+        AnnulleringRiver(testRapid, aivenProducerMock)
     }
 
     @Test

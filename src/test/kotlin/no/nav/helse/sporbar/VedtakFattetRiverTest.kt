@@ -43,15 +43,6 @@ internal class VedtakFattetRiverTest {
     private val producerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
     private val dokumentDao = DokumentDao(TestDatabase.dataSource)
 
-    private val vedtaksperiodeDao = VedtaksperiodeDao(TestDatabase.dataSource)
-    private val vedtakDao = VedtakDao(TestDatabase.dataSource)
-    private val vedtaksperiodeMediator = VedtaksperiodeMediator(
-        vedtaksperiodeDao = vedtaksperiodeDao,
-        vedtakDao = vedtakDao,
-        dokumentDao = dokumentDao,
-        producer = producerMock
-    )
-
     private val vedtakFattetMediator = VedtakFattetMediator(
         dokumentDao = dokumentDao,
         producer = producerMock
@@ -62,7 +53,6 @@ internal class VedtakFattetRiverTest {
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
-        VedtaksperiodeEndretRiver(testRapid, vedtaksperiodeMediator)
         VedtakFattetRiver(testRapid, vedtakFattetMediator)
         UtbetalingUtbetaltRiver(testRapid, utbetalingMediator)
     }

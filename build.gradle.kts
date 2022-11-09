@@ -42,8 +42,6 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
 
     testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
-    testImplementation("org.testcontainers:testcontainers:$testcontainersVersion")
-    testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("com.networknt:json-schema-validator:$jsonSchemaValidatorVersion")
     testImplementation("org.skyscreamer:jsonassert:$jsonassertVersion")

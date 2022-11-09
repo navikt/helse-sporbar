@@ -5,12 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import io.ktor.http.ContentType
-import io.ktor.serialization.jackson.JacksonConverter
-import io.ktor.server.application.install
-import io.ktor.server.auth.authenticate
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.routing.routing
 import java.util.Properties
 import no.nav.helse.rapids_rivers.RapidApplication
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusMediator
@@ -50,27 +44,12 @@ fun launchApplication(env: Environment) {
         .getDataSource()
 
     val dokumentDao = DokumentDao(dataSource)
-    val producer =
-        KafkaProducer<String, JsonNode>(
-            loadBaseConfig(
-                env.raw.getValue("KAFKA_BOOTSTRAP_SERVERS"),
-                env.serviceUser
-            ).toProducerConfig()
-        )
     val aivenProducer = createAivenProducer(env.raw)
 
-    val vedtaksperiodeDao = VedtaksperiodeDao(dataSource)
-    val vedtakDao = VedtakDao(dataSource)
     val inntektsmeldingStatusDao = PostgresInntektsmeldingStatusDao(dataSource)
     val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(
         inntektsmeldingStatusDao = inntektsmeldingStatusDao,
         producer = Kafka(aivenProducer)
-    )
-    val mediator = VedtaksperiodeMediator(
-        vedtaksperiodeDao = vedtaksperiodeDao,
-        vedtakDao = vedtakDao,
-        dokumentDao = dokumentDao,
-        producer = producer
     )
     val vedtakFattetMediator = VedtakFattetMediator(
         dokumentDao = dokumentDao,
@@ -80,26 +59,12 @@ fun launchApplication(env: Environment) {
         producer = aivenProducer
     )
 
-    RapidApplication.Builder(RapidApplication.RapidApplicationConfig.fromEnv(env.raw))
-        .withKtorModule {
-            install(ContentNegotiation) {
-                register(ContentType.Application.Json, JacksonConverter(objectMapper))
-            }
-            azureAdAppAuthentication(env.wellKnownUrl, env.clientId)
-            routing {
-                authenticate(JWT_AUTH) {
-                    vedtakApi(vedtakDao)
-                }
-            }
-        }
-        .build().apply {
+    RapidApplication.create(env.raw).apply {
             NyttDokumentRiver(this, dokumentDao)
-            VedtaksperiodeEndretRiver(this, mediator)
-            UtbetaltRiver(this, mediator)
             VedtakFattetRiver(this, vedtakFattetMediator)
             UtbetalingUtbetaltRiver(this, utbetalingMediator)
             UtbetalingUtenUtbetalingRiver(this, utbetalingMediator)
-            AnnulleringRiver(this, producer, aivenProducer)
+            AnnulleringRiver(this, aivenProducer)
             TrengerInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
             TrengerIkkeInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
             InntektsmeldingStatusVedtaksperiodeForkastetRiver(this, inntektsmeldingStatusMediator)
