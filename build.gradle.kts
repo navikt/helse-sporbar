@@ -4,20 +4,20 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 val mainClass = "no.nav.helse.sporbar.AppKt"
 val jvmTarget = "17"
 
-val rapidsAndRiversVersion = "2022100711511665136276.49acbaae4ed4"
-val ktorVersion = "2.0.1"
+val rapidsAndRiversVersion = "2022111011111668075098.65e508dcde8b"
+val ktorVersion = "2.1.3"
 val junitJupiterVersion = "5.9.0"
-val testcontainersVersion = "1.17.3"
-val mockkVersion = "1.12.4"
+val testcontainersVersion = "1.17.4"
+val mockkVersion = "1.13.2"
 val kotliqueryVersion = "1.9.0"
 val hikariCPVersion = "5.0.1"
 val vaultjdbcVersion = "1.3.10"
-val flywaycoreVersion = "9.3.0"
-val jsonSchemaValidatorVersion = "1.0.72"
+val flywaycoreVersion = "9.8.1"
+val jsonSchemaValidatorVersion = "1.0.73"
 val jsonassertVersion = "1.5.1"
 
 plugins {
-    kotlin("jvm") version "1.6.21"
+    kotlin("jvm") version "1.7.21"
 }
 
 dependencies {
