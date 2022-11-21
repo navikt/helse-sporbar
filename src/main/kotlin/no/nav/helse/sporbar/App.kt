@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.util.Properties
 import no.nav.helse.rapids_rivers.RapidApplication
+import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusMediator
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusPubliserer
 import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeEndretRiver
@@ -39,39 +40,43 @@ fun main() {
 }
 
 fun launchApplication(env: Environment) {
-    val dataSource = DataSourceBuilder(env.db)
-        .apply(DataSourceBuilder::migrate)
-        .getDataSource()
-
-    val dokumentDao = DokumentDao(dataSource)
-    val aivenProducer = createAivenProducer(env.raw)
-
-    val inntektsmeldingStatusDao = PostgresInntektsmeldingStatusDao(dataSource)
-    val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(
-        inntektsmeldingStatusDao = inntektsmeldingStatusDao,
-        producer = Kafka(aivenProducer)
-    )
-    val vedtakFattetMediator = VedtakFattetMediator(
-        dokumentDao = dokumentDao,
-        producer = aivenProducer
-    )
-    val utbetalingMediator = UtbetalingMediator(
-        producer = aivenProducer
-    )
+    val dataSourceBuilder = DataSourceBuilder(env.db)
 
     RapidApplication.create(env.raw).apply {
-            NyttDokumentRiver(this, dokumentDao)
-            VedtakFattetRiver(this, vedtakFattetMediator)
-            UtbetalingUtbetaltRiver(this, utbetalingMediator)
-            UtbetalingUtenUtbetalingRiver(this, utbetalingMediator)
-            AnnulleringRiver(this, aivenProducer)
-            TrengerInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
-            TrengerIkkeInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
-            InntektsmeldingStatusVedtaksperiodeForkastetRiver(this, inntektsmeldingStatusMediator)
-            InntektsmeldingStatusVedtaksperiodeEndretRiver(this, inntektsmeldingStatusMediator)
-            InntektsmeldingStatusPubliserer(this, inntektsmeldingStatusMediator)
-            start()
-        }
+        register(object : RapidsConnection.StatusListener {
+            override fun onStartup(rapidsConnection: RapidsConnection) {
+                dataSourceBuilder.migrate()
+            }
+        })
+
+        val dataSource by lazy { dataSourceBuilder.getDataSource() }
+        val dokumentDao = DokumentDao { dataSource }
+        val aivenProducer = createAivenProducer(env.raw)
+
+        val inntektsmeldingStatusDao = PostgresInntektsmeldingStatusDao { dataSource }
+        val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(
+            inntektsmeldingStatusDao = inntektsmeldingStatusDao,
+            producer = Kafka(aivenProducer)
+        )
+        val vedtakFattetMediator = VedtakFattetMediator(
+            dokumentDao = dokumentDao,
+            producer = aivenProducer
+        )
+        val utbetalingMediator = UtbetalingMediator(
+            producer = aivenProducer
+        )
+
+        NyttDokumentRiver(this, dokumentDao)
+        VedtakFattetRiver(this, vedtakFattetMediator)
+        UtbetalingUtbetaltRiver(this, utbetalingMediator)
+        UtbetalingUtenUtbetalingRiver(this, utbetalingMediator)
+        AnnulleringRiver(this, aivenProducer)
+        TrengerInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
+        TrengerIkkeInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
+        InntektsmeldingStatusVedtaksperiodeForkastetRiver(this, inntektsmeldingStatusMediator)
+        InntektsmeldingStatusVedtaksperiodeEndretRiver(this, inntektsmeldingStatusMediator)
+        InntektsmeldingStatusPubliserer(this, inntektsmeldingStatusMediator)
+    }.start()
 }
 
 private fun createAivenProducer(env: Map<String, String>): KafkaProducer<String, JsonNode> {

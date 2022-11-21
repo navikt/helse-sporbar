@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 import javax.sql.DataSource
 
-internal class DokumentDao(val datasource: DataSource) {
+internal class DokumentDao(private val datasourceProvider: () -> DataSource) {
     internal fun opprett(hendelseId: UUID, opprettet: LocalDateTime, dokumentId: UUID, type: Dokument.Type) {
         @Language("PostgreSQL")
         val query = """
@@ -19,7 +19,7 @@ internal class DokumentDao(val datasource: DataSource) {
                 (SELECT h.id FROM hendelse h WHERE h.hendelse_id = ?),
                 (SELECT d.id FROM dokument d WHERE d.dokument_id = ?))
             ON CONFLICT DO NOTHING;"""
-        sessionOf(datasource).use {
+        sessionOf(datasourceProvider()).use {
             it.transaction { session ->
                 session.run(
                     queryOf(
@@ -36,7 +36,7 @@ internal class DokumentDao(val datasource: DataSource) {
         }
     }
 
-    internal fun finn(hendelseIder: List<UUID>) = sessionOf(datasource).use { session ->
+    internal fun finn(hendelseIder: List<UUID>) = sessionOf(datasourceProvider()).use { session ->
         @Language("PostgreSQL")
         val query = """SELECT distinct d.dokument_id, d.type
                        FROM hendelse h

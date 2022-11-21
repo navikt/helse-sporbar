@@ -41,7 +41,7 @@ internal class VedtakFattetRiverTest {
 
     private val testRapid = TestRapid()
     private val producerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
-    private val dokumentDao = DokumentDao(TestDatabase.dataSource)
+    private val dokumentDao = DokumentDao { TestDatabase.dataSource }
 
     private val vedtakFattetMediator = VedtakFattetMediator(
         dokumentDao = dokumentDao,

@@ -20,7 +20,7 @@ internal interface InntektsmeldingStatusDao {
 }
 
 internal class PostgresInntektsmeldingStatusDao(
-    private val dataSource: DataSource
+    private val dataSourceProvider: () -> DataSource
 ): InntektsmeldingStatusDao {
 
     override fun erBehandletUtenforSpleis(vedtaksperiodeId: UUID): Boolean {
@@ -29,7 +29,7 @@ internal class PostgresInntektsmeldingStatusDao(
             SELECT 1 FROM inntektsmelding_status
             WHERE vedtaksperiode_id = :vedtaksperiodeId AND status = 'BEHANDLES_UTENFOR_SPLEIS'
         """
-        return sessionOf(dataSource).use { session ->
+        return sessionOf(dataSourceProvider()).use { session ->
             session.run(queryOf(sql, mapOf("vedtaksperiodeId" to vedtaksperiodeId)).map { it }.asList).isNotEmpty()
         }
     }
@@ -46,7 +46,7 @@ internal class PostgresInntektsmeldingStatusDao(
             WHERE potensielle.melding_innsatt < now() - INTERVAL '${statustimeout.seconds} SECONDS'
             LIMIT 500
         """
-        return sessionOf(dataSource).use { session ->
+        return sessionOf(dataSourceProvider()).use { session ->
             session.run(queryOf(sql).map { row ->
                 InntektsmeldingStatusForEksternDto(
                     id = row.uuid("id"),
@@ -69,7 +69,7 @@ internal class PostgresInntektsmeldingStatusDao(
         val now = LocalDateTime.now()
         val ider = statuser.map { it.id }
         val vedtaksperiodeIder = statuser.map { it.vedtaksperiode.id }
-        sessionOf(dataSource).use { session ->
+        sessionOf(dataSourceProvider()).use { session ->
             session.transaction { transactionalSession ->
                 @Language("PostgreSQL")
                 val meldingPublisertSql = """
@@ -89,7 +89,7 @@ internal class PostgresInntektsmeldingStatusDao(
     }
 
     override fun lagre(inntektsmeldingStatus: InntektsmeldingStatus) {
-        sessionOf(dataSource).use { session ->
+        sessionOf(dataSourceProvider()).use { session ->
             session.run(
                 queryOf(
                     "INSERT INTO inntektsmelding_status (id, hendelse_id, hendelse_opprettet, fodselsnummer, orgnummer, vedtaksperiode_id, fom, tom, status, data)  " +

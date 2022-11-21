@@ -14,7 +14,7 @@ import org.junit.jupiter.api.assertThrows
 internal class NyttDokumentRiverTest {
 
     private val testRapid = TestRapid()
-    private val dokumentDao = DokumentDao(TestDatabase.dataSource)
+    private val dokumentDao = DokumentDao { TestDatabase.dataSource }
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)

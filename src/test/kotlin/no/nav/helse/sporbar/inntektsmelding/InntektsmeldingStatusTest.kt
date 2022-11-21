@@ -29,7 +29,7 @@ internal class InntektsmeldingStatusTest {
 
     private val testRapid = TestRapid()
     private val inntektsmeldingStatusDao = object: InntektsmeldingStatusDao {
-        private val postgres = PostgresInntektsmeldingStatusDao(TestDatabase.dataSource)
+        private val postgres = PostgresInntektsmeldingStatusDao { TestDatabase.dataSource }
         private val førLagrePublisert = mutableMapOf<UUID,() -> Unit>()
         override fun erBehandletUtenforSpleis(vedtaksperiodeId: UUID) = postgres.erBehandletUtenforSpleis(vedtaksperiodeId)
         override fun lagre(inntektsmeldingStatus: InntektsmeldingStatus) = postgres.lagre(inntektsmeldingStatus)
