@@ -30,17 +30,16 @@ val objectMapper: ObjectMapper = jacksonObjectMapper()
 
 fun main() {
     val log = LoggerFactory.getLogger("sporbar")
-    val env = Environment(System.getenv())
     try {
-        launchApplication(env)
+        launchApplication(System.getenv())
     } catch (e: Exception) {
         log.error("Feil under kjøring", e)
         throw e
     }
 }
 
-fun launchApplication(env: Environment) {
-    RapidApplication.create(env.raw).apply {
+fun launchApplication(env: Map<String, String>) {
+    RapidApplication.create(env).apply {
         val dataSourceBuilder = DataSourceBuilder()
         register(object : RapidsConnection.StatusListener {
             override fun onStartup(rapidsConnection: RapidsConnection) {
@@ -49,7 +48,7 @@ fun launchApplication(env: Environment) {
         })
 
         val dokumentDao = DokumentDao(dataSourceBuilder::dataSource)
-        val aivenProducer = createAivenProducer(env.raw)
+        val aivenProducer = createAivenProducer(env)
 
         val inntektsmeldingStatusDao = PostgresInntektsmeldingStatusDao(dataSourceBuilder::dataSource)
         val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(
