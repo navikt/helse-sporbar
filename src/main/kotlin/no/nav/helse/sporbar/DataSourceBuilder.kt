@@ -33,7 +33,14 @@ internal class DataSourceBuilder {
 
     fun migrate() {
         logger.info("Migrerer database")
-        HikariDataSource(hikariConfig).use { migrateDataSource ->
+        HikariDataSource(HikariConfig().apply {
+            jdbcUrl = dbUrl
+            username = databaseUsername
+            password = databasePassword
+            connectionTimeout = Duration.ofSeconds(30).toMillis()
+            initializationFailTimeout = Duration.ofMinutes(30).toMillis()
+            maximumPoolSize = 2
+        }).use { migrateDataSource ->
             Flyway.configure()
                 .dataSource(migrateDataSource)
                 .lockRetryCount(-1)
