@@ -1,38 +1,45 @@
 package no.nav.helse.sporbar
 
 import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import java.time.Duration
 import org.flywaydb.core.Flyway
-import javax.sql.DataSource
-import no.nav.vault.jdbc.hikaricp.HikariCPVaultUtil.createHikariDataSourceWithVaultIntegration as createDataSource
+import org.slf4j.LoggerFactory
 
-internal class DataSourceBuilder(private val env: Environment.DB) {
+internal class DataSourceBuilder {
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(DataSourceBuilder::class.java)
+    }
+
+    private val databaseHost: String = requireNotNull(System.getenv("DATABASE_HOST")) { "host må settes" }
+    private val databasePort: String = requireNotNull(System.getenv("DATABASE_PORT")) { "port må settes" }
+    private val databaseName: String = requireNotNull(System.getenv("DATABASE_DATABASE")) { "databasenavn må settes" }
+    private val databaseUsername: String = requireNotNull(System.getenv("DATABASE_USERNAME")) { "brukernavn må settes" }
+    private val databasePassword: String = requireNotNull(System.getenv("DATABASE_PASSWORD")) { "passord må settes" }
+
+    private val dbUrl = String.format("jdbc:postgresql://%s:%s/%s", databaseHost, databasePort, databaseName)
 
     private val hikariConfig = HikariConfig().apply {
-        jdbcUrl = "jdbc:postgresql://${env.host}:${env.port}/${env.name}"
-        maximumPoolSize = 3
-        minimumIdle = 1
-        idleTimeout = 10001
-        connectionTimeout = 1000
-        maxLifetime = 30001
+        jdbcUrl = dbUrl
+        username = databaseUsername
+        password = databasePassword
+        connectionTimeout = Duration.ofSeconds(30).toMillis()
+        initializationFailTimeout = Duration.ofMinutes(30).toMillis()
+        maximumPoolSize = 1
     }
 
-    fun getDataSource(role: Role = Role.User) =
-        createDataSource(hikariConfig, env.vaultMountPath, role.asRole(env.name))
+    internal val dataSource by lazy { HikariDataSource(hikariConfig) }
 
     fun migrate() {
-        runMigration(getDataSource(Role.Admin), "SET ROLE \"${Role.Admin.asRole(env.name)}\"")
-    }
-
-    private fun runMigration(dataSource: DataSource, initSql: String? = null) =
-        Flyway.configure()
-            .dataSource(dataSource)
-            .initSql(initSql)
-            .load()
-            .migrate()
-
-    enum class Role {
-        Admin, User, ReadOnly;
-
-        fun asRole(databaseName: String) = "$databaseName-${name.lowercase()}"
+        logger.info("Migrerer database")
+        HikariDataSource(hikariConfig).use { migrateDataSource ->
+            Flyway.configure()
+                .dataSource(migrateDataSource)
+                .lockRetryCount(-1)
+                .load()
+                .migrate()
+        }
+        logger.info("Migrering ferdig!")
     }
 }

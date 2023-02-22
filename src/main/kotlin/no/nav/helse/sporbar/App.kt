@@ -40,20 +40,18 @@ fun main() {
 }
 
 fun launchApplication(env: Environment) {
-    val dataSourceBuilder = DataSourceBuilder(env.db)
-
     RapidApplication.create(env.raw).apply {
+        val dataSourceBuilder = DataSourceBuilder()
         register(object : RapidsConnection.StatusListener {
             override fun onStartup(rapidsConnection: RapidsConnection) {
                 dataSourceBuilder.migrate()
             }
         })
 
-        val dataSource by lazy { dataSourceBuilder.getDataSource() }
-        val dokumentDao = DokumentDao { dataSource }
+        val dokumentDao = DokumentDao(dataSourceBuilder::dataSource)
         val aivenProducer = createAivenProducer(env.raw)
 
-        val inntektsmeldingStatusDao = PostgresInntektsmeldingStatusDao { dataSource }
+        val inntektsmeldingStatusDao = PostgresInntektsmeldingStatusDao(dataSourceBuilder::dataSource)
         val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(
             inntektsmeldingStatusDao = inntektsmeldingStatusDao,
             producer = Kafka(aivenProducer)

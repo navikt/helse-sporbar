@@ -17,14 +17,13 @@ spec:
   resources:
     limits:
       cpu: 500m
-      memory: 256Mi
+      memory: 512Mi
     requests:
-      cpu: 50m
+      cpu: 250m
       memory: 128Mi
   replicas:
     min: 1
-    max: 6
-    cpuThresholdPercentage: 90
+    max: 2
   prometheus:
     enabled: true
     path: /metrics
@@ -32,8 +31,16 @@ spec:
     pool: nav-dev
   secureLogs:
     enabled: true
-  vault:
-    enabled: true
+  gcp:
+    sqlInstances:
+      - type: POSTGRES_14
+        diskAutoresize: true
+        pointInTimeRecovery: true
+        tier: db-custom-4-16384
+        name: sporbar
+        databases:
+          - name: sporbar
+            envVarPrefix: DATABASE
   env:
   - name: KAFKA_RAPID_TOPIC
     value: tbd.rapid.v1
@@ -41,13 +48,5 @@ spec:
     value: tbd-sporbar-v1
   - name: KAFKA_RESET_POLICY
     value: earliest
-  - name: DATABASE_HOST
-    value: b27dbvl016.preprod.local
-  - name: DATABASE_PORT
-    value: "5432"
-  - name: DATABASE_NAME
-    value: sporbar
-  - name: DATABASE_VAULT_MOUNT_PATH
-    value: postgresql/preprod-fss/
   - name: NULLE_UT_TOMME_OPPDRAG
     value: "true"
