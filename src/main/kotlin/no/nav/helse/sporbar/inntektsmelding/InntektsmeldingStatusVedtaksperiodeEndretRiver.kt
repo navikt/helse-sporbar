@@ -9,9 +9,6 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.asLocalDateTime
-import no.nav.helse.sporbar.Vedtaksperiode.Tilstand
-import no.nav.helse.sporbar.Vedtaksperiode.Tilstand.AVSLUTTET_UTEN_UTBETALING
-import no.nav.helse.sporbar.Vedtaksperiode.Tilstand.AVVENTER_BLOKKERENDE_PERIODE
 import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmeldingRiver.Companion.somHarInntektsmelding
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -33,23 +30,20 @@ internal class InntektsmeldingStatusVedtaksperiodeEndretRiver(
                 it.require("tom", JsonNode::asLocalDate)
                 it.require("@id") { id -> UUID.fromString(id.asText()) }
                 it.require("@opprettet", JsonNode::asLocalDateTime)
-                it.requireAny("gjeldendeTilstand", listOf(AVSLUTTET_UTEN_UTBETALING.name, AVVENTER_BLOKKERENDE_PERIODE.name))
+                it.requireKey("gjeldendeTilstand")
             }
         }.register(this)
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        when (val tilstand = enumValueOf<Tilstand>(packet["gjeldendeTilstand"].asText())) {
-            AVSLUTTET_UTEN_UTBETALING -> {
+        when (packet["gjeldendeTilstand"].asText()) {
+            "AVSLUTTET_UTEN_UTBETALING" -> {
                 log.info("Vedtaksperiode endret til AVSLUTTET_UTEN_UTBETALING. Trenger ikke inntektsmelding. {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
                 inntektsmeldingStatusMediator.lagre(packet.somTrengerIkkeInntektsmelding())
             }
-            AVVENTER_BLOKKERENDE_PERIODE -> {
+            "AVVENTER_BLOKKERENDE_PERIODE" -> {
                 log.info("Vedtaksperiode endret til AVVENTER_BLOKKERENDE_PERIODE. Har inntektsmelding. {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
                 inntektsmeldingStatusMediator.lagre(packet.somHarInntektsmelding())
-            }
-            else -> {
-                log.warn("Vedtaksperiode endret til $tilstand. Forventet ikke dette i forbindelse med inntektsmeldingstatus. {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
             }
         }
     }
