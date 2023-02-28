@@ -37,14 +37,15 @@ internal class PostgresInntektsmeldingStatusDao(
     override fun hent(statustimeout: Duration): List<InntektsmeldingStatusForEksternDto> {
         @Language("PostgreSQL")
         val sql = """
-            SELECT * FROM (
-                SELECT DISTINCT ON(vedtaksperiode_id) vedtaksperiode_id, id, fom, tom, fodselsnummer, orgnummer, status, hendelse_opprettet, melding_innsatt 
-                FROM inntektsmelding_status 
+            WITH vedtaksperioder as (
+                SELECT MAX(lopenummer) as siste_lopenummer
+                FROM inntektsmelding_status
                 WHERE melding_publisert IS NULL AND melding_ignorert IS NULL
-                ORDER BY vedtaksperiode_id, melding_innsatt DESC
-            ) AS potensielle 
-            WHERE potensielle.melding_innsatt < now() - INTERVAL '${statustimeout.seconds} SECONDS'
-            LIMIT 500
+                GROUP BY vedtaksperiode_id
+                HAVING MAX(melding_innsatt) < now() - INTERVAL '${statustimeout.seconds} SECONDS'
+            )
+            select * from inntektsmelding_status where lopenummer in (select siste_lopenummer from vedtaksperioder)
+            limit 500
         """
         return sessionOf(dataSourceProvider()).use { session ->
             session.run(queryOf(sql).map { row ->
