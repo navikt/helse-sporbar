@@ -124,6 +124,9 @@
     "sykepengegrunnlagsfakta": {
       "type": "object",
       "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget.",
+      "examples": [{
+        "$ref": "#/definitions/fastsattEtterHovedregel"
+      }],
       "oneOf": [
         {
           "type": "object",
@@ -135,18 +138,7 @@
           }
         },
         {
-          "type": "object",
-          "properties": {
-            "fastsatt": {
-              "type": "string",
-              "enum": ["ETTER_HOVEDREGEL"]
-            },
-            "innrapportertInntekt": {
-              "type": "number",
-              "examples": [28620.55],
-              "description": "Inntekten som er innrapportert til Skatt for alle arbeidsgivere siste 12 måneder."
-            }
-          }
+          "$ref": "#/definitions/fastsattEtterHovedregel"
         },
         {
           "type": "object",
@@ -154,10 +146,6 @@
             "fastsatt": {
               "type": "string",
               "enum": ["ETTER_SKJØNN"]
-            },
-            "begrunnelse": {
-              "type": "string",
-              "description": "Begrunnelse fra saksbehandler for det skjønnsfastsatte inntekten."
             },
             "innrapportertInntekt": {
               "type": "number",
@@ -167,6 +155,63 @@
           }
         }
       ]
+    }
+  },
+  "definitions": {
+    "fastsattEtterHovedregel": {
+      "type": "object",
+      "properties": {
+        "fastsatt": {
+          "type": "string",
+          "enum": ["ETTER_HOVEDREGEL"]
+        },
+        "omregnetÅrsinntekt": {
+          "type": "number",
+          "examples": [800123.55],
+          "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
+        },
+        "innrapportertÅrsinntekt": {
+          "type": "number",
+          "examples": [755785.12],
+          "description": "Inntekten som er innrapportert til Skatt for alle arbeidsgivere siste 12 måneder."
+        },
+        "avviksprosent": {
+          "type": "number",
+          "description": "Avviket mellom omregnet årsainntekt og innrapportert årsinntekt",
+          "examples": [25.38]
+        },
+        "6G": {
+          "type": "number",
+          "examples": [711720],
+          "description": "Seks ganger grunnbeløpet som gjaldt ved skjæringstidspunktet."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Liste med tags som gjelder faktaen som er lagt grunn for sykepengegrunnlaget",
+          "items": {
+            "type": "string",
+            "enum": ["6G_BEGRENSET"]
+          }
+        },
+        "arbeidsgivere": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "arbeidsgiver": {
+                "type": "string",
+                "examples": ["999263550"],
+                "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
+              },
+              "omregnetÅrsinntekt": {
+                "type": "number",
+                "examples": [800123.55],
+                "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
