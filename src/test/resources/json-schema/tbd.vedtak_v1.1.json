@@ -49,7 +49,8 @@
     "inntekt": {
       "type": "number",
       "examples": [28620.55],
-      "description": "Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren."
+      "description": "Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren.",
+      "deprecationMessage": "Bruk heller informasjonen i sykepengegrunnlagfakta.arbeidsgivere."
     },
     "sykepengegrunnlag": {
       "type": "number",
@@ -59,7 +60,8 @@
     "grunnlagForSykepengegrunnlag": {
       "type": "number",
       "examples": [343446.60],
-      "description": "Den samlede årlige inntekten før evt. begrensning."
+      "description": "Den samlede årlige inntekten før evt. begrensning.",
+      "deprecationMessage": "Bruk heller informasjonen i sykepengegrunnlagfakta."
     },
     "vedtakFattetTidspunkt": {
       "type": "string",
@@ -120,7 +122,8 @@
       "examples": [{
         "999263550": 161723.30,
         "974652269": 181723.30
-      }]
+      }],
+      "deprecationMessage": "Bruk heller informasjonen i sykepengegrunnlagfakta.arbeidsgivere."
     },
     "sykepengegrunnlagsfakta": {
       "type": "object",
@@ -144,18 +147,43 @@
       "oneOf": [
         {
           "type": "object",
-          "$id": "FastsattIInfotrygd",
-          "required": ["fastsatt"],
+          "required": ["fastsatt", "omregnetÅrsinntekt", "arbeidsgivere"],
           "properties": {
             "fastsatt": {
               "type": "string",
               "enum": ["I_INFOTRYGD"]
+            },
+            "omregnetÅrsinntekt": {
+              "type": "number",
+              "examples": [800123.55],
+              "description": "Inntekten som saksbehandler har registrert i Infotrygd."
+            },
+            "arbeidsgivere": {
+              "type": "array",
+              "description": "Alltid én arbeidsgiver i et sykepengegrunnlag fastsatt i Infotrygd.",
+              "minLength": 1,
+              "maxLength": 1,
+              "items": {
+                "type": "object",
+                "required": ["arbeidsgiver", "omregnetÅrsinntekt"],
+                "properties": {
+                  "arbeidsgiver": {
+                    "type": "string",
+                    "examples": ["999263550"],
+                    "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
+                  },
+                  "omregnetÅrsinntekt": {
+                    "type": "number",
+                    "examples": [800123.55],
+                    "description": "Inntekten som registrert av saksbehandler i Infotrygd"
+                  }
+                }
+              }
             }
           }
         },
         {
           "type": "object",
-          "$id": "FastsattEtterHovedregel",
           "required": ["fastsatt", "arbeidsgivere"],
           "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
           "properties": {
@@ -186,7 +214,6 @@
         },
         {
           "type": "object",
-          "$id": "FastsattEtterSkjønn",
           "required": ["fastsatt", "arbeidsgivere","skjønnsfastsatt"],
           "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
           "properties": {
