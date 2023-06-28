@@ -49,7 +49,8 @@
     "inntekt": {
       "type": "number",
       "examples": [28620.55],
-      "description": "Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren."
+      "description": "Månedsinntekten som sykepengegrunnlaget beregnes ut fra, for den aktuelle arbeidsgiveren.",
+      "deprecationMessage": "Bruk heller informasjonen i sykepengegrunnlagfakta.arbeidsgivere."
     },
     "sykepengegrunnlag": {
       "type": "number",
@@ -59,7 +60,8 @@
     "grunnlagForSykepengegrunnlag": {
       "type": "number",
       "examples": [343446.60],
-      "description": "Den samlede årlige inntekten før evt. begrensning."
+      "description": "Den samlede årlige inntekten før evt. begrensning.",
+      "deprecationMessage": "Bruk heller informasjonen i sykepengegrunnlagfakta."
     },
     "vedtakFattetTidspunkt": {
       "type": "string",
@@ -75,7 +77,8 @@
         "ER_IKKE_6G_BEGRENSET",
         "VURDERT_I_INFOTRYGD",
         "VET_IKKE"
-      ]
+      ],
+      "deprecationMessage": "Bruk heller kombinasjon av sykepengegrunnlagsfakta.fastsatt og sykepengegrunnlagsfakta.tags"
     },
     "dokumenter": {
       "type": "array",
@@ -119,38 +122,133 @@
       "examples": [{
         "999263550": 161723.30,
         "974652269": 181723.30
-      }]
+      }],
+      "deprecationMessage": "Bruk heller informasjonen i sykepengegrunnlagfakta.arbeidsgivere."
     },
     "sykepengegrunnlagsfakta": {
       "type": "object",
       "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget.",
       "examples": [{
-        "$ref": "#/definitions/fastsattEtterHovedregel"
+        "fastsatt": "ETTER_HOVEDREGEL",
+        "omregnetÅrsinntekt": 800123.55,
+        "innrapportertÅrsinntekt": 755785.12,
+        "avviksprosent": 25.38,
+        "6G": 711720,
+        "tags": [
+          "6G_BEGRENSET"
+        ],
+        "arbeidsgivere": [
+          {
+            "arbeidsgiver": "999263550",
+            "omregnetÅrsinntekt": 800123.55
+          }
+        ]
       }],
       "oneOf": [
         {
           "type": "object",
+          "required": ["fastsatt", "omregnetÅrsinntekt", "arbeidsgivere"],
           "properties": {
             "fastsatt": {
               "type": "string",
               "enum": ["I_INFOTRYGD"]
+            },
+            "omregnetÅrsinntekt": {
+              "type": "number",
+              "examples": [800123.55],
+              "description": "Inntekten som saksbehandler har registrert i Infotrygd."
+            },
+            "arbeidsgivere": {
+              "type": "array",
+              "description": "Alltid én arbeidsgiver i et sykepengegrunnlag fastsatt i Infotrygd.",
+              "minLength": 1,
+              "maxLength": 1,
+              "items": {
+                "type": "object",
+                "required": ["arbeidsgiver", "omregnetÅrsinntekt"],
+                "properties": {
+                  "arbeidsgiver": {
+                    "type": "string",
+                    "examples": ["999263550"],
+                    "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
+                  },
+                  "omregnetÅrsinntekt": {
+                    "type": "number",
+                    "examples": [800123.55],
+                    "description": "Inntekten som registrert av saksbehandler i Infotrygd"
+                  }
+                }
+              }
             }
           }
         },
         {
-          "$ref": "#/definitions/fastsattEtterHovedregel"
+          "type": "object",
+          "required": ["fastsatt", "arbeidsgivere"],
+          "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
+          "properties": {
+            "fastsatt": {
+              "type": "string",
+              "enum": ["ETTER_HOVEDREGEL"]
+            },
+            "arbeidsgivere": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["arbeidsgiver", "omregnetÅrsinntekt"],
+                "properties": {
+                  "arbeidsgiver": {
+                    "type": "string",
+                    "examples": ["999263550"],
+                    "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
+                  },
+                  "omregnetÅrsinntekt": {
+                    "type": "number",
+                    "examples": [800123.55],
+                    "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
+                  }
+                }
+              }
+            }
+          }
         },
         {
           "type": "object",
+          "required": ["fastsatt", "arbeidsgivere","skjønnsfastsatt"],
+          "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
           "properties": {
             "fastsatt": {
               "type": "string",
               "enum": ["ETTER_SKJØNN"]
             },
-            "innrapportertInntekt": {
+            "skjønnsfastsatt": {
               "type": "number",
-              "examples": [28620.55],
-              "description": "Inntekten som er innrapportert til Skatt for alle arbeidsgivere siste 12 måneder."
+              "examples": [900123.55],
+              "description": "Årlig beløp som er skjønnsfastsatt av saksbehandler"
+            },
+            "arbeidsgivere": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["arbeidsgiver", "omregnetÅrsinntekt", "skjønnsfastsatt"],
+                "properties": {
+                  "arbeidsgiver": {
+                    "type": "string",
+                    "examples": ["999263550"],
+                    "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
+                  },
+                  "omregnetÅrsinntekt": {
+                    "type": "number",
+                    "examples": [800123.55],
+                    "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
+                  },
+                  "skjønnsfastsatt": {
+                    "type": "number",
+                    "examples": [900123.55],
+                    "description": "Årlig beløp som er skjønnsfastsatt av saksbehandler"
+                  }
+                }
+              }
             }
           }
         }
@@ -158,13 +256,10 @@
     }
   },
   "definitions": {
-    "fastsattEtterHovedregel": {
+    "spleisSykepengegrunnlag": {
       "type": "object",
+      "required": ["omregnetÅrsinntekt", "innrapportertÅrsinntekt", "avviksprosent", "6G", "tags"],
       "properties": {
-        "fastsatt": {
-          "type": "string",
-          "enum": ["ETTER_HOVEDREGEL"]
-        },
         "omregnetÅrsinntekt": {
           "type": "number",
           "examples": [800123.55],
@@ -191,24 +286,6 @@
           "items": {
             "type": "string",
             "enum": ["6G_BEGRENSET"]
-          }
-        },
-        "arbeidsgivere": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "arbeidsgiver": {
-                "type": "string",
-                "examples": ["999263550"],
-                "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
-              },
-              "omregnetÅrsinntekt": {
-                "type": "number",
-                "examples": [800123.55],
-                "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
-              }
-            }
           }
         }
       }
