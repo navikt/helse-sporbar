@@ -133,45 +133,16 @@
           "required": ["fastsatt"],
           "properties": {
             "fastsatt": {
-              "const": "I_INFOTRYGD"
+              "type": "string",
+              "enum": ["I_INFOTRYGD"]
             }
           }
         },
         {
           "type": "object",
-          "required": ["fastsatt", "omregnetÅrsinntekt", "innrapportertÅrsinntekt", "avviksprosent", "6G", "tags", "arbeidsgivere"],
+          "required": ["arbeidsgivere"],
+          "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
           "properties": {
-            "fastsatt": {
-              "const": "ETTER_HOVEDREGEL"
-            },
-            "omregnetÅrsinntekt": {
-              "type": "number",
-              "examples": [800123.55],
-              "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
-            },
-            "innrapportertÅrsinntekt": {
-              "type": "number",
-              "examples": [755785.12],
-              "description": "Inntekten som er innrapportert til Skatt for alle arbeidsgivere siste 12 måneder."
-            },
-            "avviksprosent": {
-              "type": "number",
-              "description": "Avviket mellom omregnet årsainntekt og innrapportert årsinntekt",
-              "examples": [25.38]
-            },
-            "6G": {
-              "type": "number",
-              "examples": [711720],
-              "description": "Seks ganger grunnbeløpet som gjaldt ved skjæringstidspunktet."
-            },
-            "tags": {
-              "type": "array",
-              "description": "Liste med tags som gjelder faktaen som er lagt grunn for sykepengegrunnlaget",
-              "items": {
-                "type": "string",
-                "enum": ["6G_BEGRENSET"]
-              }
-            },
             "arbeidsgivere": {
               "type": "array",
               "items": {
@@ -197,7 +168,8 @@
           "type": "object",
           "properties": {
             "fastsatt": {
-              "const": "ETTER_HOVEDREGEL"
+              "type": "string",
+              "enum": ["ETTER_SKJØNN"]
             },
             "innrapportertInntekt": {
               "type": "number",
@@ -207,6 +179,46 @@
           }
         }
       ]
+    }
+  },
+  "definitions": {
+    "spleisSykepengegrunnlag": {
+      "type": "object",
+      "required": ["fastsatt", "omregnetÅrsinntekt", "innrapportertÅrsinntekt", "avviksprosent", "6G", "tags"],
+      "properties": {
+        "fastsatt": {
+          "type": "string",
+          "enum": ["ETTER_HOVEDREGEL"]
+        },
+        "omregnetÅrsinntekt": {
+          "type": "number",
+          "examples": [800123.55],
+          "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
+        },
+        "innrapportertÅrsinntekt": {
+          "type": "number",
+          "examples": [755785.12],
+          "description": "Inntekten som er innrapportert til Skatt for alle arbeidsgivere siste 12 måneder."
+        },
+        "avviksprosent": {
+          "type": "number",
+          "description": "Avviket mellom omregnet årsainntekt og innrapportert årsinntekt",
+          "examples": [25.38]
+        },
+        "6G": {
+          "type": "number",
+          "examples": [711720],
+          "description": "Seks ganger grunnbeløpet som gjaldt ved skjæringstidspunktet."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Liste med tags som gjelder faktaen som er lagt grunn for sykepengegrunnlaget",
+          "items": {
+            "type": "string",
+            "enum": ["6G_BEGRENSET"]
+          }
+        }
+      }
     }
   }
 }
