@@ -130,6 +130,7 @@
       "oneOf": [
         {
           "type": "object",
+          "$id": "FastsattIInfotrygd",
           "required": ["fastsatt"],
           "properties": {
             "fastsatt": {
@@ -140,9 +141,14 @@
         },
         {
           "type": "object",
-          "required": ["arbeidsgivere"],
+          "$id": "FastsattEtterHovedregel",
+          "required": ["fastsatt", "arbeidsgivere"],
           "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
           "properties": {
+            "fastsatt": {
+              "type": "string",
+              "enum": ["ETTER_HOVEDREGEL"]
+            },
             "arbeidsgivere": {
               "type": "array",
               "items": {
@@ -166,15 +172,37 @@
         },
         {
           "type": "object",
+          "$id": "FastsattEtterSkjønn",
+          "required": ["fastsatt", "arbeidsgivere","skjønnsfastsatt"],
+          "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
           "properties": {
             "fastsatt": {
               "type": "string",
               "enum": ["ETTER_SKJØNN"]
             },
-            "innrapportertInntekt": {
+            "skjønnsfastsatt": {
               "type": "number",
-              "examples": [28620.55],
-              "description": "Inntekten som er innrapportert til Skatt for alle arbeidsgivere siste 12 måneder."
+              "examples": [900123.55],
+              "description": "Årlig beløp som er skjønnsfastsatt av saksbehandler"
+            },
+            "arbeidsgivere": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["arbeidsgiver", "omregnetÅrsinntekt", "skjønnsfastsatt"],
+                "properties": {
+                  "arbeidsgiver": {
+                    "type": "string",
+                    "examples": ["999263550"],
+                    "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
+                  },
+                  "skjønnsfastsatt": {
+                    "type": "number",
+                    "examples": [900123.55],
+                    "description": "Årlig beløp som er skjønnsfastsatt av saksbehandler"
+                  }
+                }
+              }
             }
           }
         }
@@ -184,12 +212,8 @@
   "definitions": {
     "spleisSykepengegrunnlag": {
       "type": "object",
-      "required": ["fastsatt", "omregnetÅrsinntekt", "innrapportertÅrsinntekt", "avviksprosent", "6G", "tags"],
+      "required": ["omregnetÅrsinntekt", "innrapportertÅrsinntekt", "avviksprosent", "6G", "tags"],
       "properties": {
-        "fastsatt": {
-          "type": "string",
-          "enum": ["ETTER_HOVEDREGEL"]
-        },
         "omregnetÅrsinntekt": {
           "type": "number",
           "examples": [800123.55],
