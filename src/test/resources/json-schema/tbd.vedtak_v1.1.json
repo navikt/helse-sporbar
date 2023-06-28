@@ -125,7 +125,20 @@
       "type": "object",
       "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget.",
       "examples": [{
-        "fastsatt": "I_INFOTRYGD"
+        "fastsatt": "ETTER_HOVEDREGEL",
+        "omregnetÅrsinntekt": 800123.55,
+        "innrapportertÅrsinntekt": 755785.12,
+        "avviksprosent": 25.38,
+        "6G": 711720,
+        "tags": [
+          "6G_BEGRENSET"
+        ],
+        "arbeidsgivere": [
+          {
+            "arbeidsgiver": "999263550",
+            "omregnetÅrsinntekt": 800123.55
+          }
+        ]
       }],
       "oneOf": [
         {
@@ -195,6 +208,11 @@
                     "type": "string",
                     "examples": ["999263550"],
                     "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
+                  },
+                  "omregnetÅrsinntekt": {
+                    "type": "number",
+                    "examples": [800123.55],
+                    "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
                   },
                   "skjønnsfastsatt": {
                     "type": "number",
