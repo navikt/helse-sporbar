@@ -75,7 +75,8 @@
         "ER_IKKE_6G_BEGRENSET",
         "VURDERT_I_INFOTRYGD",
         "VET_IKKE"
-      ]
+      ],
+      "deprecationMessage": "Bruk heller kombinasjon av sykepengegrunnlagsfakta.fastsatt og sykepengegrunnlagsfakta.tags"
     },
     "dokumenter": {
       "type": "array",
