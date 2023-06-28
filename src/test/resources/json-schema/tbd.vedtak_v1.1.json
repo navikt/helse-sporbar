@@ -129,7 +129,7 @@
       "type": "object",
       "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget.",
       "examples": [{
-        "fastsatt": "ETTER_HOVEDREGEL",
+        "fastsatt": "EtterHovedregel",
         "omregnetÅrsinntekt": 800123.55,
         "innrapportertÅrsinntekt": 755785.12,
         "avviksprosent": 25.38,
@@ -151,7 +151,7 @@
           "properties": {
             "fastsatt": {
               "type": "string",
-              "enum": ["I_INFOTRYGD"]
+              "enum": ["IInfotrygd"]
             },
             "omregnetÅrsinntekt": {
               "type": "number",
@@ -189,7 +189,7 @@
           "properties": {
             "fastsatt": {
               "type": "string",
-              "enum": ["ETTER_HOVEDREGEL"]
+              "enum": ["EtterHovedregel"]
             },
             "arbeidsgivere": {
               "type": "array",
@@ -214,7 +214,7 @@
         },
         {
           "type": "object",
-          "required": ["fastsatt", "arbeidsgivere","skjønnsfastsatt"],
+          "required": ["fastsatt", "arbeidsgivere", "skjønnsfastsatt"],
           "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
           "properties": {
             "fastsatt": {
@@ -253,6 +253,44 @@
           }
         }
       ]
+    },
+    "begrunnelser": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["årsak", "begrunnelse", "perioder"],
+        "properties": {
+          "årsak": {
+            "type": "string",
+            "description": "Årsak til begrunnelse",
+            "enum": ["SkjønnsfastsattSykepengegrunnlag"]
+          },
+          "begrunnelse": {
+            "description": "Saksbehandlers begrunnelse",
+            "type": "string"
+          },
+          "perioder": {
+            "type": "array",
+            "description": "Begrenset til vedtakets fom & tom. Inneholder liste med perioder begrunnelsen gjelder",
+            "items": {
+              "type": "object",
+              "required": ["fom", "tom"],
+              "properties": {
+                "fom": {
+                  "type": "string",
+                  "format": "date",
+                  "examples": ["2018-01-01"]
+                },
+                "tom": {
+                  "type": "string",
+                  "format": "date",
+                  "examples": ["2018-01-31"]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -285,7 +323,7 @@
           "description": "Liste med tags som gjelder faktaen som er lagt grunn for sykepengegrunnlaget",
           "items": {
             "type": "string",
-            "enum": ["6G_BEGRENSET"]
+            "enum": ["6GBegrenset"]
           }
         }
       }
