@@ -15,7 +15,9 @@
     "tom",
     "vedtakFattetTidspunkt",
     "begrensning",
-    "grunnlagForSykepengegrunnlagPerArbeidsgiver"
+    "grunnlagForSykepengegrunnlagPerArbeidsgiver",
+    "sykepengegrunnlagsfakta",
+    "begrunnelser"
   ],
   "type": "object",
   "additionalProperties": false,
@@ -129,25 +131,28 @@
       "type": "object",
       "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget.",
       "examples": [{
-        "fastsatt": "EtterHovedregel",
+        "fastsatt": "EtterSkjønn",
         "omregnetÅrsinntekt": 800123.55,
         "innrapportertÅrsinntekt": 755785.12,
+        "skjønnsfastsatt": 777000.15,
         "avviksprosent": 25.38,
         "6G": 711720,
         "tags": [
-          "6G_BEGRENSET"
+          "6GBegrenset"
         ],
         "arbeidsgivere": [
           {
             "arbeidsgiver": "999263550",
-            "omregnetÅrsinntekt": 800123.55
+            "omregnetÅrsinntekt": 800123.55,
+            "skjønnsfastsatt": 777000.15
           }
         ]
       }],
       "oneOf": [
         {
           "type": "object",
-          "required": ["fastsatt", "omregnetÅrsinntekt", "arbeidsgivere"],
+          "description": "Sykepengegrunnlag tatt over fra Infotrygd. Her finnes ingen detaljer utover omregnet årsinntekt, og det er kun _en_ arbeidsgiver.",
+          "required": ["fastsatt", "omregnetÅrsinntekt"],
           "properties": {
             "fastsatt": {
               "type": "string",
@@ -157,28 +162,6 @@
               "type": "number",
               "examples": [800123.55],
               "description": "Inntekten som saksbehandler har registrert i Infotrygd."
-            },
-            "arbeidsgivere": {
-              "type": "array",
-              "description": "Alltid én arbeidsgiver i et sykepengegrunnlag fastsatt i Infotrygd.",
-              "minLength": 1,
-              "maxLength": 1,
-              "items": {
-                "type": "object",
-                "required": ["arbeidsgiver", "omregnetÅrsinntekt"],
-                "properties": {
-                  "arbeidsgiver": {
-                    "type": "string",
-                    "examples": ["999263550"],
-                    "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
-                  },
-                  "omregnetÅrsinntekt": {
-                    "type": "number",
-                    "examples": [800123.55],
-                    "description": "Inntekten som registrert av saksbehandler i Infotrygd"
-                  }
-                }
-              }
             }
           }
         },
@@ -219,7 +202,7 @@
           "properties": {
             "fastsatt": {
               "type": "string",
-              "enum": ["ETTER_SKJØNN"]
+              "enum": ["EtterSkjønn"]
             },
             "skjønnsfastsatt": {
               "type": "number",
@@ -258,6 +241,7 @@
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["årsak", "begrunnelse", "perioder"],
         "properties": {
           "årsak": {
