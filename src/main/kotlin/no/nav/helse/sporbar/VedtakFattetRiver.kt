@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import no.nav.helse.sporbar.Sykepengegrunnlagsfakta.Companion.sykepengegrunnlagsfakta
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
@@ -40,7 +41,10 @@ internal class VedtakFattetRiver(
                 it.require("vedtakFattetTidspunkt", JsonNode::asLocalDateTime)
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.interestedIn("utbetalingId") { id -> UUID.fromString(id.asText()) }
-
+                it.interestedIn("sykepengegrunnlagsfakta") { sykepengegrunnlagsfakta ->
+                    try { sykepengegrunnlagsfakta.sykepengegrunnlagsfakta }
+                    catch (ignore: Exception) {}
+                }
             }
         }.register(this)
     }
@@ -108,3 +112,68 @@ internal data class VedtakFattet(
     val utbetalingId: UUID?,
     val vedtakFattetTidspunkt: LocalDateTime
 )
+
+internal sealed class Sykepengegrunnlagsfakta(val fastsatt: String) {
+    internal companion object {
+        internal val JsonNode.sykepengegrunnlagsfakta get() = when (path("fastsatt").asText()) {
+            "EtterHovedregel" -> FastsattEtterHovedregel(
+                omregnetÅrsinntekt = get("omregnetÅrsinntekt").asDouble(),
+                innrapportertÅrsinntekt = get("innrapportertÅrsinntekt").asDouble(),
+                avviksprosent = get("avviksprosent").asDouble(),
+                `6G` = get("6G").asDouble(),
+                tags = get("tags").map { it.asText() }.toSet(),
+                arbeidsgivere = get("arbeidsgivere").map { FastsattEtterHovedregel.Arbeidsgiver(
+                    arbeidsgiver = it.get("arbeidsgiver").asText(),
+                    omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble()
+                )}
+            )
+            "EtterSkjønn" -> FastsattEtterSkjønn(
+                omregnetÅrsinntekt = get("omregnetÅrsinntekt").asDouble(),
+                innrapportertÅrsinntekt = get("innrapportertÅrsinntekt").asDouble(),
+                skjønnsfastsatt = get("skjønnsfastsatt").asDouble(),
+                avviksprosent = get("avviksprosent").asDouble(),
+                `6G` = get("6G").asDouble(),
+                tags = get("tags").map { it.asText() }.toSet(),
+                arbeidsgivere = get("arbeidsgivere").map { FastsattEtterSkjønn.Arbeidsgiver(
+                    arbeidsgiver = it.get("arbeidsgiver").asText(),
+                    omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble(),
+                    skjønnsfastsatt = it.get("skjønnsfastsatt").asDouble()
+                )}
+            )
+            "IInfotrygd" -> FastsattIInfotrygd(get("omregnetÅrsinntekt").asDouble())
+            else -> {
+                "Støtter ikke sykepengegrunnlag fastsatt ${path("fastsatt").asText()}".let { feilmelding ->
+                    sikkerLog.error("${feilmelding}\n\n\t${this}")
+                    throw IllegalStateException(feilmelding)
+                }
+            }
+        }
+    }
+}
+
+internal data class FastsattEtterHovedregel(
+    val omregnetÅrsinntekt: Double,
+    val innrapportertÅrsinntekt: Double,
+    val avviksprosent: Double,
+    val `6G`: Double,
+    val tags: Set<String>,
+    val arbeidsgivere: List<Arbeidsgiver>
+) : Sykepengegrunnlagsfakta("EtterHovedregel") {
+    internal data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double)
+}
+
+internal data class FastsattEtterSkjønn(
+    val omregnetÅrsinntekt: Double,
+    val innrapportertÅrsinntekt: Double,
+    val skjønnsfastsatt: Double,
+    val avviksprosent: Double,
+    val `6G`: Double,
+    val tags: Set<String>,
+    val arbeidsgivere: List<Arbeidsgiver>
+) : Sykepengegrunnlagsfakta("EtterSkjønn") {
+    internal data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double, val skjønnsfastsatt: Double)
+}
+
+internal data class FastsattIInfotrygd(
+    val omregnetÅrsinntekt: Double,
+) : Sykepengegrunnlagsfakta("IInfotrygd")
