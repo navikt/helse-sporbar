@@ -3,6 +3,7 @@
   "title": "Vedtak som blir fattet i Spleis",
   "description": "Alle vedtak om sykepenger som blir fattet i Spleis\n\nTopic: tbd.vedtak\n\nKey: Fødselsnummer",
   "required": [
+    "versjon",
     "fødselsnummer",
     "aktørId",
     "organisasjonsnummer",
@@ -22,8 +23,8 @@
   "additionalProperties": false,
   "properties": {
     "versjon": {
-      "type": ["null", "string"],
-      "description": "schema-versjon for denne meldingen. null == 1.0.0",
+      "type": "string",
+      "description": "schema-versjon for denne meldingen.",
       "enum": [
         "1.1.0"
       ]
