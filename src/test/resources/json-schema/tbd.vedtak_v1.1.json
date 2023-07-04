@@ -16,7 +16,6 @@
     "vedtakFattetTidspunkt",
     "begrensning",
     "grunnlagForSykepengegrunnlagPerArbeidsgiver",
-    "sykepengegrunnlagsfakta",
     "begrunnelser"
   ],
   "type": "object",
@@ -128,8 +127,8 @@
       "deprecationMessage": "Bruk heller informasjonen i sykepengegrunnlagfakta.arbeidsgivere."
     },
     "sykepengegrunnlagsfakta": {
-      "type": "object",
-      "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget.",
+      "type": ["null", "object"],
+      "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget. Er ikke satt i de tilfellene det ikke er gjort noen vilkårsprøving for vedtaket.",
       "examples": [{
         "fastsatt": "EtterSkjønn",
         "omregnetÅrsinntekt": 800123.55,
