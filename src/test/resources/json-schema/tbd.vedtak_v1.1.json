@@ -21,6 +21,13 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "versjon": {
+      "type": ["null", "string"],
+      "description": "schema-versjon for denne meldingen. null == 1.0.0",
+      "enum": [
+        "1.1.0"
+      ]
+    },
     "fødselsnummer": {
       "type": "string"
     },
