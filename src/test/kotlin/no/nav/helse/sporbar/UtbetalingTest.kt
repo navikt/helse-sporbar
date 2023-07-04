@@ -272,24 +272,38 @@ internal class UtbetalingTest {
         ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
         utbetalingId: UUID = idSett.utbetalingId) = """{
-  "vedtaksperiodeId": "$vedtaksperiodeId",
-  "fom": "$FOM",
-  "tom": "$TOM",
-  "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
-  "hendelser": ${hendelser.map { "\"${it}\"" }},
-  "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
-  "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
-  "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
-  "begrensning": "$BEGRENSNING",
-  "inntekt": "$INNTEKT",
-  "utbetalingId": "$utbetalingId",
-  "@event_name": "vedtak_fattet",
-  "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
-  "@opprettet": "$TIDSSTEMPEL",
-  "aktørId": "$AKTØRID",
-  "fødselsnummer": "$FØDSELSNUMMER",
-  "organisasjonsnummer": "$ORGNUMMER",
-  "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT"
+    "vedtaksperiodeId": "$vedtaksperiodeId",
+    "fom": "$FOM",
+    "tom": "$TOM",
+    "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
+    "hendelser": ${hendelser.map { "\"${it}\"" }},
+    "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
+    "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
+    "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
+    "begrensning": "$BEGRENSNING",
+    "inntekt": "$INNTEKT",
+    "utbetalingId": "$utbetalingId",
+    "@event_name": "vedtak_fattet",
+    "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
+    "@opprettet": "$TIDSSTEMPEL",
+    "aktørId": "$AKTØRID",
+    "fødselsnummer": "$FØDSELSNUMMER",
+    "organisasjonsnummer": "$ORGNUMMER",
+    "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
+    "sykepengegrunnlagsfakta": {
+        "fastsatt": "EtterSkjønn",
+        "omregnetÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG},
+        "skjønnsfastsatt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 2500},
+        "innrapportertÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 5000},
+        "avviksprosent": 26.52,
+        "6G": 620000.0,
+        "tags": [],
+        "arbeidsgivere": [{
+            "arbeidsgiver": "${ORGNUMMER}",
+            "omregnetÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG},
+            "skjønnsfastsatt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 2500}
+        }]
+    }
 }
     """
 

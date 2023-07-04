@@ -41,10 +41,7 @@ internal class VedtakFattetRiver(
                 it.require("vedtakFattetTidspunkt", JsonNode::asLocalDateTime)
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.interestedIn("utbetalingId") { id -> UUID.fromString(id.asText()) }
-                it.interestedIn("sykepengegrunnlagsfakta") { sykepengegrunnlagsfakta ->
-                    try { sykepengegrunnlagsfakta.sykepengegrunnlagsfakta }
-                    catch (ignore: Exception) {}
-                }
+                it.interestedIn("sykepengegrunnlagsfakta")
             }
         }.register(this)
     }
@@ -72,6 +69,7 @@ internal class VedtakFattetRiver(
         val utbetalingId = packet["utbetalingId"].takeUnless(JsonNode::isMissingOrNull)?.let {
             UUID.fromString(it.asText())
         }
+        val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].takeUnless(JsonNode::isMissingOrNull)?.sykepengegrunnlagsfakta
 
         vedtakFattetMediator.vedtakFattet(
             VedtakFattet(
@@ -88,7 +86,8 @@ internal class VedtakFattetRiver(
                 grunnlagForSykepengegrunnlagPerArbeidsgiver = grunnlagForSykepengegrunnlagPerArbeidsgiver,
                 begrensning = begrensning,
                 utbetalingId = utbetalingId,
-                vedtakFattetTidspunkt = vedtakFattetTidspunkt
+                vedtakFattetTidspunkt = vedtakFattetTidspunkt,
+                sykepengegrunnlagsfakta = sykepengegrunnlagsfakta
             )
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
@@ -110,10 +109,11 @@ internal data class VedtakFattet(
     val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
     val begrensning: String,
     val utbetalingId: UUID?,
-    val vedtakFattetTidspunkt: LocalDateTime
+    val vedtakFattetTidspunkt: LocalDateTime,
+    val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta?
 )
 
-internal sealed class Sykepengegrunnlagsfakta(val fastsatt: String) {
+internal sealed class Sykepengegrunnlagsfakta(internal val fastsatt: String, internal val omregnetÅrsinntekt: Double) {
     internal companion object {
         internal val JsonNode.sykepengegrunnlagsfakta get() = when (path("fastsatt").asText()) {
             "EtterHovedregel" -> FastsattEtterHovedregel(
@@ -151,29 +151,29 @@ internal sealed class Sykepengegrunnlagsfakta(val fastsatt: String) {
     }
 }
 
-internal data class FastsattEtterHovedregel(
-    val omregnetÅrsinntekt: Double,
-    val innrapportertÅrsinntekt: Double,
-    val avviksprosent: Double,
-    val `6G`: Double,
-    val tags: Set<String>,
-    val arbeidsgivere: List<Arbeidsgiver>
-) : Sykepengegrunnlagsfakta("EtterHovedregel") {
-    internal data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double)
+internal class FastsattEtterHovedregel(
+    omregnetÅrsinntekt: Double,
+    internal val innrapportertÅrsinntekt: Double,
+    internal val avviksprosent: Double,
+    internal val `6G`: Double,
+    internal val tags: Set<String>,
+    internal val arbeidsgivere: List<Arbeidsgiver>
+) : Sykepengegrunnlagsfakta("EtterHovedregel", omregnetÅrsinntekt) {
+    internal class Arbeidsgiver(internal val arbeidsgiver: String, internal val omregnetÅrsinntekt: Double)
 }
 
-internal data class FastsattEtterSkjønn(
-    val omregnetÅrsinntekt: Double,
-    val innrapportertÅrsinntekt: Double,
-    val skjønnsfastsatt: Double,
-    val avviksprosent: Double,
-    val `6G`: Double,
-    val tags: Set<String>,
-    val arbeidsgivere: List<Arbeidsgiver>
-) : Sykepengegrunnlagsfakta("EtterSkjønn") {
-    internal data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double, val skjønnsfastsatt: Double)
+internal class FastsattEtterSkjønn(
+    omregnetÅrsinntekt: Double,
+    internal val innrapportertÅrsinntekt: Double,
+    internal val skjønnsfastsatt: Double,
+    internal val avviksprosent: Double,
+    internal val `6G`: Double,
+    internal val tags: Set<String>,
+    internal val arbeidsgivere: List<Arbeidsgiver>
+) : Sykepengegrunnlagsfakta("EtterSkjønn", omregnetÅrsinntekt) {
+    internal class Arbeidsgiver(internal val arbeidsgiver: String, internal val omregnetÅrsinntekt: Double, internal val skjønnsfastsatt: Double)
 }
 
-internal data class FastsattIInfotrygd(
-    val omregnetÅrsinntekt: Double,
-) : Sykepengegrunnlagsfakta("IInfotrygd")
+internal class FastsattIInfotrygd(
+    omregnetÅrsinntekt: Double,
+) : Sykepengegrunnlagsfakta("IInfotrygd", omregnetÅrsinntekt)

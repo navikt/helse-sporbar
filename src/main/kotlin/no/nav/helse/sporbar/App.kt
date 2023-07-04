@@ -57,7 +57,8 @@ fun launchApplication(env: Map<String, String>) {
         )
         val vedtakFattetMediator = VedtakFattetMediator(
             dokumentDao = dokumentDao,
-            producer = aivenProducer
+            producer = aivenProducer,
+            utvidetFormat = env["VEDTAK_FATTET_UTVIDET_FORMAT"] == "true"
         )
         val utbetalingMediator = UtbetalingMediator(
             producer = aivenProducer

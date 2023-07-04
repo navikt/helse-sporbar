@@ -246,7 +246,8 @@ internal class VedtakFattetRiverTest {
   "aktørId": "$AKTØRID",
   "fødselsnummer": "$FØDSELSNUMMER",
   "organisasjonsnummer": "$ORGNUMMER",
-  "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT"
+  "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
+  "sykepengegrunnlagsfakta": null
 }
     """
 
@@ -277,7 +278,19 @@ internal class VedtakFattetRiverTest {
   "aktørId": "$AKTØRID",
   "fødselsnummer": "$FØDSELSNUMMER",
   "organisasjonsnummer": "$ORGNUMMER",
-  "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT"
+  "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
+  "sykepengegrunnlagsfakta": {
+    "fastsatt": "EtterHovedregel",
+    "omregnetÅrsinntekt": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG,
+    "innrapportertÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 5000},
+    "avviksprosent": 12.52,
+    "tags": ["6GBegrenset"],
+    "6G": 620000.0,
+    "arbeidsgivere": [{
+      "arbeidsgiver": "$ORGNUMMER",
+      "omregnetÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG}
+    }]
+  }
 }
     """
 
