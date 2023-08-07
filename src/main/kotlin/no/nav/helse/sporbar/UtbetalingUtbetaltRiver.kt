@@ -201,6 +201,13 @@ internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<UtbetalingUtbet
         "MinimumInntekt" -> UtbetalingUtbetalt.Begrunnelse.MinimumInntekt
         "MinimumInntektOver67" -> UtbetalingUtbetalt.Begrunnelse.MinimumInntektOver67
         "EgenmeldingUtenforArbeidsgiverperiode" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserAap" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserDagpenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserForeldrepenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserOmsorgspenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserOpplaringspenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserPleiepenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserSvangerskapspenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
         "MinimumSykdomsgrad" -> UtbetalingUtbetalt.Begrunnelse.MinimumSykdomsgrad
         "ManglerOpptjening" -> UtbetalingUtbetalt.Begrunnelse.ManglerOpptjening
         "ManglerMedlemskap" -> UtbetalingUtbetalt.Begrunnelse.ManglerMedlemskap

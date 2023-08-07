@@ -123,7 +123,20 @@ internal class UtbetalingTest {
         val avvistDag = utbetalingUtbetaltJson.path("utbetalingsdager").toList().last()
             .path("begrunnelser").toList().map { it.asText() }
         assertEquals(
-            listOf("EtterDødsdato","MinimumInntekt","Over70","MinimumInntektOver67","SykepengedagerOppbruktOver67"),
+            listOf(
+                "EtterDødsdato",
+                "MinimumInntekt",
+                "Over70",
+                "MinimumInntektOver67",
+                "SykepengedagerOppbruktOver67",
+                "EgenmeldingUtenforArbeidsgiverperiode",
+                "EgenmeldingUtenforArbeidsgiverperiode",
+                "EgenmeldingUtenforArbeidsgiverperiode",
+                "EgenmeldingUtenforArbeidsgiverperiode",
+                "EgenmeldingUtenforArbeidsgiverperiode",
+                "EgenmeldingUtenforArbeidsgiverperiode",
+                "EgenmeldingUtenforArbeidsgiverperiode"
+            ),
             avvistDag
         )
     }
@@ -402,6 +415,11 @@ internal class UtbetalingTest {
         {
           "dato": "2021-01-07",
           "type": "NavDag"
+        },
+        {
+          "dato": "2021-01-08",
+          "type": "AvvistDag", 
+          "begrunnelser": ["AndreYtelserForeldrepenger"]
         }
   ],
   "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec01",
@@ -519,7 +537,20 @@ internal class UtbetalingTest {
         {
           "dato": "2021-05-14",
           "type": "AvvistDag",
-          "begrunnelser": ["EtterDødsdato", "MinimumInntekt", "Over70", "MinimumInntektOver67", "SykepengedagerOppbruktOver67"]
+          "begrunnelser": [
+              "EtterDødsdato", 
+              "MinimumInntekt", 
+              "Over70", 
+              "MinimumInntektOver67", 
+              "SykepengedagerOppbruktOver67", 
+              "AndreYtelserAap",
+              "AndreYtelserDagpenger",
+              "AndreYtelserForeldrepenger",
+              "AndreYtelserOmsorgspenger",
+              "AndreYtelserOpplaringspenger",
+              "AndreYtelserPleiepenger",
+              "AndreYtelserSvangerskapspenger"
+          ]
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",
