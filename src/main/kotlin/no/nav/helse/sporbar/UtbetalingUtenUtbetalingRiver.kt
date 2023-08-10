@@ -40,6 +40,25 @@ internal class UtbetalingUtenUtbetalingRiver(
                 it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
                 it.require("korrelasjonsId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("vedtaksperiodeIder")
+
+                it.requireKey("arbeidsgiverOppdrag.mottaker", "arbeidsgiverOppdrag.fagområde", "arbeidsgiverOppdrag.fagsystemId",
+                    "arbeidsgiverOppdrag.nettoBeløp", "arbeidsgiverOppdrag.stønadsdager")
+                it.require("arbeidsgiverOppdrag.fom", JsonNode::asLocalDate)
+                it.require("arbeidsgiverOppdrag.tom", JsonNode::asLocalDate)
+                it.requireArray("arbeidsgiverOppdrag.linjer") {
+                    require("fom", JsonNode::asLocalDate)
+                    require("tom", JsonNode::asLocalDate)
+                    requireKey("sats", "totalbeløp", "grad", "stønadsdager")
+                }
+                it.requireKey("personOppdrag.mottaker", "personOppdrag.fagområde", "personOppdrag.fagsystemId",
+                    "personOppdrag.nettoBeløp", "personOppdrag.stønadsdager")
+                it.require("personOppdrag.fom", JsonNode::asLocalDate)
+                it.require("personOppdrag.tom", JsonNode::asLocalDate)
+                it.requireArray("personOppdrag.linjer") {
+                    require("fom", JsonNode::asLocalDate)
+                    require("tom", JsonNode::asLocalDate)
+                    requireKey("sats", "totalbeløp", "grad", "stønadsdager")
+                }
             }
         }.register(this)
     }

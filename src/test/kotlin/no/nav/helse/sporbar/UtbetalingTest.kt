@@ -344,14 +344,10 @@ internal class UtbetalingTest {
       {
         "fom": "$FOM",
         "tom": "$TOM",
-        "dagsats": 1431,
-        "lønn": 2193,
+        "sats": 1431,
         "grad": 100.0,
         "stønadsdager": 35,
-        "totalbeløp": 38360,
-        "endringskode": "UEND",
-        "delytelseId": 1,
-        "klassekode": "SPREFAG-IOP"
+        "totalbeløp": 38360
       }
     ],
     "fagsystemId": "123",
@@ -369,14 +365,10 @@ internal class UtbetalingTest {
       {
         "fom": "$FOM",
         "tom": "$TOM",
-        "dagsats": 1431,
-        "lønn": 2193,
+        "sats": 1431,
         "grad": 100.0,
         "stønadsdager": 35,
-        "totalbeløp": 38360,
-        "endringskode": "UEND",
-        "delytelseId": 1,
-        "klassekode": "SPATORD"
+        "totalbeløp": 38360
       }
     ],
     "fagsystemId": "123",
@@ -458,14 +450,10 @@ internal class UtbetalingTest {
       {
         "fom": "2021-05-06",
         "tom": "2021-05-13",
-        "dagsats": 1431,
-        "lønn": 2193,
+        "sats": 1431,
         "grad": 100.0,
         "stønadsdager": 35,
-        "totalbeløp": 38360,
-        "endringskode": "UEND",
-        "delytelseId": 1,
-        "klassekode": "SPREFAG-IOP"
+        "totalbeløp": 38360
       }
     ],
     "fagsystemId": "123",
@@ -483,14 +471,10 @@ internal class UtbetalingTest {
       {
         "fom": "2021-05-06",
         "tom": "2021-05-13",
-        "dagsats": 1431,
-        "lønn": 2193,
+        "sats": 1431,
         "grad": 100.0,
         "stønadsdager": 35,
-        "totalbeløp": 38360,
-        "endringskode": "UEND",
-        "delytelseId": 1,
-        "klassekode": "SPATORD"
+        "totalbeløp": 38360
       }
     ],
     "fagsystemId": "123",
@@ -588,14 +572,10 @@ internal class UtbetalingTest {
       {
         "fom": "2021-05-06",
         "tom": "2021-05-13",
-        "dagsats": 1431,
-        "lønn": 2193,
+        "sats": 1431,
         "grad": 100.0,
         "stønadsdager": 35,
-        "totalbeløp": 38360,
-        "endringskode": "UEND",
-        "delytelseId": 1,
-        "klassekode": "SPREFAG-IOP"
+        "totalbeløp": 38360
       }
     ],
     "fagsystemId": "123",
