@@ -147,6 +147,13 @@ data class UtbetalingUtbetalt(
     val foreløpigBeregnetSluttPåSykepenger: LocalDate
 ) {
     enum class Begrunnelse {
+        AndreYtelserAap,
+        AndreYtelserDagpenger,
+        AndreYtelserForeldrepenger,
+        AndreYtelserOmsorgspenger,
+        AndreYtelserOpplaringspenger,
+        AndreYtelserPleiepenger,
+        AndreYtelserSvangerskapspenger,
         SykepengedagerOppbrukt,
         SykepengedagerOppbruktOver67,
         MinimumInntekt,
@@ -220,13 +227,13 @@ internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<UtbetalingUtbet
         "MinimumInntekt" -> UtbetalingUtbetalt.Begrunnelse.MinimumInntekt
         "MinimumInntektOver67" -> UtbetalingUtbetalt.Begrunnelse.MinimumInntektOver67
         "EgenmeldingUtenforArbeidsgiverperiode" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
-        "AndreYtelserAap" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
-        "AndreYtelserDagpenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
-        "AndreYtelserForeldrepenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
-        "AndreYtelserOmsorgspenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
-        "AndreYtelserOpplaringspenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
-        "AndreYtelserPleiepenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
-        "AndreYtelserSvangerskapspenger" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserAap" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserAap
+        "AndreYtelserDagpenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserDagpenger
+        "AndreYtelserForeldrepenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserForeldrepenger
+        "AndreYtelserOmsorgspenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserOmsorgspenger
+        "AndreYtelserOpplaringspenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserOpplaringspenger
+        "AndreYtelserPleiepenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserPleiepenger
+        "AndreYtelserSvangerskapspenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserSvangerskapspenger
         "MinimumSykdomsgrad" -> UtbetalingUtbetalt.Begrunnelse.MinimumSykdomsgrad
         "ManglerOpptjening" -> UtbetalingUtbetalt.Begrunnelse.ManglerOpptjening
         "ManglerMedlemskap" -> UtbetalingUtbetalt.Begrunnelse.ManglerMedlemskap

@@ -129,13 +129,13 @@ internal class UtbetalingTest {
                 "Over70",
                 "MinimumInntektOver67",
                 "SykepengedagerOppbruktOver67",
-                "EgenmeldingUtenforArbeidsgiverperiode",
-                "EgenmeldingUtenforArbeidsgiverperiode",
-                "EgenmeldingUtenforArbeidsgiverperiode",
-                "EgenmeldingUtenforArbeidsgiverperiode",
-                "EgenmeldingUtenforArbeidsgiverperiode",
-                "EgenmeldingUtenforArbeidsgiverperiode",
-                "EgenmeldingUtenforArbeidsgiverperiode"
+                "AndreYtelserAap",
+                "AndreYtelserDagpenger",
+                "AndreYtelserForeldrepenger",
+                "AndreYtelserOmsorgspenger",
+                "AndreYtelserOpplaringspenger",
+                "AndreYtelserPleiepenger",
+                "AndreYtelserSvangerskapspenger",
             ),
             avvistDag
         )

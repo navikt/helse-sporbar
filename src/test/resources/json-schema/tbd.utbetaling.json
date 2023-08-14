@@ -118,6 +118,13 @@
             "items": {
               "type": "string",
               "enum": [
+                "AndreYtelserAap",
+                "AndreYtelserDagpenger",
+                "AndreYtelserForeldrepenger",
+                "AndreYtelserOmsorgspenger",
+                "AndreYtelserOpplaringspenger",
+                "AndreYtelserPleiepenger",
+                "AndreYtelserSvangerskapspenger",
                 "SykepengedagerOppbrukt",
                 "SykepengedagerOppbruktOver67",
                 "MinimumInntekt",
