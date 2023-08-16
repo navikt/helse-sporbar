@@ -253,12 +253,12 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["årsak", "begrunnelse", "perioder"],
+        "required": ["type", "begrunnelse", "perioder"],
         "properties": {
-          "årsak": {
+          "type": {
             "type": "string",
-            "description": "Årsak til begrunnelse",
-            "enum": ["SkjønnsfastsattSykepengegrunnlag"]
+            "description": "Type begrunnelse",
+            "enum": ["SkjønnsfastsattSykepengegrunnlagFritekst", "SkjønnsfastsattSykepengegrunnlagMal"]
           },
           "begrunnelse": {
             "description": "Saksbehandlers begrunnelse",
