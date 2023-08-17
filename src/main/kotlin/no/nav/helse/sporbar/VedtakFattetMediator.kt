@@ -2,34 +2,25 @@ package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.clients.producer.KafkaProducer
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 
 internal class VedtakFattetMediator(
     private val dokumentDao: DokumentDao,
-    private val producer: KafkaProducer<String, JsonNode>,
-    private val utvidetFormat: Boolean = false
+    private val producer: KafkaProducer<String, JsonNode>
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
 
         val dokumenter: List<Dokument> = dokumentDao.finn(vedtakFattet.hendelseIder)
-        val meldingForEkstern = objectMapper.valueToTree<ObjectNode>(oversett(vedtakFattet, dokumenter)).let { ekstern ->
-            if (!utvidetFormat) ekstern
-            else  {
-                val sykepengegrunnlagsfakta = vedtakFattet.sykepengegrunnlagsfakta
-                if (sykepengegrunnlagsfakta == null) ekstern.medNyeDefaultfelter.putNull("sykepengegrunnlagsfakta")
-                else ekstern.medNyeDefaultfelter.set("sykepengegrunnlagsfakta", objectMapper.valueToTree(oversett(sykepengegrunnlagsfakta)))
-            }
-        }
-
+        val meldingForEkstern = objectMapper.valueToTree<ObjectNode>(oversett(vedtakFattet, dokumenter))
         producer.send(
             ProducerRecord(
                 "tbd.vedtak",
@@ -57,7 +48,18 @@ internal class VedtakFattetMediator(
             begrensning = vedtakFattet.begrensning,
             dokumenter = dokumenter,
             utbetalingId = vedtakFattet.utbetalingId,
-            vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt
+            vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt,
+            sykepengegrunnlagsfakta = vedtakFattet.sykepengegrunnlagsfakta?.let { oversett(it) },
+            begrunnelser = vedtakFattet.begrunnelser.map { begrunnelse ->
+                BegrunnelseForEksternDto(
+                    begrunnelse.type,
+                    begrunnelse.begrunnelse,
+                    begrunnelse.perioder.map {
+                        PeriodeForEksternDto(it.fom, it.tom)
+                    }
+                )
+            },
+            versjon = "1.1.0"
         )
     }
 
@@ -86,9 +88,18 @@ internal class VedtakFattetMediator(
             omregnetÅrsinntekt = sykepengegrunnlagsfakta.omregnetÅrsinntekt
         )
     }
-
-    private val ObjectNode.medNyeDefaultfelter get() = put("versjon", "1.1.0").apply { putArray("begrunnelser") }
 }
+
+data class BegrunnelseForEksternDto(
+    val type: String,
+    val begrunnelse: String,
+    val perioder: List<PeriodeForEksternDto>
+)
+
+data class PeriodeForEksternDto(
+    val fom: LocalDate,
+    val tom: LocalDate
+)
 
 data class VedtakFattetForEksternDto(
     val fødselsnummer: String,
@@ -104,7 +115,10 @@ data class VedtakFattetForEksternDto(
     val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
     val begrensning: String,
     val utbetalingId: UUID?,
-    val vedtakFattetTidspunkt: LocalDateTime
+    val vedtakFattetTidspunkt: LocalDateTime,
+    val sykepengegrunnlagsfakta: SykepengegrunnlagsfaktaForEksternDto?,
+    val begrunnelser: List<BegrunnelseForEksternDto>,
+    val versjon: String
 )
 
 sealed class SykepengegrunnlagsfaktaForEksternDto

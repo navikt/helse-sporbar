@@ -2,13 +2,20 @@ package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
-import no.nav.helse.rapids_rivers.*
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import no.nav.helse.rapids_rivers.JsonMessage
+import no.nav.helse.rapids_rivers.MessageContext
+import no.nav.helse.rapids_rivers.MessageProblems
+import no.nav.helse.rapids_rivers.RapidsConnection
+import no.nav.helse.rapids_rivers.River
+import no.nav.helse.rapids_rivers.asLocalDate
+import no.nav.helse.rapids_rivers.asLocalDateTime
+import no.nav.helse.rapids_rivers.isMissingOrNull
 import no.nav.helse.sporbar.Sykepengegrunnlagsfakta.Companion.sykepengegrunnlagsfakta
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
@@ -42,6 +49,7 @@ internal class VedtakFattetRiver(
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.interestedIn("utbetalingId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("sykepengegrunnlagsfakta")
+                it.interestedIn("begrunnelser")
             }
         }.register(this)
     }
@@ -65,6 +73,15 @@ internal class VedtakFattetRiver(
         val grunnlagForSykepengegrunnlagPerArbeidsgiver = objectMapper.readValue(packet["grunnlagForSykepengegrunnlagPerArbeidsgiver"].toString(), object : TypeReference<Map<String, Double>>() {})
         val begrensning = packet["begrensning"].asText()
         val vedtakFattetTidspunkt = packet["vedtakFattetTidspunkt"].asLocalDateTime()
+        val begrunnelser = packet["begrunnelser"].takeUnless(JsonNode::isMissingOrNull)?.map { begrunnelse ->
+            Begrunnelse(
+                begrunnelse["type"].asText(),
+                begrunnelse["begrunnelse"].asText(),
+                begrunnelse["perioder"].map {
+                    Periode(it["fom"].asLocalDate(), it["tom"].asLocalDate())
+                }
+            )
+        } ?: emptyList()
 
         val utbetalingId = packet["utbetalingId"].takeUnless(JsonNode::isMissingOrNull)?.let {
             UUID.fromString(it.asText())
@@ -87,13 +104,25 @@ internal class VedtakFattetRiver(
                 begrensning = begrensning,
                 utbetalingId = utbetalingId,
                 vedtakFattetTidspunkt = vedtakFattetTidspunkt,
-                sykepengegrunnlagsfakta = sykepengegrunnlagsfakta
+                sykepengegrunnlagsfakta = sykepengegrunnlagsfakta,
+                begrunnelser = begrunnelser
             )
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
         sikkerLog.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
     }
 }
+
+internal class Begrunnelse(
+    val type: String,
+    val begrunnelse: String,
+    val perioder: List<Periode>
+)
+
+internal class Periode(
+    val fom: LocalDate,
+    val tom: LocalDate
+)
 
 internal data class VedtakFattet(
     val fødselsnummer: String,
@@ -110,7 +139,8 @@ internal data class VedtakFattet(
     val begrensning: String,
     val utbetalingId: UUID?,
     val vedtakFattetTidspunkt: LocalDateTime,
-    val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta?
+    val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta?,
+    val begrunnelser: List<Begrunnelse>
 )
 
 internal sealed class Sykepengegrunnlagsfakta(internal val fastsatt: String, internal val omregnetÅrsinntekt: Double) {

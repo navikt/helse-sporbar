@@ -124,6 +124,31 @@ internal class VedtakFattetRiverTest {
             .contains(idSett.søknadDokumentId))
     }
 
+    @Test
+    fun `vedtakFattet med begrunnelser`() {
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val idSett = IdSett()
+
+        sykmeldingSendt(idSett)
+        søknadSendt(idSett)
+        inntektsmeldingSendt(idSett)
+        vedtakFattetMedUtbetalingSendt(
+            idSett,
+            begrunnelser = listOf(
+                Begrunnelse(
+                    "SkjønnsfastsattSykepengegrunnlagFritekst", "En begrunnelse", perioder = listOf(
+                        Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
+                    )
+                )
+            )
+        )
+
+        verify { producerMock.send(capture(captureSlot)) }
+        val vedtakFattetJson = captureSlot.last().validertJson()
+        assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
+        assertEquals(1, vedtakFattetJson["begrunnelser"].size())
+    }
+
     private fun sykmeldingSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId)
@@ -192,7 +217,9 @@ internal class VedtakFattetRiverTest {
             idSett.nySøknadHendelseId,
             idSett.sendtSøknadHendelseId,
             idSett.inntektsmeldingHendelseId
-    )) {
+        ),
+        begrunnelser: List<Begrunnelse> = emptyList()
+    ) {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
                 "TIL UTBETALING",
@@ -201,7 +228,7 @@ internal class VedtakFattetRiverTest {
                 hendelseIder
             )
         )
-        testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett))
+        testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, begrunnelser = begrunnelser))
     }
 
     private fun vedtakFattetUtenUtbetalingSendt(
@@ -260,39 +287,49 @@ internal class VedtakFattetRiverTest {
             idSett.inntektsmeldingHendelseId
         ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
-        utbetalingId: UUID = idSett.utbetalingId) = """{
-  "vedtaksperiodeId": "$vedtaksperiodeId",
-  "fom": "$FOM",
-  "tom": "$TOM",
-  "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
-  "hendelser": ${hendelser.map { "\"${it}\"" }},
-  "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
-  "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
-  "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
-  "begrensning": "$BEGRENSNING",
-  "inntekt": "$INNTEKT",
-  "utbetalingId": "$utbetalingId",
-  "@event_name": "vedtak_fattet",
-  "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
-  "@opprettet": "$TIDSSTEMPEL",
-  "aktørId": "$AKTØRID",
-  "fødselsnummer": "$FØDSELSNUMMER",
-  "organisasjonsnummer": "$ORGNUMMER",
-  "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
-  "sykepengegrunnlagsfakta": {
-    "fastsatt": "EtterHovedregel",
-    "omregnetÅrsinntekt": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG,
-    "innrapportertÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 5000},
-    "avviksprosent": 12.52,
-    "tags": ["6GBegrenset"],
-    "6G": 620000.0,
-    "arbeidsgivere": [{
-      "arbeidsgiver": "$ORGNUMMER",
-      "omregnetÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG}
-    }]
-  }
-}
-    """
+        utbetalingId: UUID = idSett.utbetalingId,
+        begrunnelser: List<Begrunnelse> = emptyList()
+    ): String {
+        val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
+        return """{
+      "vedtaksperiodeId": "$vedtaksperiodeId",
+      "fom": "$FOM",
+      "tom": "$TOM",
+      "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
+      "hendelser": ${hendelser.map { "\"${it}\"" }},
+      "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
+      "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
+      "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
+      "begrensning": "$BEGRENSNING",
+      "inntekt": "$INNTEKT",
+      "utbetalingId": "$utbetalingId",
+      "@event_name": "vedtak_fattet",
+      "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
+      "@opprettet": "$TIDSSTEMPEL",
+      "aktørId": "$AKTØRID",
+      "fødselsnummer": "$FØDSELSNUMMER",
+      "organisasjonsnummer": "$ORGNUMMER",
+      "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
+      "sykepengegrunnlagsfakta": {
+        "fastsatt": "EtterHovedregel",
+        "omregnetÅrsinntekt": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG,
+        "innrapportertÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 5000},
+        "avviksprosent": 12.52,
+        "tags": [
+          "6GBegrenset"
+        ],
+        "6G": 620000.0,
+        "arbeidsgivere": [
+          {
+            "arbeidsgiver": "$ORGNUMMER",
+            "omregnetÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG}
+          }
+        ]
+      },
+      "begrunnelser": $begrunnelserJson
+    }
+        """
+    }
 
     @Language("JSON")
     private fun nySøknadMessage(
