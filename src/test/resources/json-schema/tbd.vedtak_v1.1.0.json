@@ -137,25 +137,65 @@
     },
     "sykepengegrunnlagsfakta": {
       "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget. ",
-      "examples": [{
-        "fastsatt": "EtterSkjønn",
-        "omregnetÅrsinntekt": 800123.55,
-        "innrapportertÅrsinntekt": 755785.12,
-        "skjønnsfastsatt": 777000.15,
-        "avviksprosent": 25.38,
-        "6G": 711720,
-        "tags": [
-          "6GBegrenset"
-        ],
-        "arbeidsgivere": [
-          {
-            "arbeidsgiver": "999263550",
-            "omregnetÅrsinntekt": 800123.55,
-            "skjønnsfastsatt": 777000.15
-          }
-        ]
-      }],
       "oneOf": [
+        {
+          "type": "object",
+          "required": ["fastsatt", "arbeidsgivere", "skjønnsfastsatt"],
+          "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
+          "properties": {
+            "fastsatt": {
+              "type": "string",
+              "enum": ["EtterSkjønn"]
+            },
+            "skjønnsfastsatt": {
+              "type": "number",
+              "examples": [900123.55],
+              "description": "Årlig beløp som er skjønnsfastsatt av saksbehandler"
+            },
+            "arbeidsgivere": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["arbeidsgiver", "omregnetÅrsinntekt", "skjønnsfastsatt"],
+                "properties": {
+                  "arbeidsgiver": {
+                    "type": "string",
+                    "examples": ["999263550"],
+                    "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
+                  },
+                  "omregnetÅrsinntekt": {
+                    "type": "number",
+                    "examples": [800123.55],
+                    "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
+                  },
+                  "skjønnsfastsatt": {
+                    "type": "number",
+                    "examples": [900123.55],
+                    "description": "Årlig beløp som er skjønnsfastsatt av saksbehandler"
+                  }
+                }
+              }
+            }
+          },
+          "examples": [{
+            "fastsatt": "EtterSkjønn",
+            "omregnetÅrsinntekt": 800123.55,
+            "innrapportertÅrsinntekt": 755785.12,
+            "skjønnsfastsatt": 777000.15,
+            "avviksprosent": 25.38,
+            "6G": 711720,
+            "tags": [
+              "6GBegrenset"
+            ],
+            "arbeidsgivere": [
+              {
+                "arbeidsgiver": "999263550",
+                "omregnetÅrsinntekt": 800123.55,
+                "skjønnsfastsatt": 777000.15
+              }
+            ]
+          }]
+        },
         {
           "type": "null",
           "description": "Er ikke gjort noen vilkårsprøving for vedtaket."
@@ -200,46 +240,6 @@
                     "type": "number",
                     "examples": [800123.55],
                     "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
-                  }
-                }
-              }
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": ["fastsatt", "arbeidsgivere", "skjønnsfastsatt"],
-          "allOf": [{"$ref": "#/definitions/spleisSykepengegrunnlag"}],
-          "properties": {
-            "fastsatt": {
-              "type": "string",
-              "enum": ["EtterSkjønn"]
-            },
-            "skjønnsfastsatt": {
-              "type": "number",
-              "examples": [900123.55],
-              "description": "Årlig beløp som er skjønnsfastsatt av saksbehandler"
-            },
-            "arbeidsgivere": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["arbeidsgiver", "omregnetÅrsinntekt", "skjønnsfastsatt"],
-                "properties": {
-                  "arbeidsgiver": {
-                    "type": "string",
-                    "examples": ["999263550"],
-                    "description": "orgnummer, fnr, dnr, npid, eller annen identifikator for arbeidsgiveren som inngår i sykepengegrunnlaget"
-                  },
-                  "omregnetÅrsinntekt": {
-                    "type": "number",
-                    "examples": [800123.55],
-                    "description": "Inntekten som rapportert i inntektsmelding/saksbehandler etc."
-                  },
-                  "skjønnsfastsatt": {
-                    "type": "number",
-                    "examples": [900123.55],
-                    "description": "Årlig beløp som er skjønnsfastsatt av saksbehandler"
                   }
                 }
               }
