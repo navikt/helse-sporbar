@@ -137,24 +137,6 @@
     },
     "sykepengegrunnlagsfakta": {
       "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget. ",
-      "examples": [{
-        "fastsatt": "EtterSkjønn",
-        "omregnetÅrsinntekt": 800123.55,
-        "innrapportertÅrsinntekt": 755785.12,
-        "skjønnsfastsatt": 777000.15,
-        "avviksprosent": 25.38,
-        "6G": 711720,
-        "tags": [
-          "6GBegrenset"
-        ],
-        "arbeidsgivere": [
-          {
-            "arbeidsgiver": "999263550",
-            "omregnetÅrsinntekt": 800123.55,
-            "skjønnsfastsatt": 777000.15
-          }
-        ]
-      }],
       "oneOf": [
         {
           "type": "null",
@@ -246,7 +228,25 @@
             }
           }
         }
-      ]
+      ],
+      "examples": [{
+        "fastsatt": "EtterSkjønn",
+        "omregnetÅrsinntekt": 800123.55,
+        "innrapportertÅrsinntekt": 755785.12,
+        "skjønnsfastsatt": 777000.15,
+        "avviksprosent": 25.38,
+        "6G": 711720,
+        "tags": [
+          "6GBegrenset"
+        ],
+        "arbeidsgivere": [
+          {
+            "arbeidsgiver": "999263550",
+            "omregnetÅrsinntekt": 800123.55,
+            "skjønnsfastsatt": 777000.15
+          }
+        ]
+      }]
     },
     "begrunnelser": {
       "type": "array",
