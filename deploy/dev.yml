@@ -50,5 +50,3 @@ spec:
     value: earliest
   - name: NULLE_UT_TOMME_OPPDRAG
     value: "true"
-  - name: VEDTAK_FATTET_UTVIDET_FORMAT
-    value: "true"
