@@ -2,7 +2,7 @@
 
 ![Bygg og deploy](https://github.com/navikt/helse-sporbar/workflows/Bygg%20og%20deploy/badge.svg)
 
-Sporbar tolker interne hendelser og lager nye hendelser som publiseres for innsyn i saksbehandling.
+Sporbar tolker interne hendelser og lager nye hendelser som publiseres for innsikt i saksbehandling.
 
 ## Topics
 
