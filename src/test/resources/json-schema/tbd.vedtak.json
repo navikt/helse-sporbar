@@ -18,7 +18,8 @@
     "begrensning",
     "grunnlagForSykepengegrunnlagPerArbeidsgiver",
     "begrunnelser",
-    "sykepengegrunnlagsfakta"
+    "sykepengegrunnlagsfakta",
+    "tags"
   ],
   "type": "object",
   "additionalProperties": false,
@@ -27,7 +28,7 @@
       "type": "string",
       "description": "schema-versjon for denne meldingen.",
       "enum": [
-        "1.1.0"
+        "1.2.0"
       ]
     },
     "fødselsnummer": {
@@ -285,6 +286,14 @@
             }
           }
         }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Type tag",
+        "enum": ["IngenNyArbeidsgiverperiode"]
       }
     }
   },

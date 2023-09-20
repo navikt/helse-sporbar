@@ -149,6 +149,35 @@ internal class VedtakFattetRiverTest {
         assertEquals(1, vedtakFattetJson["begrunnelser"].size())
     }
 
+    @Test
+    fun `vedtakFattet med tags`() {
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val idSett = IdSett()
+
+        sykmeldingSendt(idSett)
+        søknadSendt(idSett)
+        inntektsmeldingSendt(idSett)
+        vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode"))
+
+        verify { producerMock.send( capture(captureSlot) ) }
+
+        val vedtakFattet = captureSlot.last()
+        assertEquals(FØDSELSNUMMER, vedtakFattet.key())
+
+        val vedtakFattetJson = vedtakFattet.validertJson()
+        assertEquals(FØDSELSNUMMER, vedtakFattetJson["fødselsnummer"].textValue())
+        assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
+        assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
+        assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
+        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())})
+        assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
+
+        assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+            .contains(idSett.søknadDokumentId))
+
+        assertEquals("IngenNyArbeidsgiverperiode", vedtakFattetJson["tags"].map { it.asText() }.single())
+    }
+
     private fun sykmeldingSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId)
@@ -218,7 +247,8 @@ internal class VedtakFattetRiverTest {
             idSett.sendtSøknadHendelseId,
             idSett.inntektsmeldingHendelseId
         ),
-        begrunnelser: List<Begrunnelse> = emptyList()
+        begrunnelser: List<Begrunnelse> = emptyList(),
+        tags: Set<String> = emptySet()
     ) {
         testRapid.sendTestMessage(
             vedtaksperiodeEndret(
@@ -228,7 +258,7 @@ internal class VedtakFattetRiverTest {
                 hendelseIder
             )
         )
-        testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, begrunnelser = begrunnelser))
+        testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, begrunnelser = begrunnelser, tags = tags))
     }
 
     private fun vedtakFattetUtenUtbetalingSendt(
@@ -274,7 +304,8 @@ internal class VedtakFattetRiverTest {
   "fødselsnummer": "$FØDSELSNUMMER",
   "organisasjonsnummer": "$ORGNUMMER",
   "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
-  "sykepengegrunnlagsfakta": null
+  "sykepengegrunnlagsfakta": null,
+  "tags": []
 }
     """
 
@@ -288,7 +319,8 @@ internal class VedtakFattetRiverTest {
         ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
         utbetalingId: UUID = idSett.utbetalingId,
-        begrunnelser: List<Begrunnelse> = emptyList()
+        begrunnelser: List<Begrunnelse> = emptyList(),
+        tags: Set<String> = emptySet()
     ): String {
         val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
         return """{
@@ -326,7 +358,8 @@ internal class VedtakFattetRiverTest {
           }
         ]
       },
-      "begrunnelser": $begrunnelserJson
+      "begrunnelser": $begrunnelserJson,
+      "tags": ${tags.map { "\"$it\"" }}
     }
         """
     }

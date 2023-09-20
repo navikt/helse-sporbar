@@ -59,7 +59,8 @@ internal class VedtakFattetMediator(
                     }
                 )
             },
-            versjon = "1.1.0"
+            tags = vedtakFattet.tags,
+            versjon = "1.2.0"
         )
     }
 
@@ -118,7 +119,8 @@ data class VedtakFattetForEksternDto(
     val vedtakFattetTidspunkt: LocalDateTime,
     val sykepengegrunnlagsfakta: SykepengegrunnlagsfaktaForEksternDto?,
     val begrunnelser: List<BegrunnelseForEksternDto>,
-    val versjon: String
+    val versjon: String,
+    val tags: Set<String>
 )
 
 sealed class SykepengegrunnlagsfaktaForEksternDto

@@ -49,7 +49,7 @@ internal class VedtakFattetRiver(
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.interestedIn("utbetalingId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("sykepengegrunnlagsfakta")
-                it.interestedIn("begrunnelser")
+                it.interestedIn("begrunnelser", "tags")
             }
         }.register(this)
     }
@@ -83,6 +83,8 @@ internal class VedtakFattetRiver(
             )
         } ?: emptyList()
 
+        val tags = packet["tags"].takeUnless(JsonNode::isMissingOrNull)?.map { it.asText() }?.toSet() ?: emptySet<String>()
+
         val utbetalingId = packet["utbetalingId"].takeUnless(JsonNode::isMissingOrNull)?.let {
             UUID.fromString(it.asText())
         }
@@ -105,7 +107,8 @@ internal class VedtakFattetRiver(
                 utbetalingId = utbetalingId,
                 vedtakFattetTidspunkt = vedtakFattetTidspunkt,
                 sykepengegrunnlagsfakta = sykepengegrunnlagsfakta,
-                begrunnelser = begrunnelser
+                begrunnelser = begrunnelser,
+                tags = tags
             )
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
@@ -140,7 +143,8 @@ internal data class VedtakFattet(
     val utbetalingId: UUID?,
     val vedtakFattetTidspunkt: LocalDateTime,
     val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta?,
-    val begrunnelser: List<Begrunnelse>
+    val begrunnelser: List<Begrunnelse>,
+    val tags: Set<String>
 )
 
 internal sealed class Sykepengegrunnlagsfakta(internal val fastsatt: String, internal val omregnetÅrsinntekt: Double) {
