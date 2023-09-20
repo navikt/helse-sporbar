@@ -27,7 +27,7 @@ meldingene:
 
 #### tbd.vedtak
 
-JSON Schema for vedtak ([view](https://json-schema.app/view/%23?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnavikt%2Fhelse-sporbar%2Fmaster%2Fsrc%2Ftest%2Fresources%2Fjson-schema%2Ftbd.vedtak_v1.1.0.json) | [raw](src/test/resources/json-schema/tbd.vedtak_v1.1.0.json))
+JSON Schema for vedtak ([view](https://json-schema.app/view/%23?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnavikt%2Fhelse-sporbar%2Fmaster%2Fsrc%2Ftest%2Fresources%2Fjson-schema%2Ftbd.vedtak.json) | [raw](src/test/resources/json-schema/tbd.vedtak.json))
 
 #### tbd.utbetaling
 

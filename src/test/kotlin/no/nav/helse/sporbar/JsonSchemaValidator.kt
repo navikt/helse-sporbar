@@ -18,7 +18,7 @@ internal object JsonSchemaValidator {
         .getSchema(InntektsmeldingStatusTest::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
 
     private val inntektsmeldingstatusSchema by lazy { "inntektsmeldingstatus".getSchema() }
-    private val vedtakSchema by lazy { "vedtak_v1.1.0".getSchema() }
+    private val vedtakSchema by lazy { "vedtak".getSchema() }
     private val utbetalingSchema by lazy { "utbetaling".getSchema() }
     private val annulleringSchema by lazy { "utbetaling__annullering".getSchema() }
 
