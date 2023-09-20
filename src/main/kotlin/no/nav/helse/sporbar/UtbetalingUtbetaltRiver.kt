@@ -13,6 +13,7 @@ private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 private val NULLE_UT_TOMME_OPPDRAG = System.getenv("NULLE_UT_TOMME_OPPDRAG")?.toBoolean() ?: false
+private val SEND_ARBEID_IKKE_GJENOPPTATT = System.getenv("SEND_ARBEID_IKKE_GJENOPPTATT")?.toBoolean() ?: false
 
 internal class UtbetalingUtbetaltRiver(
     rapidsConnection: RapidsConnection,
@@ -89,7 +90,7 @@ internal class UtbetalingUtbetaltRiver(
         val utbetalingsdager = packet["utbetalingsdager"].toList().map { dag ->
             UtbetalingUtbetalt.UtbetalingdagDto(
                 dato = dag["dato"].asLocalDate(),
-                type = dag["type"].asText(),
+                type = dag["type"].dagtype,
                 begrunnelser = dag.path("begrunnelser").takeUnless(JsonNode::isMissingOrNull)
                     ?.let { mapBegrunnelser(it.toList())} ?: emptyList()
             )
@@ -245,4 +246,13 @@ internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<UtbetalingUtbet
             UtbetalingUtbetalt.Begrunnelse.UKJENT
         }
     }
+}
+
+internal val JsonNode.dagtype get(): String {
+    val fraSpleis = asText()
+    if (fraSpleis == "ArbeidIkkeGjenopptattDag") return when (SEND_ARBEID_IKKE_GJENOPPTATT) {
+        true -> "ArbeidIkkeGjenopptattDag"
+        false -> "Feriedag"
+    }
+    return fraSpleis
 }

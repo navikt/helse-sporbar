@@ -172,6 +172,42 @@ internal class UtbetalingTest {
     }
 
     @Test
+    fun `utbetaling_utbetalt - mapper ArbeidIkkeGjenopptattDag til Feriedag`() {
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        testRapid.sendTestMessage(utbetalingUtbetaltMedArbeidIkkeGjenopptattDag())
+        verify { producerMock.send( capture(captureSlot) ) }
+
+        val utbetalingUtbetalt = captureSlot.last()
+        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
+
+        val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
+        assertEquals(mapOf(
+            LocalDate.parse("2021-05-06") to "Feriedag",
+            LocalDate.parse("2021-05-07") to "Feriedag",
+            LocalDate.parse("2021-05-08") to "NavDag",
+            LocalDate.parse("2021-05-09") to "NavHelgDag"
+        ), utbetalingsdager)
+    }
+
+    @Test
+    fun `utbetaling_uten_utbetaling - mapper ArbeidIkkeGjenopptattDag til Feriedag`() {
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        testRapid.sendTestMessage(utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag())
+        verify { producerMock.send( capture(captureSlot) ) }
+
+        val utbetalingUtenUtbetaling = captureSlot.last()
+        val utbetalingUtenUtbetalingJson = utbetalingUtenUtbetaling.validertJson()
+
+        val utbetalingsdager = utbetalingUtenUtbetalingJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
+        assertEquals(mapOf(
+            LocalDate.parse("2022-05-06") to "Feriedag",
+            LocalDate.parse("2022-05-07") to "Feriedag",
+            LocalDate.parse("2022-05-08") to "NavDag",
+            LocalDate.parse("2022-05-09") to "NavHelgDag"
+        ), utbetalingsdager)
+    }
+
+    @Test
     fun `vedtakFattet med tilhørende utbetalingUtenUtbetaling`() {
         val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
         val idSett = IdSett()
@@ -660,6 +696,148 @@ internal class UtbetalingTest {
         {
           "dato": "2021-05-06",
           "type": "Fridag"
+        }
+  ],
+  "@opprettet": "${LocalDateTime.now()}",
+  "aktørId": "123",
+  "organisasjonsnummer": "123456789",
+  "vedtaksperiodeIder": ["${UUID.randomUUID()}", "${UUID.randomUUID()}"]
+}
+    """
+
+    @Language("json")
+    private fun utbetalingUtbetaltMedArbeidIkkeGjenopptattDag() = """{
+  "@id": "${UUID.randomUUID()}",
+  "fødselsnummer": "12345678910",
+  "utbetalingId": "${UUID.randomUUID()}",
+  "korrelasjonsId": "${UUID.randomUUID()}",
+  "@event_name": "utbetaling_utbetalt",
+  "fom": "2021-05-06",
+  "tom": "2021-05-13",
+  "maksdato": "2021-07-15",
+  "forbrukteSykedager": "217",
+  "gjenståendeSykedager": "31",
+  "stønadsdager": 35,
+  "ident": "Automatisk behandlet",
+  "epost": "tbd@nav.no",
+  "type": "REVURDERING",
+  "tidspunkt": "${LocalDateTime.now()}",
+  "automatiskBehandling": "true",
+  "arbeidsgiverOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SPREF",
+    "linjer": [
+      {
+        "fom": "2021-05-06",
+        "tom": "2021-05-13",
+        "sats": 1431,
+        "grad": 100.0,
+        "stønadsdager": 35,
+        "totalbeløp": 38360
+      }
+    ],
+    "fagsystemId": "123",
+    "endringskode": "ENDR",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": "38360",
+    "stønadsdager": 35,
+    "fom": "2021-05-06",
+    "tom": "2021-05-13"
+  },
+  "personOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SP",
+    "linjer": [],
+    "fagsystemId": "123",
+    "endringskode": "NY",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": 0,
+    "stønadsdager": 0,
+    "fom": "${LocalDate.MIN}",
+    "tom": "${LocalDate.MAX}"
+  },
+  "utbetalingsdager": [
+        {
+          "dato": "2021-05-06",
+          "type": "ArbeidIkkeGjenopptattDag"
+        },
+        {
+          "dato": "2021-05-07",
+          "type": "Feriedag"
+        },
+        {
+          "dato": "2021-05-08",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2021-05-09",
+          "type": "NavHelgDag"
+        }
+  ],
+  "@opprettet": "${LocalDateTime.now()}",
+  "aktørId": "123",
+  "organisasjonsnummer": "123456789",
+  "vedtaksperiodeIder": ["${UUID.randomUUID()}", "${UUID.randomUUID()}"]
+}
+    """
+    @Language("json")
+    private fun utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag() = """{
+  "@id": "${UUID.randomUUID()}",
+  "fødselsnummer": "12345678910",
+  "utbetalingId": "${UUID.randomUUID()}",
+  "korrelasjonsId": "${UUID.randomUUID()}",
+  "@event_name": "utbetaling_uten_utbetaling",
+  "fom": "-999999999-01-01",
+  "tom": "+999999999-12-31",
+  "maksdato": "2021-07-15",
+  "forbrukteSykedager": "217",
+  "gjenståendeSykedager": "31",
+  "stønadsdager": 35,
+  "ident": "Automatisk behandlet",
+  "epost": "tbd@nav.no",
+  "type": "REVURDERING",
+  "tidspunkt": "${LocalDateTime.now()}",
+  "automatiskBehandling": "true",
+  "arbeidsgiverOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SPREF",
+    "linjer": [],
+    "fagsystemId": "123",
+    "endringskode": "NY",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": 0,
+    "stønadsdager": 0,
+    "fom": "-999999999-01-01",
+    "tom": "-999999999-01-01"
+  },
+  "personOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SP",
+    "linjer": [],
+    "fagsystemId": "123",
+    "endringskode": "NY",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": 0,
+    "stønadsdager": 0,
+    "fom": "-999999999-01-01",
+    "tom": "-999999999-01-01"
+  },
+  "utbetalingsdager": [
+        {
+          "dato": "2022-05-06",
+          "type": "ArbeidIkkeGjenopptattDag"
+        },
+        {
+          "dato": "2022-05-07",
+          "type": "Feriedag"
+        },
+        {
+          "dato": "2022-05-08",
+          "type": "NavDag"
+        },
+        {
+          "dato": "2022-05-09",
+          "type": "NavHelgDag"
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",

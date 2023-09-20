@@ -50,3 +50,5 @@ spec:
     value: earliest
   - name: NULLE_UT_TOMME_OPPDRAG
     value: "true"
+  - name: SEND_ARBEID_IKKE_GJENOPPTATT
+    value: "true"
