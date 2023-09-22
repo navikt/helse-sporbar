@@ -172,7 +172,7 @@ internal class UtbetalingTest {
     }
 
     @Test
-    fun `utbetaling_utbetalt - mapper ArbeidIkkeGjenopptattDag til Feriedag`() {
+    fun `utbetaling_utbetalt - mapper ArbeidIkkeGjenopptattDag hele veien ut`() {
         val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMedArbeidIkkeGjenopptattDag())
         verify { producerMock.send( capture(captureSlot) ) }
@@ -182,7 +182,7 @@ internal class UtbetalingTest {
 
         val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
         assertEquals(mapOf(
-            LocalDate.parse("2021-05-06") to "Feriedag",
+            LocalDate.parse("2021-05-06") to "ArbeidIkkeGjenopptattDag",
             LocalDate.parse("2021-05-07") to "Feriedag",
             LocalDate.parse("2021-05-08") to "NavDag",
             LocalDate.parse("2021-05-09") to "NavHelgDag"
@@ -190,7 +190,7 @@ internal class UtbetalingTest {
     }
 
     @Test
-    fun `utbetaling_uten_utbetaling - mapper ArbeidIkkeGjenopptattDag til Feriedag`() {
+    fun `utbetaling_uten_utbetaling - mapper ArbeidIkkeGjenopptattDag hele veien ut`() {
         val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
         testRapid.sendTestMessage(utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag())
         verify { producerMock.send( capture(captureSlot) ) }
@@ -200,7 +200,7 @@ internal class UtbetalingTest {
 
         val utbetalingsdager = utbetalingUtenUtbetalingJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
         assertEquals(mapOf(
-            LocalDate.parse("2022-05-06") to "Feriedag",
+            LocalDate.parse("2022-05-06") to "ArbeidIkkeGjenopptattDag",
             LocalDate.parse("2022-05-07") to "Feriedag",
             LocalDate.parse("2022-05-08") to "NavDag",
             LocalDate.parse("2022-05-09") to "NavHelgDag"

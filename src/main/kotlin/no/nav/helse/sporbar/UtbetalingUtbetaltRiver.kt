@@ -13,7 +13,6 @@ private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 private val NULLE_UT_TOMME_OPPDRAG = System.getenv("NULLE_UT_TOMME_OPPDRAG")?.toBoolean() ?: false
-private val SEND_ARBEID_IKKE_GJENOPPTATT = System.getenv("SEND_ARBEID_IKKE_GJENOPPTATT")?.toBoolean() ?: false
 
 internal class UtbetalingUtbetaltRiver(
     rapidsConnection: RapidsConnection,
@@ -248,11 +247,22 @@ internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<UtbetalingUtbet
     }
 }
 
+private val KjenteDagtyper = setOf(
+    "ArbeidsgiverperiodeDag",
+    "NavDag",
+    "NavHelgDag",
+    "Arbeidsdag",
+    "Fridag",
+    "AvvistDag",
+    "UkjentDag",
+    "ForeldetDag",
+    "Permisjonsdag",
+    "Feriedag",
+    "ArbeidIkkeGjenopptattDag"
+)
+
 internal val JsonNode.dagtype get(): String {
     val fraSpleis = asText()
-    if (fraSpleis == "ArbeidIkkeGjenopptattDag") return when (SEND_ARBEID_IKKE_GJENOPPTATT) {
-        true -> "ArbeidIkkeGjenopptattDag"
-        false -> "Feriedag"
-    }
-    return fraSpleis
+    if (fraSpleis in KjenteDagtyper) return fraSpleis
+    throw IllegalStateException("Ny dagtype fra Spleis: $fraSpleis. Vurder om denne skal eksponeres videre ut på tbd.utbetaling")
 }
