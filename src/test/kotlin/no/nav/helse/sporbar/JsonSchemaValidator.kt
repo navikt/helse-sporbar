@@ -21,6 +21,7 @@ internal object JsonSchemaValidator {
     private val vedtakSchema by lazy { "vedtak".getSchema() }
     private val utbetalingSchema by lazy { "utbetaling".getSchema() }
     private val annulleringSchema by lazy { "utbetaling__annullering".getSchema() }
+    private val vedtakAnnullertSchema by lazy { "vedtak__annullert".getSchema() }
 
     private fun JsonSchema.assertSchema(json: JsonNode) {
         val valideringsfeil = validate(json)
@@ -29,7 +30,10 @@ internal object JsonSchemaValidator {
 
     private fun Melding.hentSchema(): Triple<String, Meldingstype, JsonSchema> = when (topic) {
         "tbd.inntektsmeldingstatus" -> Triple("sykmeldt", Meldingstype.Inntektsmeldingstatus, inntektsmeldingstatusSchema)
-        "tbd.vedtak" -> Triple("fødselsnummer", Meldingstype.Vedtak, vedtakSchema)
+        "tbd.vedtak" -> when (json.path("event").asText()) {
+            "vedtak_annullert" -> Triple("fødselsnummer", Meldingstype.VedtakAnnullert, vedtakAnnullertSchema)
+            else -> Triple("fødselsnummer", Meldingstype.Vedtak, vedtakSchema)
+        }
         "aapen-helse-sporbar" -> Triple("fødselsnummer", Meldingstype.Annullering, annulleringSchema)
         "tbd.utbetaling" -> when (json.path("event").asText()) {
             "utbetaling_annullert" -> Triple("fødselsnummer", Meldingstype.Annullering, annulleringSchema)

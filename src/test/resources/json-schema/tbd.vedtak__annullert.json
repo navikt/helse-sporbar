@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Vedtak som har blitt annullert i Spleis",
+  "description": "Alle vedtak for sykepenger som har blitt annullert i Spleis\n\nTopic: tbd.vedtak\n\nEvent: vedtak_annullert\n\nKey: Fødselsnummer",
+  "required": [
+    "versjon",
+    "fødselsnummer",
+    "aktørId",
+    "organisasjonsnummer",
+    "fom",
+    "tom"
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event": {
+      "type": "string",
+      "enum": ["vedtak_annullert"]
+    },
+    "versjon": {
+      "type": "string",
+      "description": "schema-versjon for denne meldingen.",
+      "enum": [
+        "1.0.0"
+      ]
+    },
+    "fødselsnummer": {
+      "type": "string"
+    },
+    "aktørId": {
+      "type": "string"
+    },
+    "organisasjonsnummer": {
+      "type": "string",
+      "examples": [
+        "999263550"
+      ]
+    },
+    "vedtaksperiodeId": {
+      "type": "string",
+      "examples": [
+        "9985ce0f-896b-4489-bf51-b7bb39b76121"
+      ]
+    },
+    "fom": {
+      "type": "string",
+      "format": "date",
+      "examples": [
+        "2018-01-01"
+      ]
+    },
+    "tom": {
+      "type": "string",
+      "format": "date",
+      "examples": [
+        "2018-01-31"
+      ]
+    }
+  }
+}
