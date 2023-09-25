@@ -42,7 +42,7 @@ class AnnulleringRiver(
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val fødselsnummer = packet["fødselsnummer"].asText()
-        val annullering = AnnulleringDto(
+        val annulleringDto = AnnulleringDto(
             organisasjonsnummer = packet["organisasjonsnummer"].asText(),
             fødselsnummer = fødselsnummer,
             tidsstempel = packet["tidspunkt"].asLocalDateTime(),
@@ -53,18 +53,18 @@ class AnnulleringRiver(
             arbeidsgiverFagsystemId = packet["arbeidsgiverFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText(),
             personFagsystemId = packet["personFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText()
         )
-        val annulleringDto = objectMapper.valueToTree<JsonNode>(annullering)
+        val annulleringJson = objectMapper.valueToTree<JsonNode>(annulleringDto)
         aivenProducer.send(
             ProducerRecord(
                 "tbd.utbetaling",
                 null,
                 fødselsnummer,
-                annulleringDto,
+                annulleringJson,
                 listOf(Meldingstype.Annullering.header())
             )
         )
         log.info("Publiserte annullering")
-        sikkerLog.info("Publiserte annullering på $fødselsnummer")
+        sikkerLog.info("Publiserte annullering $annulleringJson")
     }
 
     data class AnnulleringDto(
