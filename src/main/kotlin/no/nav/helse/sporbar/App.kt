@@ -65,7 +65,7 @@ fun launchApplication(env: Map<String, String>) {
 
         NyttDokumentRiver(this, dokumentDao)
         VedtakFattetRiver(this, vedtakFattetMediator)
-        //VedtaksperiodeAnnullertRiver(this, aivenProducer)
+        VedtaksperiodeAnnullertRiver(this, aivenProducer)
         UtbetalingUtbetaltRiver(this, utbetalingMediator)
         UtbetalingUtenUtbetalingRiver(this, utbetalingMediator)
         AnnulleringRiver(this, aivenProducer)
