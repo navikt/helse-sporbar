@@ -18,10 +18,10 @@ internal object JsonSchemaValidator {
         .getSchema(InntektsmeldingStatusTest::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
 
     private val inntektsmeldingstatusSchema by lazy { "inntektsmeldingstatus".getSchema() }
-    private val vedtakSchema by lazy { "vedtak".getSchema() }
+    private val vedtakFattetSchema by lazy { "vedtak__fattet".getSchema() }
+    private val vedtakAnnullertSchema by lazy { "vedtak__annullert".getSchema() }
     private val utbetalingSchema by lazy { "utbetaling".getSchema() }
     private val annulleringSchema by lazy { "utbetaling__annullering".getSchema() }
-    private val vedtakAnnullertSchema by lazy { "vedtak__annullert".getSchema() }
 
     private fun JsonSchema.assertSchema(json: JsonNode) {
         val valideringsfeil = validate(json)
@@ -32,7 +32,7 @@ internal object JsonSchemaValidator {
         "tbd.inntektsmeldingstatus" -> Triple("sykmeldt", Meldingstype.Inntektsmeldingstatus, inntektsmeldingstatusSchema)
         "tbd.vedtak" -> when (json.path("event").asText()) {
             "vedtak_annullert" -> Triple("fødselsnummer", Meldingstype.VedtakAnnullert, vedtakAnnullertSchema)
-            else -> Triple("fødselsnummer", Meldingstype.Vedtak, vedtakSchema)
+            else -> Triple("fødselsnummer", Meldingstype.VedtakFattet, vedtakFattetSchema)
         }
         "aapen-helse-sporbar" -> Triple("fødselsnummer", Meldingstype.Annullering, annulleringSchema)
         "tbd.utbetaling" -> when (json.path("event").asText()) {
@@ -63,7 +63,7 @@ internal object JsonSchemaValidator {
 
     internal fun ProducerRecord<String, JsonNode>.validertJson() = Melding(
         topic = topic(),
-        meldingstype = headers().meldingstypeOrNull() ?: Meldingstype.Vedtak.also { require(topic() == "tbd.vedtak") },
+        meldingstype = headers().meldingstypeOrNull() ?: Meldingstype.VedtakFattet.also { require(topic() == "tbd.vedtak") },
         key = key(),
         json = value()
     ).validertJson()

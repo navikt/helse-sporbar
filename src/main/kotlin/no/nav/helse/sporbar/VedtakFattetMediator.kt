@@ -26,7 +26,8 @@ internal class VedtakFattetMediator(
                 "tbd.vedtak",
                 null,
                 vedtakFattet.fødselsnummer,
-                meldingForEkstern
+                meldingForEkstern,
+                listOf(Meldingstype.VedtakFattet.header())
             )
         )
         sikkerLogg.info("Publiserer vedtakFattet {}", meldingForEkstern)
