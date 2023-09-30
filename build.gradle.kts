@@ -4,12 +4,12 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 val mainClass = "no.nav.helse.sporbar.AppKt"
 val jvmTarget = "17"
 
-val rapidsAndRiversVersion = "2022111011111668075098.65e508dcde8b"
-val ktorVersion = "2.1.3"
-val junitJupiterVersion = "5.9.0"
-val testcontainersVersion = "1.17.4"
+val rapidsAndRiversVersion = "2023093008351696055717.ffdec6aede3d"
+val ktorVersion = "2.3.4"
+val junitJupiterVersion = "5.10.0"
+val testcontainersVersion = "1.19.0"
 val mockkVersion = "1.13.2"
-val postgresqlVersion = "42.5.4"
+val postgresqlVersion = "42.6.0"
 val kotliqueryVersion = "1.9.0"
 val hikariCPVersion = "5.0.1"
 val flywaycoreVersion = "9.15.0"
@@ -17,7 +17,7 @@ val jsonSchemaValidatorVersion = "1.0.73"
 val jsonassertVersion = "1.5.1"
 
 plugins {
-    kotlin("jvm") version "1.7.21"
+    kotlin("jvm") version "1.9.10"
 }
 
 dependencies {
@@ -64,7 +64,7 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "7.4.2"
+        gradleVersion = "8.3"
     }
 
     withType<Test> {
@@ -90,9 +90,8 @@ tasks {
 
         doLast {
             configurations.runtimeClasspath.get().forEach {
-                val file = File("$buildDir/libs/${it.name}")
-                if (!file.exists())
-                    it.copyTo(file)
+                val file = File("${layout.buildDirectory.get()}/libs/${it.name}")
+                if (!file.exists()) it.copyTo(file)
             }
         }
     }
