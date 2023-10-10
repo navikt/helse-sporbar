@@ -142,6 +142,20 @@ internal class UtbetalingTest {
     }
 
     @Test
+    fun `utbetaling_utbetalt - ignorerer vedtaksperiode i blocklist`() {
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf("bf453475-21f8-4ad1-9055-45f110411f5f")))
+        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
+    }
+
+    @Test
+    fun `utbetaling_uten_utbetaling - ignorerer vedtaksperiode i blocklist`() {
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf("bf453475-21f8-4ad1-9055-45f110411f5f"), "utbetaling_uten_utbetaling"))
+        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
+    }
+
+    @Test
     fun `utbetaling_utbetalt - mapper vedtaksperiodeIder til antallVedtak`() {
         val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMedVedtaksperiodeIder())
@@ -372,6 +386,7 @@ internal class UtbetalingTest {
   "type": "$UTBETALINGSTYPE",
   "tidspunkt": "$TIDSSTEMPEL",
   "automatiskBehandling": "$AUTOMATISK_BEHANDLING",
+  "vedtaksperiodeIder": [],
   "@event_name": "$event",
   "arbeidsgiverOppdrag": {
     "mottaker": "$ORGNUMMER",
@@ -479,6 +494,7 @@ internal class UtbetalingTest {
   "type": "REVURDERING",
   "tidspunkt": "${LocalDateTime.now()}",
   "automatiskBehandling": "true",
+  "vedtaksperiodeIder": [],
   "arbeidsgiverOppdrag": {
     "mottaker": "123456789",
     "fagområde": "SPREF",
@@ -644,6 +660,69 @@ internal class UtbetalingTest {
   "aktørId": "123",
   "organisasjonsnummer": "123456789",
   "vedtaksperiodeIder": ["${UUID.randomUUID()}", "${UUID.randomUUID()}"]
+}
+    """
+    @Language("json")
+    private fun utbetalingUtbetaltMed0KrINettobeløp(vedtaksperioder: Set<String>, event: String = "utbetaling_utbetalt") = """{
+  "@id": "${UUID.randomUUID()}",
+  "fødselsnummer": "12345678910",
+  "utbetalingId": "${UUID.randomUUID()}",
+  "korrelasjonsId": "${UUID.randomUUID()}",
+  "@event_name": "$event",
+  "fom": "2021-05-06",
+  "tom": "2021-05-13",
+  "maksdato": "2021-07-15",
+  "forbrukteSykedager": "217",
+  "gjenståendeSykedager": "31",
+  "stønadsdager": 35,
+  "ident": "Automatisk behandlet",
+  "epost": "tbd@nav.no",
+  "type": "REVURDERING",
+  "tidspunkt": "${LocalDateTime.now()}",
+  "automatiskBehandling": "true",
+  "arbeidsgiverOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SPREF",
+    "linjer": [
+      {
+        "fom": "2021-05-06",
+        "tom": "2021-05-13",
+        "sats": 1431,
+        "grad": 100.0,
+        "stønadsdager": 35,
+        "totalbeløp": 38360
+      }
+    ],
+    "fagsystemId": "123",
+    "endringskode": "ENDR",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": 0,
+    "stønadsdager": 35,
+    "fom": "2021-05-06",
+    "tom": "2021-05-13"
+  },
+  "personOppdrag": {
+    "mottaker": "123456789",
+    "fagområde": "SP",
+    "linjer": [],
+    "fagsystemId": "123",
+    "endringskode": "NY",
+    "tidsstempel": "${LocalDateTime.now()}",
+    "nettoBeløp": 0,
+    "stønadsdager": 0,
+    "fom": "${LocalDate.MIN}",
+    "tom": "${LocalDate.MAX}"
+  },
+  "utbetalingsdager": [
+        {
+          "dato": "2021-05-06",
+          "type": "NavDag"
+        }
+  ],
+  "@opprettet": "${LocalDateTime.now()}",
+  "aktørId": "123",
+  "organisasjonsnummer": "123456789",
+  "vedtaksperiodeIder": [${vedtaksperioder.joinToString { "\"$it\"" }}]
 }
     """
 
