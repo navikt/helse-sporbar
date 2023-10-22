@@ -165,7 +165,7 @@ internal class UtbetalingTest {
         val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
 
         val antallVedtak = utbetalingUtbetaltJson.path("antallVedtak").asInt()
-        assertEquals(2, antallVedtak)
+        assertEquals(1, antallVedtak)
     }
 
     @Test
@@ -182,7 +182,7 @@ internal class UtbetalingTest {
         assertFalse(utbetalingUtenUtbetalingJson.path("arbeidsgiverOppdrag").isNull) { "Denne skal være assertTrue når toggelen NULLE_UT_TOMME_OPPDRAG fjernes (eller settes til true mannuelt)" }
         assertFalse(utbetalingUtenUtbetalingJson.path("personOppdrag").isNull) { "Denne skal være assertTrue når toggelen NULLE_UT_TOMME_OPPDRAG fjernes (eller settes til true mannuelt)" }
         assertEquals(LocalDate.of(2021,7,15), utbetalingUtenUtbetalingJson.path("foreløpigBeregnetSluttPåSykepenger").asLocalDate())
-        assertEquals(2, antallVedtak)
+        assertEquals(1, antallVedtak)
     }
 
     @Test
@@ -659,7 +659,7 @@ internal class UtbetalingTest {
   "@opprettet": "${LocalDateTime.now()}",
   "aktørId": "123",
   "organisasjonsnummer": "123456789",
-  "vedtaksperiodeIder": ["${UUID.randomUUID()}", "${UUID.randomUUID()}"]
+  "vedtaksperiodeIder": ["${UUID.randomUUID()}"]
 }
     """
     @Language("json")

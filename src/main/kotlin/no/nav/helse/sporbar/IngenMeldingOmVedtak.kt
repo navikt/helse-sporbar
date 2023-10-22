@@ -24,6 +24,6 @@ object IngenMeldingOmVedtak {
         }
     }
 
-    fun ignorerMeldingOmVedtak(vedtaksperiodeIder: List<String>, vararg oppdragDto: UtbetalingUtbetalt.OppdragDto?) =
-        vedtaksperiodeIder.any { id -> id in vedtaksperioder } && oppdragDto.mapNotNull { it }.all { it.nettoBeløp == 0 }
+    fun ignorerMeldingOmVedtak(vedtaksperiodeId: String, vararg oppdragDto: UtbetalingUtbetalt.OppdragDto?) =
+        vedtaksperiodeId in vedtaksperioder && oppdragDto.mapNotNull { it }.all { it.nettoBeløp == 0 }
 }

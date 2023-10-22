@@ -43,7 +43,7 @@ internal class UtbetalingUtbetaltRiver(
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
                 it.require("korrelasjonsId") { id -> UUID.fromString(id.asText()) }
-                it.requireArray("vedtaksperiodeIder")
+                it.interestedIn("vedtaksperiodeIder")
 
                 it.requireKey("arbeidsgiverOppdrag.mottaker", "arbeidsgiverOppdrag.fagområde", "arbeidsgiverOppdrag.fagsystemId",
                     "arbeidsgiverOppdrag.nettoBeløp", "arbeidsgiverOppdrag.stønadsdager")
@@ -98,10 +98,8 @@ internal class UtbetalingUtbetaltRiver(
         val arbeidsgiverOppdrag = parseOppdrag(packet["arbeidsgiverOppdrag"])
         val personOppdrag = parseOppdrag(packet["personOppdrag"])
 
-        val vedtaksperioder = packet["vedtaksperiodeIder"].map { it.asText() }
-        if (IngenMeldingOmVedtak.ignorerMeldingOmVedtak(vedtaksperioder, arbeidsgiverOppdrag, personOppdrag)) return sikkerLog.info("Ignorerer melding om vedtak for ${vedtaksperioder.joinToString()}")
-
-        val antallVedtak = vedtaksperioder.size
+        val vedtaksperiode = packet["vedtaksperiodeIder"].map(JsonNode::asText).singleOrNull()
+        if (vedtaksperiode != null && IngenMeldingOmVedtak.ignorerMeldingOmVedtak(vedtaksperiode, arbeidsgiverOppdrag, personOppdrag)) return sikkerLog.info("Ignorerer melding om vedtak for $vedtaksperiode")
 
         utbetalingMediator.
         utbetalingUtbetalt(UtbetalingUtbetalt(
@@ -121,7 +119,7 @@ internal class UtbetalingUtbetaltRiver(
             personOppdrag = personOppdrag,
             type = type,
             utbetalingsdager = utbetalingsdager,
-            antallVedtak = antallVedtak,
+            antallVedtak = 1,
             foreløpigBeregnetSluttPåSykepenger = maksdato
         ))
         log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
