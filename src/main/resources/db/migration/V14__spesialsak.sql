@@ -1,0 +1,1 @@
+CREATE TABLE spesialsak (vedtaksperiode_id UUID PRIMARY KEY);
