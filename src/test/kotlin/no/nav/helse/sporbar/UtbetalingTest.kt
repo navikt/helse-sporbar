@@ -2,22 +2,25 @@ package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.clearAllMocks
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
+import kotliquery.queryOf
+import kotliquery.sessionOf
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.*
-import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class UtbetalingTest {
@@ -47,7 +50,7 @@ internal class UtbetalingTest {
     private val testRapid = TestRapid()
     private val producerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
     private val dokumentDao = DokumentDao { TestDatabase.dataSource }
-    private val spesialsakDao = mockk<SpesialsakDao>(relaxed = true)
+    private val spesialsakDao = SpesialsakDao { TestDatabase.dataSource }
 
     private val vedtakFattetMediator = VedtakFattetMediator(
         dokumentDao = dokumentDao,
@@ -145,18 +148,42 @@ internal class UtbetalingTest {
 
     @Test
     fun `utbetaling_utbetalt - ignorerer vedtaksperiode i blocklist`() {
-        every { spesialsakDao.spesialsak(any()) } returns true
+        val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
+        opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
         val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf("bf453475-21f8-4ad1-9055-45f110411f5f")))
+        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId)))
         verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
     }
 
     @Test
     fun `utbetaling_uten_utbetaling - ignorerer vedtaksperiode i blocklist`() {
-        every { spesialsakDao.spesialsak(any()) } returns true
+        val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
+        opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
         val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf("bf453475-21f8-4ad1-9055-45f110411f5f"), "utbetaling_uten_utbetaling"))
+        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId), "utbetaling_uten_utbetaling"))
         verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
+    }
+
+    @Test
+    fun `utbetaling_utbetalt - periode som har vært spesialsak én gang er ikke det neste gang`() {
+        val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
+        opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId)))
+        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
+        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId)))
+        verify(exactly = 1) { producerMock.send( capture(captureSlot) ) }
+    }
+
+    @Test
+    fun `utbetaling_uten_utbetaling - periode som har vært spesialsak én gang er ikke det neste gang`() {
+        val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
+        opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
+        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId), "utbetaling_uten_utbetaling"))
+        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
+        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId), "utbetaling_uten_utbetaling"))
+        verify(exactly = 1) { producerMock.send( capture(captureSlot) ) }
     }
 
     @Test
@@ -327,6 +354,14 @@ internal class UtbetalingTest {
 
     private fun utbetalingUtbetaltSendt(idSett: IdSett, event: String = "utbetaling_utbetalt") {
         testRapid.sendTestMessage(utbetalingUtbetalt(idSett, event))
+    }
+
+    private fun opprettSpesialsak(vedtaksperiodeId: UUID) {
+        @Language("PostgreSQL")
+        val query = "INSERT INTO spesialsak (vedtaksperiode_id) VALUES (:vedtaksperiode_id)"
+        sessionOf(TestDatabase.dataSource).use {
+            it.run(queryOf(query, mapOf("vedtaksperiode_id" to vedtaksperiodeId)).asUpdate)
+        }
     }
 
     @Language("json")

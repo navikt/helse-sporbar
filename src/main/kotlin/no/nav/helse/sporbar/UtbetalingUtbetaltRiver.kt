@@ -101,7 +101,8 @@ internal class UtbetalingUtbetaltRiver(
 
         val vedtaksperiode = packet["vedtaksperiodeIder"].map(JsonNode::asText).singleOrNull()
         if (vedtaksperiode != null && IngenMeldingOmVedtak(spesialsakDao).ignorerMeldingOmVedtak(vedtaksperiode, arbeidsgiverOppdrag, personOppdrag)) {
-            return sikkerLog.info("Ignorerer melding om vedtak for $vedtaksperiode")
+            spesialsakDao.slett(UUID.fromString(vedtaksperiode))
+            return sikkerLog.info("Ignorerer denne meldingen om vedtak for $vedtaksperiode fordi den er spesialsak, og anser den ikke lenger som spesialsak")
         }
 
         utbetalingMediator.utbetalingUtbetalt(
