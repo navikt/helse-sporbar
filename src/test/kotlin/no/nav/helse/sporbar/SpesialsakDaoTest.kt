@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SpesialsakDaoTest {
-    private val dao = SpesialsakDao(TestDatabase.dataSource)
+    private val dao = SpesialsakDao { TestDatabase.dataSource }
 
     @Test
     fun `er spesialsak`() {

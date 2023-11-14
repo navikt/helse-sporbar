@@ -12,7 +12,8 @@ private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 internal class UtbetalingUtenUtbetalingRiver(
     rapidsConnection: RapidsConnection,
-    private val utbetalingMediator: UtbetalingMediator
+    private val utbetalingMediator: UtbetalingMediator,
+    private val spesialsakDao: SpesialsakDao
 ) : River.PacketListener {
 
     init {
@@ -95,28 +96,30 @@ internal class UtbetalingUtenUtbetalingRiver(
         val personOppdrag = parseOppdrag(packet["personOppdrag"])
 
         val vedtaksperiode = packet["vedtaksperiodeIder"].map(JsonNode::asText).singleOrNull()
-        if (vedtaksperiode != null && IngenMeldingOmVedtak.ignorerMeldingOmVedtak(vedtaksperiode, arbeidsgiverOppdrag, personOppdrag)) return sikkerLog.info("Ignorerer melding om vedtak for $vedtaksperiode")
+        if (vedtaksperiode != null && IngenMeldingOmVedtak(spesialsakDao).ignorerMeldingOmVedtak(vedtaksperiode, arbeidsgiverOppdrag, personOppdrag)) return sikkerLog.info("Ignorerer melding om vedtak for $vedtaksperiode")
 
-        utbetalingMediator.utbetalingUtenUtbetaling(UtbetalingUtbetalt(
-            event = "utbetaling_uten_utbetaling",
-            utbetalingId = utbetalingId,
-            korrelasjonsId = korrelasjonsId,
-            fødselsnummer = fødselsnummer,
-            aktørId = aktørId,
-            organisasjonsnummer = organisasjonsnummer,
-            fom = fom,
-            tom = tom,
-            forbrukteSykedager = forbrukteSykedager,
-            gjenståendeSykedager = gjenståendeSykedager,
-            stønadsdager = stønadsdager,
-            automatiskBehandling = automatiskBehandling,
-            arbeidsgiverOppdrag = arbeidsgiverOppdrag,
-            personOppdrag = personOppdrag,
-            type = type,
-            utbetalingsdager = utbetalingsdager,
-            antallVedtak = 1,
-            foreløpigBeregnetSluttPåSykepenger = maksdato
-        ))
+        utbetalingMediator.utbetalingUtenUtbetaling(
+            UtbetalingUtbetalt(
+                event = "utbetaling_uten_utbetaling",
+                utbetalingId = utbetalingId,
+                korrelasjonsId = korrelasjonsId,
+                fødselsnummer = fødselsnummer,
+                aktørId = aktørId,
+                organisasjonsnummer = organisasjonsnummer,
+                fom = fom,
+                tom = tom,
+                forbrukteSykedager = forbrukteSykedager,
+                gjenståendeSykedager = gjenståendeSykedager,
+                stønadsdager = stønadsdager,
+                automatiskBehandling = automatiskBehandling,
+                arbeidsgiverOppdrag = arbeidsgiverOppdrag,
+                personOppdrag = personOppdrag,
+                type = type,
+                utbetalingsdager = utbetalingsdager,
+                antallVedtak = 1,
+                foreløpigBeregnetSluttPåSykepenger = maksdato
+            )
+        )
         log.info("Behandler utbetaling_uten_utbetaling: ${packet["@id"].asText()}")
         sikkerLog.info("Behandler utbetaling_uten_utbetaling: ${packet["@id"].asText()}")
     }

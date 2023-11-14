@@ -2,6 +2,7 @@ package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.clearAllMocks
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import no.nav.helse.rapids_rivers.asLocalDate
@@ -46,6 +47,7 @@ internal class UtbetalingTest {
     private val testRapid = TestRapid()
     private val producerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
     private val dokumentDao = DokumentDao { TestDatabase.dataSource }
+    private val spesialsakDao = mockk<SpesialsakDao>(relaxed = true)
 
     private val vedtakFattetMediator = VedtakFattetMediator(
         dokumentDao = dokumentDao,
@@ -59,8 +61,8 @@ internal class UtbetalingTest {
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
         VedtakFattetRiver(testRapid, vedtakFattetMediator)
-        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator)
-        UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator)
+        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, spesialsakDao)
+        UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator, spesialsakDao)
     }
 
     @BeforeEach
@@ -143,6 +145,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `utbetaling_utbetalt - ignorerer vedtaksperiode i blocklist`() {
+        every { spesialsakDao.spesialsak(any()) } returns true
         val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf("bf453475-21f8-4ad1-9055-45f110411f5f")))
         verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
@@ -150,6 +153,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `utbetaling_uten_utbetaling - ignorerer vedtaksperiode i blocklist`() {
+        every { spesialsakDao.spesialsak(any()) } returns true
         val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf("bf453475-21f8-4ad1-9055-45f110411f5f"), "utbetaling_uten_utbetaling"))
         verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }

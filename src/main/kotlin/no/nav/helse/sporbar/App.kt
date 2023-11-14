@@ -48,6 +48,7 @@ fun launchApplication(env: Map<String, String>) {
         })
 
         val dokumentDao = DokumentDao(dataSourceBuilder::dataSource)
+        val spesialsakDao = SpesialsakDao(dataSourceBuilder::dataSource)
         val aivenProducer = createAivenProducer(env)
 
         val inntektsmeldingStatusDao = PostgresInntektsmeldingStatusDao(dataSourceBuilder::dataSource)
@@ -66,8 +67,8 @@ fun launchApplication(env: Map<String, String>) {
         NyttDokumentRiver(this, dokumentDao)
         VedtakFattetRiver(this, vedtakFattetMediator)
         VedtaksperiodeAnnullertRiver(this, aivenProducer)
-        UtbetalingUtbetaltRiver(this, utbetalingMediator)
-        UtbetalingUtenUtbetalingRiver(this, utbetalingMediator)
+        UtbetalingUtbetaltRiver(this, utbetalingMediator, spesialsakDao)
+        UtbetalingUtenUtbetalingRiver(this, utbetalingMediator, spesialsakDao)
         AnnulleringRiver(this, aivenProducer)
         TrengerInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
         TrengerIkkeInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
