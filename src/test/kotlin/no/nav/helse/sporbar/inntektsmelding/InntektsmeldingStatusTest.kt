@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.opentest4j.AssertionFailedError
@@ -286,6 +285,16 @@ internal class InntektsmeldingStatusTest {
         assertEquals("HAR_INNTEKTSMELDING", testProducer.sistePubliserteStatusFor(vedtaksperiodeId))
     }
 
+    @Test
+    fun `ignorerer meldinger for vedtaksperioder som ikke har gyldig organisasjonsnummer`() {
+        val vedtaksperiodeIdPåOrgnummer = UUID.randomUUID()
+        testRapid.sendTestMessage(vedtaksperiodeForkastetEvent(vedtaksperiodeIdPåOrgnummer))
+        assertEquals("BEHANDLES_UTENFOR_SPLEIS", status(vedtaksperiodeIdPåOrgnummer))
+        val vedtaksperiodeIdPåArbeidsledig = UUID.randomUUID()
+        testRapid.sendTestMessage(vedtaksperiodeForkastetEvent(vedtaksperiodeIdPåArbeidsledig, organisasjonsnummer = "ARBEIDSLEDIG"))
+        assertNull(status(vedtaksperiodeIdPåArbeidsledig))
+    }
+
     private fun status(vedtaksperiodeId: UUID): String? = sessionOf(TestDatabase.dataSource).use { session ->
         session.run(queryOf("SELECT status FROM inntektsmelding_status WHERE vedtaksperiode_id = ? ORDER BY melding_innsatt DESC", vedtaksperiodeId).map { it.string("status") }.asSingle)
     }
@@ -330,9 +339,10 @@ internal class InntektsmeldingStatusTest {
             extra = mapOf("søknadIder" to setOf(UUID.randomUUID()))
         )
 
-        private fun vedtaksperiodeForkastetEvent(vedtaksperiodeId: UUID) = event(
+        private fun vedtaksperiodeForkastetEvent(vedtaksperiodeId: UUID, organisasjonsnummer: String = orgnr) = event(
             event = "vedtaksperiode_forkastet",
             vedtaksperiodeId = vedtaksperiodeId,
+            organisasjonsnummer = organisasjonsnummer,
             extra = mapOf("hendelser" to setOf(UUID.randomUUID()))
         )
 
@@ -345,6 +355,7 @@ internal class InntektsmeldingStatusTest {
         private fun event(
             event: String,
             vedtaksperiodeId: UUID,
+            organisasjonsnummer: String = orgnr,
             extra: Map<String, Any> = emptyMap()
         ) = JsonMessage.newMessage(
             mapOf(
@@ -353,7 +364,7 @@ internal class InntektsmeldingStatusTest {
                 "vedtaksperiodeId" to vedtaksperiodeId,
                 "fødselsnummer" to fnr,
                 "aktørId" to aktørId,
-                "organisasjonsnummer" to orgnr,
+                "organisasjonsnummer" to organisasjonsnummer,
                 "@opprettet" to opprettet,
                 "fom" to fom,
                 "tom" to tom

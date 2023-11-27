@@ -24,8 +24,9 @@ internal class InntektsmeldingStatusVedtaksperiodeEndretRiver(
         River(rapidsConnection).apply {
             validate {
                 it.requireValue("@event_name", "vedtaksperiode_endret")
-                it.requireKey("organisasjonsnummer", "fødselsnummer", "aktørId", "vedtaksperiodeId", "hendelser")
+                it.requireKey("fødselsnummer", "aktørId", "vedtaksperiodeId", "hendelser")
                 it.interestedIn("hendelser")
+                it.require("organisasjonsnummer", JsonNode::orgnummer)
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
                 it.require("@id") { id -> UUID.fromString(id.asText()) }
@@ -73,3 +74,4 @@ internal class InntektsmeldingStatusVedtaksperiodeEndretRiver(
         )
     }
 }
+internal fun JsonNode.orgnummer() { check(asText().matches("\\d{9}".toRegex())) }
