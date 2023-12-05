@@ -38,6 +38,18 @@ internal class NyttDokumentRiverTest {
     }
 
     @Test
+    fun `sendt søknad arbeidsledig`() {
+        val nySøknadHendelseId = UUID.randomUUID()
+        val sykmeldingId = UUID.randomUUID()
+        val søknadId = UUID.randomUUID()
+        testRapid.sendTestMessage(sendtSøknadArbeidsledigMessage(nySøknadHendelseId, sykmeldingId, søknadId))
+
+        val dokumenter = dokumentDao.finn(listOf(nySøknadHendelseId))
+
+        assertEquals(2, dokumenter.size)
+    }
+
+    @Test
     fun `duplikate hendelser for ny søknad hendelse og en sendt søknad hendelse`() {
         val nySøknadHendelseId = UUID.randomUUID()
         val sendtSøknadHendelseId = UUID.randomUUID()
@@ -113,6 +125,20 @@ internal class NyttDokumentRiverTest {
     ) =
         """{
             "@event_name": "sendt_søknad_nav",
+            "@id": "$nySøknadHendelseId",
+            "id": "$søknadDokumentId",
+            "sykmeldingId": "$sykmeldingDokumentId",
+            "@opprettet": "2020-06-11T10:46:46.007854"
+        }"""
+
+    @Language("JSON")
+    private fun sendtSøknadArbeidsledigMessage(
+        nySøknadHendelseId: UUID,
+        sykmeldingDokumentId: UUID,
+        søknadDokumentId: UUID
+    ) =
+        """{
+            "@event_name": "sendt_søknad_arbeidsledig",
             "@id": "$nySøknadHendelseId",
             "id": "$søknadDokumentId",
             "sykmeldingId": "$sykmeldingDokumentId",

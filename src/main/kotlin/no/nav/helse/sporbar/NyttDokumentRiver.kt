@@ -18,10 +18,7 @@ internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val
                 it.interestedIn("inntektsmeldingId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("id") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("sykmeldingId") { id -> UUID.fromString(id.asText()) }
-                it.requireAny(
-                    "@event_name",
-                    listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver")
-                )
+                it.requireAny("@event_name", listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver", "sendt_søknad_arbeidsledig"))
             }
         }.register(this)
     }
@@ -36,7 +33,7 @@ internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val
                     val dokumentId = UUID.fromString(packet["inntektsmeldingId"].textValue())
                     dokumentDao.opprett(hendelseId, opprettet, dokumentId, Dokument.Type.Inntektsmelding)
                 }
-                "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver" -> {
+                "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver", "sendt_søknad_arbeidsledig" -> {
                     val sykmeldingId = UUID.fromString(packet["sykmeldingId"].textValue())
                     dokumentDao.opprett(hendelseId, opprettet, sykmeldingId, Dokument.Type.Sykmelding)
                     val søknadId = UUID.fromString(packet["id"].textValue())
