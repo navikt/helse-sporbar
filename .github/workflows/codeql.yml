@@ -31,15 +31,13 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17.x'
-          cache: 'gradle'
+          java-version: '21.x'
 
       - name: Gradle build
         uses: gradle/gradle-build-action@v2.4.2
         with:
           arguments: build
         env:
-          ORG_GRADLE_PROJECT_githubUser: x-access-token
           ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Perform CodeQL Analysis
