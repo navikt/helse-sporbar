@@ -1,8 +1,8 @@
 val mainClass = "no.nav.helse.sporbar.AppKt"
 val jvmTarget = 21
 
-val rapidsAndRiversVersion = "2024010209171704183456.6d035b91ffb4"
-val ktorVersion = "2.3.7"
+val rapidsAndRiversVersion = "2024020422121707081126.d834a5d05bb2"
+val ktorVersion = "2.3.8"
 val junitJupiterVersion = "5.10.0"
 val testcontainersVersion = "1.19.0"
 val mockkVersion = "1.13.9"
