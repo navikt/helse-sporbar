@@ -5,6 +5,7 @@ import java.util.UUID
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
+import no.nav.helse.rapids_rivers.MessageProblems
 import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDate
@@ -18,12 +19,15 @@ internal class InntektsmeldingStatusVedtaksperiodeEndretRiver(
     private val inntektsmeldingStatusMediator: InntektsmeldingStatusMediator
 ): River.PacketListener {
 
-    private val log: Logger = LoggerFactory.getLogger("inntektsmeldingstatus")
+    private companion object {
+        private val logg: Logger = LoggerFactory.getLogger(this::class.java)
+        private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
+    }
 
     init {
         River(rapidsConnection).apply {
             validate {
-                it.requireValue("@event_name", "vedtaksperiode_endret")
+                it.demandValue("@event_name", "vedtaksperiode_endret")
                 it.requireKey("fødselsnummer", "aktørId", "vedtaksperiodeId", "hendelser")
                 it.interestedIn("hendelser")
                 it.require("organisasjonsnummer", JsonNode::orgnummer)
@@ -36,14 +40,19 @@ internal class InntektsmeldingStatusVedtaksperiodeEndretRiver(
         }.register(this)
     }
 
+    override fun onError(problems: MessageProblems, context: MessageContext) {
+        logg.error("Forstod ikke vedtaksperiode_endret (se sikkerLogg for detaljer)")
+        sikkerLogg.error("Forstod ikke vedtaksperiode_endret: ${problems.toExtendedReport()}")
+    }
+
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         when (packet["gjeldendeTilstand"].asText()) {
             "AVSLUTTET_UTEN_UTBETALING" -> {
-                log.info("Vedtaksperiode endret til AVSLUTTET_UTEN_UTBETALING. Trenger ikke inntektsmelding. {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
+                logg.info("Vedtaksperiode endret til AVSLUTTET_UTEN_UTBETALING. Trenger ikke inntektsmelding. {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
                 inntektsmeldingStatusMediator.lagre(packet.somTrengerIkkeInntektsmelding())
             }
             "AVVENTER_BLOKKERENDE_PERIODE" -> {
-                log.info("Vedtaksperiode endret til AVVENTER_BLOKKERENDE_PERIODE. Har inntektsmelding. {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
+                logg.info("Vedtaksperiode endret til AVVENTER_BLOKKERENDE_PERIODE. Har inntektsmelding. {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
                 inntektsmeldingStatusMediator.lagre(packet.somHarInntektsmelding())
             }
         }

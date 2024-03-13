@@ -4,23 +4,32 @@ import no.nav.helse.rapids_rivers.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeEndretRiver
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
 
 internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val dokumentDao: DokumentDao) :
     River.PacketListener {
+    private companion object {
+        private val logg: Logger = LoggerFactory.getLogger(this::class.java)
+        private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
+    }
     init {
         River(rapidsConnection).apply {
             validate {
+                it.demandAny("@event_name", listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver", "sendt_søknad_arbeidsledig"))
                 it.requireKey("@opprettet")
                 it.require("@id") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("inntektsmeldingId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("id") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("sykmeldingId") { id -> UUID.fromString(id.asText()) }
-                it.requireAny("@event_name", listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver", "sendt_søknad_arbeidsledig"))
             }
         }.register(this)
+    }
+    override fun onError(problems: MessageProblems, context: MessageContext) {
+        logg.error("Forstod ikke nytt dokument (se sikkerLogg for detaljer)")
+        sikkerLogg.error("Forstod ikke nytt dokument: ${problems.toExtendedReport()}")
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {

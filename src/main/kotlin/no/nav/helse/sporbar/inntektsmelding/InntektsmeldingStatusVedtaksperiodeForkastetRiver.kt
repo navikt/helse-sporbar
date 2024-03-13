@@ -5,6 +5,7 @@ import java.util.UUID
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
+import no.nav.helse.rapids_rivers.MessageProblems
 import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDate
@@ -17,12 +18,15 @@ internal class InntektsmeldingStatusVedtaksperiodeForkastetRiver(
     private val inntektsmeldingStatusMediator: InntektsmeldingStatusMediator
 ): River.PacketListener {
 
-    private val log: Logger = LoggerFactory.getLogger("inntektsmeldingstatus")
+    private companion object {
+        private val logg: Logger = LoggerFactory.getLogger(this::class.java)
+        private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
+    }
 
     init {
         River(rapidsConnection).apply {
             validate {
-                it.requireValue("@event_name", "vedtaksperiode_forkastet")
+                it.demandValue("@event_name", "vedtaksperiode_forkastet")
                 it.requireKey("fødselsnummer", "aktørId", "vedtaksperiodeId", "hendelser")
                 it.require("organisasjonsnummer", JsonNode::orgnummer)
                 it.interestedIn("hendelser")
@@ -34,8 +38,13 @@ internal class InntektsmeldingStatusVedtaksperiodeForkastetRiver(
         }.register(this)
     }
 
+    override fun onError(problems: MessageProblems, context: MessageContext) {
+        logg.error("Forstod ikke vedtaksperiode_forkastet (se sikkerLogg for detaljer)")
+        sikkerLogg.error("Forstod ikke vedtaksperiode_forkastet: ${problems.toExtendedReport()}")
+    }
+
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        log.info("Vedtaksperiode forkastet. Behandles utenfor Spleis. {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
+        logg.info("Vedtaksperiode forkastet. Behandles utenfor Spleis. {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
         inntektsmeldingStatusMediator.lagre(packet.somBehandlesUtenforSpleis())
     }
 

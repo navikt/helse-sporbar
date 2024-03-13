@@ -12,12 +12,15 @@ internal class TrengerInntektsmeldingRiver(
     private val inntektsmeldingStatusMediator: InntektsmeldingStatusMediator
 ) : River.PacketListener{
 
-    private val log: Logger = LoggerFactory.getLogger("inntektsmeldingstatus")
+    private companion object {
+        private val logg: Logger = LoggerFactory.getLogger(this::class.java)
+        private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
+    }
 
     init {
         River(rapidsConnection).apply {
             validate {
-                it.requireValue("@event_name", "trenger_inntektsmelding")
+                it.demandValue("@event_name", "trenger_inntektsmelding")
                 it.requireKey("organisasjonsnummer", "fødselsnummer", "aktørId", "vedtaksperiodeId")
                 it.interestedIn("søknadIder")
                 it.require("@id") { id -> UUID.fromString(id.asText()) }
@@ -28,8 +31,13 @@ internal class TrengerInntektsmeldingRiver(
         }.register(this)
     }
 
+    override fun onError(problems: MessageProblems, context: MessageContext) {
+        logg.error("Forstod ikke trenger_inntektsmelding (se sikkerLogg for detaljer)")
+        sikkerLogg.error("Forstod ikke trenger_inntektsmelding: ${problems.toExtendedReport()}")
+    }
+
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        log.info("Trenger inntektsmelding for vedtaksperiode {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
+        logg.info("Trenger inntektsmelding for vedtaksperiode {}", keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()))
         inntektsmeldingStatusMediator.lagre(packet.somManglerInntektsmelding())
     }
 
