@@ -27,8 +27,8 @@ internal class InntektsmeldingStatusVedtaksperiodeForkastetRiver(
         River(rapidsConnection).apply {
             validate {
                 it.demandValue("@event_name", "vedtaksperiode_forkastet")
+                it.demand("organisasjonsnummer", JsonNode::orgnummer)
                 it.requireKey("fødselsnummer", "aktørId", "vedtaksperiodeId", "hendelser")
-                it.require("organisasjonsnummer", JsonNode::orgnummer)
                 it.interestedIn("hendelser")
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
