@@ -140,7 +140,7 @@
           },
           "type": {
             "type": "string",
-            "description": "AvvistDag: Vil ha innhold i begrunnelser for hvorfor den er avvist\n\nUkjentDag: Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag",
+            "description": "AvvistDag: Vil ha innhold i begrunnelser for hvorfor den er avvist\n\nUkjentDag: Vi har ikke mottatt informasjon om denne dagen, så den regnes som en arbeidsdag\n\nAndreYtelser: Vil ha innhold i begrunnelser hva slags ytelse det gjelder",
             "enum": [
               "AvvistDag",
               "NavHelgDag",
@@ -152,7 +152,8 @@
               "NavDag",
               "ForeldetDag",
               "UkjentDag",
-              "ArbeidIkkeGjenopptattDag"
+              "ArbeidIkkeGjenopptattDag",
+              "AndreYtelser"
             ]
           }
         }
