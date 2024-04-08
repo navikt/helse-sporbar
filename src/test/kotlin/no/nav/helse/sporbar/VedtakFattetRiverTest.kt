@@ -158,7 +158,7 @@ internal class VedtakFattetRiverTest {
         sykmeldingSendt(idSett)
         søknadSendt(idSett)
         inntektsmeldingSendt(idSett)
-        vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode"))
+        vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode", "Personutbetaling"))
 
         verify { producerMock.send( capture(captureSlot) ) }
 

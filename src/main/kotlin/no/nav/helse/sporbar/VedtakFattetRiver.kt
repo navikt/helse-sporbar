@@ -83,7 +83,8 @@ internal class VedtakFattetRiver(
             )
         } ?: emptyList()
 
-        val tags = packet["tags"].takeUnless(JsonNode::isMissingOrNull)?.map { it.asText() }?.toSet() ?: emptySet<String>()
+        val tags = packet["tags"].takeUnless(JsonNode::isMissingOrNull)?.map { it.asText() }
+            ?.filter { tag -> tag in TAGS_TIL_DELING_UTAD }?.toSet() ?: emptySet<String>()
 
         val utbetalingId = packet["utbetalingId"].takeUnless(JsonNode::isMissingOrNull)?.let {
             UUID.fromString(it.asText())
@@ -113,6 +114,10 @@ internal class VedtakFattetRiver(
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
         sikkerLog.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
+    }
+
+    companion object {
+        val TAGS_TIL_DELING_UTAD: Set<String> = setOf("IngenNyArbeidsgiverperiode")
     }
 }
 
