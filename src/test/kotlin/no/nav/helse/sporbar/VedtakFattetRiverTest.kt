@@ -158,7 +158,7 @@ internal class VedtakFattetRiverTest {
         sykmeldingSendt(idSett)
         søknadSendt(idSett)
         inntektsmeldingSendt(idSett)
-        vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode", "Personutbetaling"))
+        vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode", "Personutbetaling", "SykepengegrunnlagUnder2G"))
 
         verify { producerMock.send( capture(captureSlot) ) }
 
@@ -176,7 +176,7 @@ internal class VedtakFattetRiverTest {
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett.søknadDokumentId))
 
-        assertEquals("IngenNyArbeidsgiverperiode", vedtakFattetJson["tags"].map { it.asText() }.single())
+        assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G"), vedtakFattetJson["tags"].map { it.asText() })
     }
 
     private fun sykmeldingSendt(
