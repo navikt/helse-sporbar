@@ -409,6 +409,7 @@ internal class UtbetalingTest {
     "aktørId": "$AKTØRID",
     "fødselsnummer": "$FØDSELSNUMMER",
     "organisasjonsnummer": "$ORGNUMMER",
+    "tags": [],
     "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
     "sykepengegrunnlagsfakta": {
         "fastsatt": "EtterSkjønn",

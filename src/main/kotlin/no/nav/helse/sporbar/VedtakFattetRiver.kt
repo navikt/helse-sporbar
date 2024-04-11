@@ -40,7 +40,8 @@ internal class VedtakFattetRiver(
                     "grunnlagForSykepengegrunnlag",
                     "grunnlagForSykepengegrunnlagPerArbeidsgiver",
                     "begrensning",
-                    "inntekt"
+                    "inntekt",
+                    "tags"
                 )
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
@@ -49,7 +50,7 @@ internal class VedtakFattetRiver(
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.interestedIn("utbetalingId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("sykepengegrunnlagsfakta")
-                it.interestedIn("begrunnelser", "tags")
+                it.interestedIn("begrunnelser")
             }
         }.register(this)
     }
