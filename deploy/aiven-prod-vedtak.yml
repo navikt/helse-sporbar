@@ -27,6 +27,9 @@ spec:
         - team: flex
           application: spinnsyn-backend
           access: read
+        - team: flex
+          application: flex-inntektsmelding-status
+          access: read
         - team: disykefravar
           application: dvh-sporbar-konsument-prod
           access: read
