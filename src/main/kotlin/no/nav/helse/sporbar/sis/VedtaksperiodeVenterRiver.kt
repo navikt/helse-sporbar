@@ -1,9 +1,7 @@
 package no.nav.helse.sporbar.sis
 
 import com.fasterxml.jackson.databind.JsonNode
-import java.time.OffsetDateTime
 import java.time.ZoneId
-import java.util.UUID
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
 import no.nav.helse.rapids_rivers.MessageProblems
@@ -11,7 +9,7 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import no.nav.helse.rapids_rivers.toUUID
-import org.intellij.lang.annotations.Language
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
 import org.slf4j.LoggerFactory
 
 internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val sisPublisher: SisPublisher) :
@@ -37,7 +35,7 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val si
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
         val tidspunkt = packet["@opprettet"].asLocalDateTime().atZone(ZoneId.of("Europe/Oslo")).toOffsetDateTime()
-        sisPublisher.send(vedtaksperiodeId, lagBehandlingStatus(vedtaksperiodeId, behandlingId, tidspunkt, "VENTER_PÅ_SAKSBEHANDLER"))
+        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, VENTER_PÅ_SAKSBEHANDLER))
     }
 
     private companion object {

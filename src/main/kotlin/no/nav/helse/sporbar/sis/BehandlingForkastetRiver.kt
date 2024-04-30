@@ -9,6 +9,7 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import no.nav.helse.rapids_rivers.toUUID
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.BEHANDLES_UTENFOR_SPEIL
 import org.slf4j.LoggerFactory
 
 internal class BehandlingForkastetRiver(rapid: RapidsConnection, private val sisPublisher: SisPublisher) :
@@ -33,7 +34,7 @@ internal class BehandlingForkastetRiver(rapid: RapidsConnection, private val sis
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
         val tidspunkt = packet["@opprettet"].asLocalDateTime().atZone(ZoneId.of("Europe/Oslo")).toOffsetDateTime()
-        sisPublisher.send(vedtaksperiodeId, lagBehandlingStatus(vedtaksperiodeId, behandlingId, tidspunkt, "BEHANDLES_UTENFOR_SPEIL"))
+        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, BEHANDLES_UTENFOR_SPEIL))
     }
 
     private companion object {
