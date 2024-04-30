@@ -1,0 +1,26 @@
+---
+apiVersion: kafka.nais.io/v1
+kind: Topic
+metadata:
+  name: sis
+  namespace: tbd
+  labels:
+    team: tbd
+  annotations:
+    dcat.data.nav.no/title: "Status i Speil"
+    dcat.data.nav.no/description: "Status på behandling i Speil"
+    dcat.data.nav.no/theme: "helse"
+    dcat.data.nav.no/keyword: "helse, sykepenger, behandling"
+spec:
+  pool: nav-dev
+  config:  # optional; all fields are optional too; defaults shown
+    cleanupPolicy: delete  # delete, compact
+    minimumInSyncReplicas: 1
+    partitions: 4
+    replication: 2  # see min/max requirements
+    retentionBytes: -1  # -1 means unlimited
+    retentionHours: 72  # -1 means unlimited
+  acl:
+    - team: tbd
+      application: sporbar
+      access: readwrite

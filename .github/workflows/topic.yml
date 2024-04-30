@@ -11,6 +11,8 @@ on:
     - 'deploy/aiven-prod-utbetaling.yml'
     - 'deploy/aiven-prod-vedtak.yml'
     - 'deploy/aiven-prod-inntektsmeldingstatus.yml'
+    - 'deploy/aiven-prod-sis.yml'
+    - 'deploy/aiven-dev-sis.yml'
 
 jobs:
   deployDev:
@@ -22,7 +24,7 @@ jobs:
         env:
           APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
           CLUSTER: dev-gcp
-          RESOURCE: deploy/aiven-dev-utbetaling.yml,deploy/aiven-dev-vedtak.yml,deploy/aiven-dev-inntektsmeldingstatus.yml
+          RESOURCE: deploy/aiven-dev-utbetaling.yml,deploy/aiven-dev-vedtak.yml,deploy/aiven-dev-inntektsmeldingstatus.yml,deploy/aiven-dev-sis.yml
 
   deployProd:
     name: apply prod-gcp
@@ -33,5 +35,5 @@ jobs:
         env:
           APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
           CLUSTER: prod-gcp
-          RESOURCE: deploy/aiven-prod-utbetaling.yml,deploy/aiven-prod-vedtak.yml,deploy/aiven-prod-inntektsmeldingstatus.yml
+          RESOURCE: deploy/aiven-prod-utbetaling.yml,deploy/aiven-prod-vedtak.yml,deploy/aiven-prod-inntektsmeldingstatus.yml,deploy/aiven-prod-sis.yml
 
