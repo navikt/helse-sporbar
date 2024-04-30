@@ -12,6 +12,7 @@ import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import no.nav.helse.rapids_rivers.toUUID
 import no.nav.helse.sporbar.DokumentDao
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 import org.intellij.lang.annotations.Language
 import org.slf4j.LoggerFactory
 
@@ -40,20 +41,8 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dok
         val søknad = dokumentDao.finn(listOf(internSøknadId)).firstOrNull() ?: return
         val søknadId = søknad.dokumentId
         val tidspunkt = packet["@opprettet"].asLocalDateTime().atZone(ZoneId.of("Europe/Oslo")).toOffsetDateTime()
-        sisPublisher.send(vedtaksperiodeId, lagBehandlingOpprettet(vedtaksperiodeId, behandlingId, tidspunkt, søknadId))
-        sisPublisher.send(vedtaksperiodeId, lagBehandlingStatus(vedtaksperiodeId, behandlingId, tidspunkt, "VENTER_PÅ_ARBEIDSGIVER"))
-    }
-    
-    private fun lagBehandlingOpprettet(vedtaksperiodeId: UUID, behandlingId: UUID, tidspunkt: OffsetDateTime, søknadId: UUID): String {
-        @Language("JSON")
-        val melding = """{
-  "vedtaksperiodeId": "$vedtaksperiodeId",
-  "behandlingId": "$behandlingId",
-  "tidspunkt": "$tidspunkt",
-  "status": "OPPRETTET",
-  "eksternSøknadId": "$søknadId"
-}"""
-        return melding
+        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingOpprettet(vedtaksperiodeId, behandlingId, tidspunkt, søknadId))
+        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding(vedtaksperiodeId, behandlingId, tidspunkt, VENTER_PÅ_ARBEIDSGIVER))
     }
 
     private companion object {

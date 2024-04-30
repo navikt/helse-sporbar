@@ -11,6 +11,7 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import no.nav.helse.rapids_rivers.toUUID
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.FERDIG
 import org.intellij.lang.annotations.Language
 import org.slf4j.LoggerFactory
 
@@ -36,7 +37,7 @@ internal class BehandlingLukketRiver(rapid: RapidsConnection, private val sisPub
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
         val tidspunkt = packet["@opprettet"].asLocalDateTime().atZone(ZoneId.of("Europe/Oslo")).toOffsetDateTime()
-        sisPublisher.send(vedtaksperiodeId, lagBehandlingStatus(vedtaksperiodeId, behandlingId, tidspunkt, "FERDIG"))
+        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, FERDIG))
     }
 
     private companion object {

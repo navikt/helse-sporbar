@@ -1,12 +1,17 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.LocalDateTime
 import java.util.UUID
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.helse.sporbar.sis.BehandlingForkastetRiver
 import no.nav.helse.sporbar.sis.BehandlingLukketRiver
 import no.nav.helse.sporbar.sis.BehandlingOpprettetRiver
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.BEHANDLES_UTENFOR_SPEIL
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.FERDIG
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.OPPRETTET
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
 import no.nav.helse.sporbar.sis.SisPublisher
 import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver
 import org.intellij.lang.annotations.Language
@@ -43,7 +48,7 @@ class BehandlingstatusTest {
         sendBehandlingLukket()
 
         assertEquals(4, sisPublisher.sendteMeldinger.size)
-        assertEquals(listOf("OPPRETTET", "VENTER_PÅ_ARBEIDSGIVER", "VENTER_PÅ_SAKSBEHANDLER", "FERDIG"), sisPublisher.sendteStatuser)
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser)
     }
 
     @Test
@@ -54,7 +59,7 @@ class BehandlingstatusTest {
         sendBehandlingForkastet()
 
         assertEquals(3, sisPublisher.sendteMeldinger.size)
-        assertEquals(listOf("OPPRETTET", "VENTER_PÅ_ARBEIDSGIVER", "BEHANDLES_UTENFOR_SPEIL"), sisPublisher.sendteStatuser)
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, BEHANDLES_UTENFOR_SPEIL), sisPublisher.sendteStatuser)
     }
 
     private fun sendSøknad(søknadId: UUID) {
@@ -123,14 +128,11 @@ class BehandlingstatusTest {
     }
 
     private class TestSisPublisher: SisPublisher {
-        val sendteMeldinger = mutableListOf<String>()
-        val sendteStatuser = mutableListOf<String>()
-        override fun send(vedtaksperiodeId: UUID, melding: String) {
+        val sendteMeldinger = mutableListOf<Behandlingstatusmelding>()
+        val sendteStatuser = mutableListOf<Behandlingstatusmelding.Behandlingstatustype>()
+        override fun send(vedtaksperiodeId: UUID, melding: Behandlingstatusmelding) {
             sendteMeldinger.add(melding)
-            sendteStatuser.add(mapper.readTree(melding).path("status").asText())
-        }
-        private companion object {
-            private val mapper = jacksonObjectMapper()
+            sendteStatuser.add(melding.status)
         }
     }
 
