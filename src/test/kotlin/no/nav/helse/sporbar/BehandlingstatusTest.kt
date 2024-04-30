@@ -1,12 +1,15 @@
 package no.nav.helse.sporbar
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.LocalDateTime
 import java.util.UUID
-import junit.framework.TestCase.assertEquals
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
+import no.nav.helse.sporbar.sis.BehandlingLukketRiver
 import no.nav.helse.sporbar.sis.BehandlingOpprettetRiver
 import no.nav.helse.sporbar.sis.SisPublisher
+import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver
 import org.intellij.lang.annotations.Language
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -20,7 +23,8 @@ class BehandlingstatusTest {
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
         BehandlingOpprettetRiver(testRapid, dokumentDao, sisPublisher)
-
+        VedtaksperiodeVenterRiver(testRapid, sisPublisher)
+        BehandlingLukketRiver(testRapid, sisPublisher)
     }
 
     @BeforeEach
@@ -37,7 +41,7 @@ class BehandlingstatusTest {
         sendBehandlingLukket()
 
         assertEquals(4, sisPublisher.sendteMeldinger.size)
-        assertEquals(listOf("OPPRETTET", "VENTER_PÅ_ARBEIDSGIVER", "VENTER_PÅ_SAKSBEHANDLER", "LUKKET"), sisPublisher.sendteMeldinger)
+        assertEquals(listOf("OPPRETTET", "VENTER_PÅ_ARBEIDSGIVER", "VENTER_PÅ_SAKSBEHANDLER", "FERDIG"), sisPublisher.sendteStatuser)
     }
 
     private fun sendSøknad(søknadId: UUID) {
@@ -95,8 +99,13 @@ class BehandlingstatusTest {
 
     private class TestSisPublisher: SisPublisher {
         val sendteMeldinger = mutableListOf<String>()
+        val sendteStatuser = mutableListOf<String>()
         override fun send(vedtaksperiodeId: UUID, melding: String) {
             sendteMeldinger.add(melding)
+            sendteStatuser.add(mapper.readTree(melding).path("status").asText())
+        }
+        private companion object {
+            private val mapper = jacksonObjectMapper()
         }
     }
 

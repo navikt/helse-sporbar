@@ -3,7 +3,6 @@ package no.nav.helse.sporbar.sis
 import com.fasterxml.jackson.databind.JsonNode
 import java.time.OffsetDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.util.UUID
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
@@ -16,9 +15,6 @@ import no.nav.helse.sporbar.DokumentDao
 import org.intellij.lang.annotations.Language
 import org.slf4j.LoggerFactory
 
-interface SisPublisher {
-    fun send(vedtaksperiodeId: UUID, melding: String)
-}
 internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dokumentDao: DokumentDao, private val sisPublisher: SisPublisher) :
     River.PacketListener {
 
@@ -64,15 +60,4 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dok
         private val sikkerlogg = LoggerFactory.getLogger("tjenestekall")
         private val logg = LoggerFactory.getLogger(BehandlingOpprettetRiver::class.java)
     }
-}
-
-fun lagBehandlingStatus(vedtaksperiodeId: UUID, behandlingId: UUID, tidspunkt: OffsetDateTime, status: String): String {
-    @Language("JSON")
-    val melding = """{
-  "vedtaksperiodeId": "$vedtaksperiodeId",
-  "behandlingId": "$behandlingId",
-  "tidspunkt": "$tidspunkt",
-  "status": "$status"
-}"""
-    return melding
 }
