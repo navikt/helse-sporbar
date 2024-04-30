@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -16,6 +15,11 @@ import no.nav.helse.sporbar.inntektsmelding.Kafka
 import no.nav.helse.sporbar.inntektsmelding.PostgresInntektsmeldingStatusDao
 import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmeldingRiver
 import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmeldingRiver
+import no.nav.helse.sporbar.sis.BehandlingForkastetRiver
+import no.nav.helse.sporbar.sis.BehandlingLukketRiver
+import no.nav.helse.sporbar.sis.BehandlingOpprettetRiver
+import no.nav.helse.sporbar.sis.KafkaSisPublisher
+import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -75,10 +79,17 @@ fun launchApplication(env: Map<String, String>) {
         InntektsmeldingStatusVedtaksperiodeForkastetRiver(this, inntektsmeldingStatusMediator)
         InntektsmeldingStatusVedtaksperiodeEndretRiver(this, inntektsmeldingStatusMediator)
         InntektsmeldingStatusPubliserer(this, inntektsmeldingStatusMediator)
+
+        val sisPublisher = KafkaSisPublisher(aivenProducer)
+        BehandlingOpprettetRiver(this, dokumentDao, sisPublisher)
+        VedtaksperiodeVenterRiver(this, sisPublisher)
+        BehandlingLukketRiver(this, sisPublisher)
+        BehandlingForkastetRiver(this, sisPublisher)
+
     }.start()
 }
 
-private fun createAivenProducer(env: Map<String, String>): KafkaProducer<String, JsonNode> {
+private fun createAivenProducer(env: Map<String, String>): KafkaProducer<String, String> {
     val properties = Properties().apply {
         put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, env.getValue("KAFKA_BROKERS"))
         put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SSL.name)
@@ -94,5 +105,5 @@ private fun createAivenProducer(env: Map<String, String>): KafkaProducer<String,
         put(ProducerConfig.LINGER_MS_CONFIG, "0")
         put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1")
     }
-    return KafkaProducer(properties, StringSerializer(), JsonNodeSerializer())
+    return KafkaProducer(properties, StringSerializer(), StringSerializer())
 }

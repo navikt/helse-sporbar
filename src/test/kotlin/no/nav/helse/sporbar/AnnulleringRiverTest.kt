@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.verify
@@ -34,7 +33,7 @@ class AnnulleringRiverTest {
     }
 
     private val testRapid = TestRapid()
-    private val aivenProducerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
+    private val aivenProducerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
 
     init {
         AnnulleringRiver(testRapid, aivenProducerMock)
@@ -47,7 +46,7 @@ class AnnulleringRiverTest {
             personFagsystemId = personFagsystemId
         ))
 
-        val captureSlot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
         verify { aivenProducerMock.send( capture(captureSlot) ) }
 
         val annullering = captureSlot.captured
@@ -72,7 +71,7 @@ class AnnulleringRiverTest {
             arbeidsgiverFagsystemId = arbeidsgiverFagsystemId
         ))
 
-        val captureSlot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
         verify { aivenProducerMock.send( capture(captureSlot) ) }
 
         val annullering = captureSlot.captured
@@ -97,7 +96,7 @@ class AnnulleringRiverTest {
             arbeidsgiverFagsystemId = null
         ))
 
-        val captureSlot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
         verify { aivenProducerMock.send( capture(captureSlot) ) }
 
         val annullering = captureSlot.captured

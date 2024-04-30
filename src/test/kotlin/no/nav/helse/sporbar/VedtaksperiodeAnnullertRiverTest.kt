@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.verify
@@ -26,7 +25,7 @@ class VedtaksperiodeAnnullertRiverTest {
     }
 
     private val testRapid = TestRapid()
-    private val aivenProducerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
+    private val aivenProducerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
 
     init {
         VedtaksperiodeAnnullertRiver(testRapid, aivenProducerMock)
@@ -36,7 +35,7 @@ class VedtaksperiodeAnnullertRiverTest {
     fun `gyldig vedtaksperiode_annullert`() {
         testRapid.sendTestMessage(vedtaksperiodeAnnullert())
 
-        val captureSlot = CapturingSlot<ProducerRecord<String, JsonNode>>()
+        val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
         verify { aivenProducerMock.send( capture(captureSlot) ) }
 
         val vedtakAnnullert = captureSlot.captured

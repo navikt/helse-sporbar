@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
@@ -48,7 +47,7 @@ internal class UtbetalingTest {
     }
 
     private val testRapid = TestRapid()
-    private val producerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
+    private val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
     private val dokumentDao = DokumentDao { TestDatabase.dataSource }
     private val spesialsakDao = SpesialsakDao { TestDatabase.dataSource }
 
@@ -76,7 +75,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `vedtakFattet med tilhørende utbetalingUtbetalt`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
         sykmeldingSendt(idSett)
@@ -118,7 +117,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `utbetaling - mapper ut begrunnelser på avviste dager `() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltEnAvvistDag())
         verify { producerMock.send( capture(captureSlot) ) }
 
@@ -150,7 +149,7 @@ internal class UtbetalingTest {
     fun `utbetaling_utbetalt - ignorerer vedtaksperiode i blocklist`() {
         val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
         opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId)))
         verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
     }
@@ -159,7 +158,7 @@ internal class UtbetalingTest {
     fun `utbetaling_uten_utbetaling - ignorerer vedtaksperiode i blocklist`() {
         val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
         opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId), "utbetaling_uten_utbetaling"))
         verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
     }
@@ -168,7 +167,7 @@ internal class UtbetalingTest {
     fun `utbetaling_utbetalt - periode som har vært spesialsak én gang er ikke det neste gang`() {
         val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
         opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId)))
         verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
         testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId)))
@@ -179,7 +178,7 @@ internal class UtbetalingTest {
     fun `utbetaling_uten_utbetaling - periode som har vært spesialsak én gang er ikke det neste gang`() {
         val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
         opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId), "utbetaling_uten_utbetaling"))
         verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
         testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId), "utbetaling_uten_utbetaling"))
@@ -188,7 +187,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `utbetaling_utbetalt - mapper vedtaksperiodeIder til antallVedtak`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMedVedtaksperiodeIder())
         verify { producerMock.send( capture(captureSlot) ) }
 
@@ -201,7 +200,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `utbetaling_uten_utbetaling - mapper vedtaksperiodeIder til antallVedtak`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtenUtbetalingMedVedtaksperiodeIder())
         verify { producerMock.send( capture(captureSlot) ) }
 
@@ -218,7 +217,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `utbetaling_utbetalt - mapper AndreYtelserDag hele veien ut`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMedAndreYtelserDag())
         verify { producerMock.send( capture(captureSlot) ) }
 
@@ -236,7 +235,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `utbetaling_utbetalt - mapper ArbeidIkkeGjenopptattDag hele veien ut`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMedArbeidIkkeGjenopptattDag())
         verify { producerMock.send( capture(captureSlot) ) }
 
@@ -254,7 +253,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `utbetaling_uten_utbetaling - mapper ArbeidIkkeGjenopptattDag hele veien ut`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag())
         verify { producerMock.send( capture(captureSlot) ) }
 
@@ -272,7 +271,7 @@ internal class UtbetalingTest {
 
     @Test
     fun `vedtakFattet med tilhørende utbetalingUtenUtbetaling`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
         sykmeldingSendt(idSett)

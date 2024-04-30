@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
@@ -40,7 +39,7 @@ internal class VedtakFattetRiverTest {
     }
 
     private val testRapid = TestRapid()
-    private val producerMock = mockk<KafkaProducer<String,JsonNode>>(relaxed = true)
+    private val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
     private val dokumentDao = DokumentDao { TestDatabase.dataSource }
     private val spesialsakDao = SpesialsakDao { TestDatabase.dataSource }
 
@@ -66,7 +65,7 @@ internal class VedtakFattetRiverTest {
 
     @Test
     fun `vedtakFattet uten utbetaling`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
         sykmeldingSendt(idSett)
@@ -100,7 +99,7 @@ internal class VedtakFattetRiverTest {
 
     @Test
     fun `vedtakFattet med utbetaling`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
         sykmeldingSendt(idSett)
@@ -127,7 +126,7 @@ internal class VedtakFattetRiverTest {
 
     @Test
     fun `vedtakFattet med begrunnelser`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
         sykmeldingSendt(idSett)
@@ -152,7 +151,7 @@ internal class VedtakFattetRiverTest {
 
     @Test
     fun `vedtakFattet med tags`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, JsonNode>>()
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
         sykmeldingSendt(idSett)

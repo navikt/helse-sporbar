@@ -15,7 +15,7 @@ private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
 
 class AnnulleringRiver(
     rapidsConnection: RapidsConnection,
-    private val aivenProducer: KafkaProducer<String, JsonNode>,
+    private val aivenProducer: KafkaProducer<String, String>,
 ):
     River.PacketListener {
     init {
@@ -59,7 +59,7 @@ class AnnulleringRiver(
                 "tbd.utbetaling",
                 null,
                 fødselsnummer,
-                annulleringJson,
+                annulleringJson.toString(),
                 listOf(Meldingstype.Annullering.header())
             )
         )

@@ -19,7 +19,7 @@ private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 internal class VedtaksperiodeAnnullertRiver(
     rapidsConnection: RapidsConnection,
-    private val aivenProducer: KafkaProducer<String, JsonNode>
+    private val aivenProducer: KafkaProducer<String, String>
 ) : River.PacketListener {
 
     init {
@@ -60,7 +60,7 @@ internal class VedtaksperiodeAnnullertRiver(
                 "tbd.vedtak",
                 null,
                 fødselsnummer,
-                vedtakAnnullertJson,
+                vedtakAnnullertJson.toString(),
                 listOf(Meldingstype.VedtakAnnullert.header())
             )
         )

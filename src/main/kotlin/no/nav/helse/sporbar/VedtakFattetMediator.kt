@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -15,7 +14,7 @@ private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 
 internal class VedtakFattetMediator(
     private val dokumentDao: DokumentDao,
-    private val producer: KafkaProducer<String, JsonNode>
+    private val producer: KafkaProducer<String, String>
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
 
@@ -26,7 +25,7 @@ internal class VedtakFattetMediator(
                 "tbd.vedtak",
                 null,
                 vedtakFattet.fødselsnummer,
-                meldingForEkstern,
+                meldingForEkstern.toString(),
                 listOf(Meldingstype.VedtakFattet.header())
             )
         )

@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 
 internal class UtbetalingMediator(
-    private val producer: KafkaProducer<String, JsonNode>
+    private val producer: KafkaProducer<String, String>
 ) {
     internal fun utbetalingUtbetalt(utbetalingUtbetalt: UtbetalingUtbetalt) =
         send(utbetalingUtbetalt, Meldingstype.Utbetaling)
@@ -24,7 +24,7 @@ internal class UtbetalingMediator(
                 "tbd.utbetaling",
                 null,
                 utbetalingUtbetalt.fødselsnummer,
-                utbetalingJson,
+                utbetalingJson.toString(),
                 listOf(meldingstype.header())
             )
         )

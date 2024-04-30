@@ -1,6 +1,7 @@
 package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.networknt.schema.JsonSchema
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
@@ -12,6 +13,8 @@ import org.apache.kafka.common.header.Headers
 import org.junit.jupiter.api.Assertions.assertEquals
 
 internal object JsonSchemaValidator {
+
+    private val mapper = jacksonObjectMapper()
 
     private fun String.getSchema() = JsonSchemaFactory
         .getInstance(SpecVersion.VersionFlag.V7)
@@ -61,10 +64,10 @@ internal object JsonSchemaValidator {
         .singleOrNull { it.first == "type" }
         ?.let { Meldingstype.valueOf(it.second) }
 
-    internal fun ProducerRecord<String, JsonNode>.validertJson() = Melding(
+    internal fun ProducerRecord<String, String>.validertJson() = Melding(
         topic = topic(),
         meldingstype = headers().meldingstypeOrNull() ?: Meldingstype.VedtakFattet.also { require(topic() == "tbd.vedtak") },
         key = key(),
-        json = value()
+        json = mapper.readTree(value())
     ).validertJson()
 }

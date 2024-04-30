@@ -17,7 +17,7 @@ internal interface Producer {
 }
 
 internal class Kafka(
-    private val kafkaProducer: KafkaProducer<String, JsonNode>
+    private val kafkaProducer: KafkaProducer<String, String>
 ) : Producer {
     override fun send(melding: Melding) {
         kafkaProducer.send(
@@ -25,7 +25,7 @@ internal class Kafka(
                 melding.topic,
                 null,
                 melding.key,
-                melding.json,
+                melding.json.toString(),
                 listOf(melding.meldingstype.header())
             )
         )
