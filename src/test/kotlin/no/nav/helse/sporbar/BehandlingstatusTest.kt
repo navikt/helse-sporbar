@@ -95,7 +95,7 @@ class BehandlingstatusTest {
 
     private class TestSisPublisher: SisPublisher {
         val sendteMeldinger = mutableListOf<String>()
-        override fun send(melding: String) {
+        override fun send(vedtaksperiodeId: UUID, melding: String) {
             sendteMeldinger.add(melding)
         }
     }
