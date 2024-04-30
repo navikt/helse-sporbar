@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.LocalDateTime
 import java.util.UUID
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
+import no.nav.helse.sporbar.sis.BehandlingForkastetRiver
 import no.nav.helse.sporbar.sis.BehandlingLukketRiver
 import no.nav.helse.sporbar.sis.BehandlingOpprettetRiver
 import no.nav.helse.sporbar.sis.SisPublisher
@@ -25,6 +26,7 @@ class BehandlingstatusTest {
         BehandlingOpprettetRiver(testRapid, dokumentDao, sisPublisher)
         VedtaksperiodeVenterRiver(testRapid, sisPublisher)
         BehandlingLukketRiver(testRapid, sisPublisher)
+        BehandlingForkastetRiver(testRapid, sisPublisher)
     }
 
     @BeforeEach
@@ -42,6 +44,17 @@ class BehandlingstatusTest {
 
         assertEquals(4, sisPublisher.sendteMeldinger.size)
         assertEquals(listOf("OPPRETTET", "VENTER_PÅ_ARBEIDSGIVER", "VENTER_PÅ_SAKSBEHANDLER", "FERDIG"), sisPublisher.sendteStatuser)
+    }
+
+    @Test
+    fun `Behandles utenfor Speil`() {
+        val søknadId = UUID.randomUUID()
+        sendSøknad(søknadId)
+        sendBehandlingOpprettet(søknadId)
+        sendBehandlingForkastet()
+
+        assertEquals(3, sisPublisher.sendteMeldinger.size)
+        assertEquals(listOf("OPPRETTET", "VENTER_PÅ_ARBEIDSGIVER", "BEHANDLES_UTENFOR_SPEIL"), sisPublisher.sendteStatuser)
     }
 
     private fun sendSøknad(søknadId: UUID) {
@@ -89,6 +102,18 @@ class BehandlingstatusTest {
         @Language("JSON")
         val melding = """{
           "@event_name": "behandling_lukket",
+          "@id": "${UUID.randomUUID()}",
+          "@opprettet": "${LocalDateTime.now()}",
+          "vedtaksperiodeId": "${UUID.randomUUID()}",
+          "behandlingId": "${UUID.randomUUID()}"
+        }""".trimIndent()
+        testRapid.sendTestMessage(melding)
+    }
+
+    private fun sendBehandlingForkastet() {
+        @Language("JSON")
+        val melding = """{
+          "@event_name": "behandling_forkastet",
           "@id": "${UUID.randomUUID()}",
           "@opprettet": "${LocalDateTime.now()}",
           "vedtaksperiodeId": "${UUID.randomUUID()}",
