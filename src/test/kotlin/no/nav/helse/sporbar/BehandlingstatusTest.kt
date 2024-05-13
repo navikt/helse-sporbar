@@ -42,11 +42,13 @@ class BehandlingstatusTest {
     @Test
     fun `Ny behandling som avsluttes`() {
         val søknadId = UUID.randomUUID()
-        sendSøknad(søknadId)
+        val eksternSøknadId = UUID.randomUUID()
+        sendSøknad(søknadId, eksternSøknadId)
         sendBehandlingOpprettet(søknadId)
         sendVedtaksperiodeVenter("GODKJENNING")
         sendBehandlingLukket()
 
+        assertEquals(setOf(eksternSøknadId), sisPublisher.sendteMeldinger.mapNotNull { it.eksternSøknadId }.toSet())
         assertEquals(4, sisPublisher.sendteMeldinger.size)
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser)
     }
@@ -62,12 +64,12 @@ class BehandlingstatusTest {
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, BEHANDLES_UTENFOR_SPEIL), sisPublisher.sendteStatuser)
     }
 
-    private fun sendSøknad(søknadId: UUID) {
+    private fun sendSøknad(søknadId: UUID, eksternSøknadId: UUID = UUID.randomUUID()) {
         @Language("JSON")
         val melding = """{
           "@event_name": "sendt_søknad_nav",
           "@id": "$søknadId",
-          "id": "${UUID.randomUUID()}",
+          "id": "$eksternSøknadId",
           "sykmeldingId": "${UUID.randomUUID()}",
           "@opprettet": "${LocalDateTime.now()}"
         }""".trimIndent()

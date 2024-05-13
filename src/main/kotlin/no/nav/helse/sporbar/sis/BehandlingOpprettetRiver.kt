@@ -11,6 +11,7 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import no.nav.helse.rapids_rivers.toUUID
+import no.nav.helse.sporbar.Dokument
 import no.nav.helse.sporbar.DokumentDao
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 import org.intellij.lang.annotations.Language
@@ -38,7 +39,7 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dok
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
         val internSøknadId = packet["kilde.meldingsreferanseId"].asText().toUUID()
-        val søknad = dokumentDao.finn(listOf(internSøknadId)).firstOrNull() ?: return
+        val søknad = dokumentDao.finn(listOf(internSøknadId)).firstOrNull { it.type == Dokument.Type.Søknad } ?: return
         val søknadId = søknad.dokumentId
         val tidspunkt = packet["@opprettet"].asLocalDateTime().atZone(ZoneId.of("Europe/Oslo")).toOffsetDateTime()
         sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingOpprettet(vedtaksperiodeId, behandlingId, tidspunkt, søknadId))
