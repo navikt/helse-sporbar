@@ -139,6 +139,11 @@ internal class VedtakFattetRiverTest {
                     "SkjønnsfastsattSykepengegrunnlagFritekst", "En begrunnelse", perioder = listOf(
                         Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
                     )
+                ),
+                Begrunnelse(
+                    "DelvisAvslag", "Du har fått delvis innvilgelse", perioder = listOf(
+                        Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
+                    )
                 )
             )
         )
@@ -146,7 +151,7 @@ internal class VedtakFattetRiverTest {
         verify { producerMock.send(capture(captureSlot)) }
         val vedtakFattetJson = captureSlot.last().validertJson()
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
-        assertEquals(1, vedtakFattetJson["begrunnelser"].size())
+        assertEquals(2, vedtakFattetJson["begrunnelser"].size())
     }
 
     @Test
