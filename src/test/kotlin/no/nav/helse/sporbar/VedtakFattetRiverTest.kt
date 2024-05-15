@@ -141,7 +141,7 @@ internal class VedtakFattetRiverTest {
                     )
                 ),
                 Begrunnelse(
-                    "DelvisAvslag", "Du har fått delvis innvilgelse", perioder = listOf(
+                    "DelvisInnvilgelse", "Du har fått delvis innvilgelse", perioder = listOf(
                         Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
                     )
                 )

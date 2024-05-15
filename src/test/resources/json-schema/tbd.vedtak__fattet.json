@@ -259,7 +259,7 @@
           "type": {
             "type": "string",
             "description": "Type begrunnelse",
-            "enum": ["SkjønnsfastsattSykepengegrunnlagFritekst", "SkjønnsfastsattSykepengegrunnlagMal", "SkjønnsfastsattSykepengegrunnlagKonklusjon", "DelvisAvslag", "Avslag"]
+            "enum": ["SkjønnsfastsattSykepengegrunnlagFritekst", "SkjønnsfastsattSykepengegrunnlagMal", "SkjønnsfastsattSykepengegrunnlagKonklusjon", "DelvisInnvilgelse", "Avslag"]
           },
           "begrunnelse": {
             "description": "Saksbehandlers begrunnelse",
