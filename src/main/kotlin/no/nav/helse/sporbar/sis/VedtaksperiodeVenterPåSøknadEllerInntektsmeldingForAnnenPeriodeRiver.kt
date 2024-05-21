@@ -12,14 +12,14 @@ import no.nav.helse.rapids_rivers.toUUID
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ANNEN_PERIODE
 import org.slf4j.LoggerFactory
 
-internal class VedtaksperiodeVenterIndirektePåNoeAnnetEnnGodkjenningRiver(rapid: RapidsConnection, private val sisPublisher: SisPublisher) :
+internal class VedtaksperiodeVenterPåSøknadEllerInntektsmeldingForAnnenPeriodeRiver(rapid: RapidsConnection, private val sisPublisher: SisPublisher) :
     River.PacketListener {
 
     init {
         River(rapid).apply {
             validate {
                 it.demandValue("@event_name", "vedtaksperiode_venter")
-                it.rejectValue("venterPå.venteårsak.hva", "GODKJENNING")
+                it.demandAny("venterPå.venteårsak.hva", listOf("SØKNAD", "INNTEKTSMELDING"))
                 it.requireKey("vedtaksperiodeId", "behandlingId")
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 // Venter på en annen periode som i sin tur venter på noe annet enn godkjenning
@@ -44,6 +44,6 @@ internal class VedtaksperiodeVenterIndirektePåNoeAnnetEnnGodkjenningRiver(rapid
 
     private companion object {
         private val sikkerlogg = LoggerFactory.getLogger("tjenestekall")
-        private val logg = LoggerFactory.getLogger(VedtaksperiodeVenterIndirektePåNoeAnnetEnnGodkjenningRiver::class.java)
+        private val logg = LoggerFactory.getLogger(VedtaksperiodeVenterPåSøknadEllerInntektsmeldingForAnnenPeriodeRiver::class.java)
     }
 }

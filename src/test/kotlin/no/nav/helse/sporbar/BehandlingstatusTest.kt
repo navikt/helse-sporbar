@@ -14,7 +14,7 @@ import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VEN
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
 import no.nav.helse.sporbar.sis.SisPublisher
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterIndirektePåNoeAnnetEnnGodkjenningRiver
+import no.nav.helse.sporbar.sis.VedtaksperiodeVenterPåSøknadEllerInntektsmeldingForAnnenPeriodeRiver
 import no.nav.helse.sporbar.sis.VedtaksperiodeVenterPåGodkjenningRiver
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -32,7 +32,7 @@ class BehandlingstatusTest {
         NyttDokumentRiver(testRapid, dokumentDao)
         BehandlingOpprettetRiver(testRapid, dokumentDao, sisPublisher)
         VedtaksperiodeVenterPåGodkjenningRiver(testRapid, sisPublisher)
-        VedtaksperiodeVenterIndirektePåNoeAnnetEnnGodkjenningRiver(testRapid, sisPublisher)
+        VedtaksperiodeVenterPåSøknadEllerInntektsmeldingForAnnenPeriodeRiver(testRapid, sisPublisher)
         BehandlingLukketRiver(testRapid, sisPublisher)
         BehandlingForkastetRiver(testRapid, sisPublisher)
     }
