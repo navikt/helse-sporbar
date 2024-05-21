@@ -43,25 +43,27 @@ class BehandlingstatusTest {
     fun `Ny behandling som avsluttes`() {
         val søknadId = UUID.randomUUID()
         val eksternSøknadId = UUID.randomUUID()
+        val vedtaksperiodeId = UUID.randomUUID()
         sendSøknad(søknadId, eksternSøknadId)
-        sendBehandlingOpprettet(søknadId)
-        sendVedtaksperiodeVenter("GODKJENNING")
-        sendBehandlingLukket()
+        sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
+        sendVedtaksperiodeVenter(vedtaksperiodeId, "GODKJENNING")
+        sendBehandlingLukket(vedtaksperiodeId)
 
-        assertEquals(setOf(eksternSøknadId), sisPublisher.sendteMeldinger.mapNotNull { it.eksternSøknadId }.toSet())
-        assertEquals(4, sisPublisher.sendteMeldinger.size)
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser)
+        assertEquals(setOf(eksternSøknadId), sisPublisher.sendteMeldinger[vedtaksperiodeId]?.mapNotNull { it.eksternSøknadId }?.toSet())
+        assertEquals(4, sisPublisher.sendteMeldinger[vedtaksperiodeId]?.size)
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser[vedtaksperiodeId])
     }
 
     @Test
     fun `Behandles utenfor Speil`() {
         val søknadId = UUID.randomUUID()
+        val vedtaksperiodeId = UUID.randomUUID()
         sendSøknad(søknadId)
-        sendBehandlingOpprettet(søknadId)
-        sendBehandlingForkastet()
+        sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
+        sendBehandlingForkastet(vedtaksperiodeId)
 
-        assertEquals(3, sisPublisher.sendteMeldinger.size)
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, BEHANDLES_UTENFOR_SPEIL), sisPublisher.sendteStatuser)
+        assertEquals(3, sisPublisher.sendteMeldinger[vedtaksperiodeId]?.size)
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, BEHANDLES_UTENFOR_SPEIL), sisPublisher.sendteStatuser[vedtaksperiodeId])
     }
 
     private fun sendSøknad(søknadId: UUID, eksternSøknadId: UUID = UUID.randomUUID()) {
@@ -75,7 +77,7 @@ class BehandlingstatusTest {
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
-    private fun sendBehandlingOpprettet(søknadId: UUID) {
+    private fun sendBehandlingOpprettet(vedtaksperiodeId: UUID, søknadId: UUID) {
         @Language("JSON")
         val melding = """{
           "@event_name": "behandling_opprettet",
@@ -84,18 +86,18 @@ class BehandlingstatusTest {
             "meldingsreferanseId": "$søknadId"
           },
           "@opprettet": "${LocalDateTime.now()}",
-          "vedtaksperiodeId": "${UUID.randomUUID()}",
+          "vedtaksperiodeId": "$vedtaksperiodeId",
           "behandlingId": "${UUID.randomUUID()}"
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
-    private fun sendVedtaksperiodeVenter(hva: String) {
+    private fun sendVedtaksperiodeVenter(vedtaksperiodeId: UUID, hva: String) {
         @Language("JSON")
         val melding = """{
           "@event_name": "vedtaksperiode_venter",
           "@id": "${UUID.randomUUID()}",
           "@opprettet": "${LocalDateTime.now()}",
-          "vedtaksperiodeId": "${UUID.randomUUID()}",
+          "vedtaksperiodeId": "$vedtaksperiodeId",
           "behandlingId": "${UUID.randomUUID()}",
           "venterPå": {
             "venteårsak": {
@@ -105,36 +107,40 @@ class BehandlingstatusTest {
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
-    private fun sendBehandlingLukket() {
+    private fun sendBehandlingLukket(vedtaksperiodeId: UUID) {
         @Language("JSON")
         val melding = """{
           "@event_name": "behandling_lukket",
           "@id": "${UUID.randomUUID()}",
           "@opprettet": "${LocalDateTime.now()}",
-          "vedtaksperiodeId": "${UUID.randomUUID()}",
+          "vedtaksperiodeId": "$vedtaksperiodeId",
           "behandlingId": "${UUID.randomUUID()}"
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
 
-    private fun sendBehandlingForkastet() {
+    private fun sendBehandlingForkastet(vedtaksperiodeId: UUID) {
         @Language("JSON")
         val melding = """{
           "@event_name": "behandling_forkastet",
           "@id": "${UUID.randomUUID()}",
           "@opprettet": "${LocalDateTime.now()}",
-          "vedtaksperiodeId": "${UUID.randomUUID()}",
+          "vedtaksperiodeId": "$vedtaksperiodeId",
           "behandlingId": "${UUID.randomUUID()}"
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
 
     private class TestSisPublisher: SisPublisher {
-        val sendteMeldinger = mutableListOf<Behandlingstatusmelding>()
-        val sendteStatuser = mutableListOf<Behandlingstatusmelding.Behandlingstatustype>()
+        val sendteMeldinger = mutableMapOf<UUID, MutableList<Behandlingstatusmelding>>()
+        val sendteStatuser = mutableMapOf<UUID, MutableList<Behandlingstatusmelding.Behandlingstatustype>>()
         override fun send(vedtaksperiodeId: UUID, melding: Behandlingstatusmelding) {
-            sendteMeldinger.add(melding)
-            sendteStatuser.add(melding.status)
+            sendteMeldinger.compute(vedtaksperiodeId) { _, forrige ->
+                forrige?.plus(melding)?.toMutableList() ?: mutableListOf(melding)
+            }
+            sendteStatuser.compute(vedtaksperiodeId) { _, forrige ->
+                forrige?.plus(melding.status)?.toMutableList() ?: mutableListOf(melding.status)
+            }
         }
     }
 
