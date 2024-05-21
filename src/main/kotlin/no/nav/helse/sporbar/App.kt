@@ -19,7 +19,7 @@ import no.nav.helse.sporbar.sis.BehandlingForkastetRiver
 import no.nav.helse.sporbar.sis.BehandlingLukketRiver
 import no.nav.helse.sporbar.sis.BehandlingOpprettetRiver
 import no.nav.helse.sporbar.sis.KafkaSisPublisher
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver
+import no.nav.helse.sporbar.sis.VedtaksperiodeVenterPåGodkjenningRiver
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -82,7 +82,7 @@ fun launchApplication(env: Map<String, String>) {
 
         val sisPublisher = KafkaSisPublisher(aivenProducer)
         BehandlingOpprettetRiver(this, dokumentDao, sisPublisher)
-        VedtaksperiodeVenterRiver(this, sisPublisher)
+        VedtaksperiodeVenterPåGodkjenningRiver(this, sisPublisher)
         BehandlingLukketRiver(this, sisPublisher)
         BehandlingForkastetRiver(this, sisPublisher)
 

@@ -10,10 +10,12 @@ import no.nav.helse.sporbar.sis.Behandlingstatusmelding
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.BEHANDLES_UTENFOR_SPEIL
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.FERDIG
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.OPPRETTET
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ANNEN_PERIODE
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
 import no.nav.helse.sporbar.sis.SisPublisher
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver
+import no.nav.helse.sporbar.sis.VedtaksperiodeVenterIndirektePåNoeAnnetEnnGodkjenningRiver
+import no.nav.helse.sporbar.sis.VedtaksperiodeVenterPåGodkjenningRiver
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -29,7 +31,8 @@ class BehandlingstatusTest {
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
         BehandlingOpprettetRiver(testRapid, dokumentDao, sisPublisher)
-        VedtaksperiodeVenterRiver(testRapid, sisPublisher)
+        VedtaksperiodeVenterPåGodkjenningRiver(testRapid, sisPublisher)
+        VedtaksperiodeVenterIndirektePåNoeAnnetEnnGodkjenningRiver(testRapid, sisPublisher)
         BehandlingLukketRiver(testRapid, sisPublisher)
         BehandlingForkastetRiver(testRapid, sisPublisher)
     }
@@ -85,8 +88,10 @@ class BehandlingstatusTest {
         sendSøknad(søknadIdJanuar, eksternSøknadIdJanuar)
         sendBehandlingOpprettet(vedtaksperiodeIdJanuar, søknadIdJanuar)
         sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdJanuar) // Feil1: Ettersom januar-søknaden er den som sparker i gang showet, så peker alt på den
+        sendVedtaksperiodeVenter(vedtaksperiodeIdJanuar, "INNTEKTSMELDING", vedtaksperiodeIdJanuar)
+        sendVedtaksperiodeVenter(vedtaksperiodeIdMars, "INNTEKTSMELDING", vedtaksperiodeIdJanuar)
 
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdMars)) // Feil2: Vi trenger ikke noe mer fra arbeidsgiver her
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
         assertEquals(setOf(eksternSøknadIdJanuar, eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars)) // Feil1: Mars-perioden får kobling mot januarSøknad
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdJanuar))
@@ -106,10 +111,12 @@ class BehandlingstatusTest {
         sendSøknad(søknadIdAG2, eksternSøknadIdAG2)
         sendBehandlingOpprettet(vedtaksperiodeIdAG2, søknadIdAG2)
 
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdAG1))
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdAG2))
+        // Arbeidsgiver 1 sender inn inntektsmelding
+        sendVedtaksperiodeVenter(vedtaksperiodeIdAG1, "INNTEKTSMELDING", vedtaksperiodeIdAG2)
+        sendVedtaksperiodeVenter(vedtaksperiodeIdAG2, "INNTEKTSMELDING", vedtaksperiodeIdAG2)
 
-        // Om inntektsmelding kommer inn på AG1 vil ikke den få ny status før vi også har fått inntektsmelding på AG2
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdAG1))
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdAG2))
     }
 
     private fun sendSøknad(søknadId: UUID, eksternSøknadId: UUID = UUID.randomUUID()) {
@@ -137,7 +144,7 @@ class BehandlingstatusTest {
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
-    private fun sendVedtaksperiodeVenter(vedtaksperiodeId: UUID, hva: String) {
+    private fun sendVedtaksperiodeVenter(vedtaksperiodeId: UUID, hva: String, venterPå: UUID = vedtaksperiodeId) {
         @Language("JSON")
         val melding = """{
           "@event_name": "vedtaksperiode_venter",
@@ -146,6 +153,7 @@ class BehandlingstatusTest {
           "vedtaksperiodeId": "$vedtaksperiodeId",
           "behandlingId": "${UUID.randomUUID()}",
           "venterPå": {
+            "vedtaksperiodeId": "$venterPå",
             "venteårsak": {
               "hva": "$hva"
             }

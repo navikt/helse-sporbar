@@ -12,7 +12,7 @@ import no.nav.helse.rapids_rivers.toUUID
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
 import org.slf4j.LoggerFactory
 
-internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val sisPublisher: SisPublisher) :
+internal class VedtaksperiodeVenterPåGodkjenningRiver(rapid: RapidsConnection, private val sisPublisher: SisPublisher) :
     River.PacketListener {
 
     init {
@@ -40,6 +40,6 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val si
 
     private companion object {
         private val sikkerlogg = LoggerFactory.getLogger("tjenestekall")
-        private val logg = LoggerFactory.getLogger(VedtaksperiodeVenterRiver::class.java)
+        private val logg = LoggerFactory.getLogger(VedtaksperiodeVenterPåGodkjenningRiver::class.java)
     }
 }

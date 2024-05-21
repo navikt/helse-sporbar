@@ -15,6 +15,7 @@ data class Behandlingstatusmelding(
     enum class Behandlingstatustype {
         OPPRETTET,
         VENTER_PÅ_ARBEIDSGIVER,
+        VENTER_PÅ_ANNEN_PERIODE,
         VENTER_PÅ_SAKSBEHANDLER,
         FERDIG,
         BEHANDLES_UTENFOR_SPEIL
