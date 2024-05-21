@@ -86,11 +86,30 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeIdJanuar, søknadIdJanuar)
         sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdJanuar) // Feil1: Ettersom januar-søknaden er den som sparker i gang showet, så peker alt på den
 
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdMars)) // Feil2: Vi trenger ikke noe mer fra arbeidsgiver her
         assertEquals(setOf(eksternSøknadIdJanuar, eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars)) // Feil1: Mars-perioden får kobling mot januarSøknad
 
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdJanuar)) // Feil2: Vi trenger ikke noe mer fra arbeidsgiver her
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdJanuar))
         assertEquals(setOf(eksternSøknadIdJanuar), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdJanuar))
+    }
+
+    @Test
+    fun `Overlappende søknader fra to arbeidsgivere`() {
+        val søknadIdAG1 = UUID.randomUUID()
+        val eksternSøknadIdAG1 = UUID.randomUUID()
+        val vedtaksperiodeIdAG1 = UUID.randomUUID()
+        val søknadIdAG2 = UUID.randomUUID()
+        val eksternSøknadIdAG2 = UUID.randomUUID()
+        val vedtaksperiodeIdAG2 = UUID.randomUUID()
+        sendSøknad(søknadIdAG1, eksternSøknadIdAG1)
+        sendBehandlingOpprettet(vedtaksperiodeIdAG1, søknadIdAG1)
+        sendSøknad(søknadIdAG2, eksternSøknadIdAG2)
+        sendBehandlingOpprettet(vedtaksperiodeIdAG2, søknadIdAG2)
+
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdAG1))
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdAG2))
+
+        // Om inntektsmelding kommer inn på AG1 vil ikke den få ny status før vi også har fått inntektsmelding på AG2
     }
 
     private fun sendSøknad(søknadId: UUID, eksternSøknadId: UUID = UUID.randomUUID()) {
