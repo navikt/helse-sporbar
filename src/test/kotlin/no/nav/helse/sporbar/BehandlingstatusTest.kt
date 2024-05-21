@@ -49,7 +49,7 @@ class BehandlingstatusTest {
         sendVedtaksperiodeVenter(vedtaksperiodeId, "GODKJENNING")
         sendBehandlingLukket(vedtaksperiodeId)
 
-        assertEquals(setOf(eksternSøknadId), sisPublisher.sendteMeldinger[vedtaksperiodeId]?.mapNotNull { it.eksternSøknadId }?.toSet())
+        assertEquals(setOf(eksternSøknadId), sisPublisher.eksterneSøknadIder(vedtaksperiodeId))
         assertEquals(4, sisPublisher.sendteMeldinger[vedtaksperiodeId]?.size)
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser[vedtaksperiodeId])
     }
@@ -64,6 +64,33 @@ class BehandlingstatusTest {
 
         assertEquals(3, sisPublisher.sendteMeldinger[vedtaksperiodeId]?.size)
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, BEHANDLES_UTENFOR_SPEIL), sisPublisher.sendteStatuser[vedtaksperiodeId])
+    }
+
+    @Test
+    fun `Out of order søknad`() {
+        val søknadIdMars = UUID.randomUUID()
+        val eksternSøknadIdMars = UUID.randomUUID()
+        val vedtaksperiodeIdMars = UUID.randomUUID()
+        sendSøknad(søknadIdMars, eksternSøknadIdMars)
+        sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdMars)
+        sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeIdMars)
+        sendBehandlingLukket(vedtaksperiodeIdMars)
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser[vedtaksperiodeIdMars])
+        assertEquals(setOf(eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars))
+
+        val søknadIdJanuar = UUID.randomUUID()
+        val eksternSøknadIdJanuar = UUID.randomUUID()
+        val vedtaksperiodeIdJanuar = UUID.randomUUID()
+
+        sendSøknad(søknadIdJanuar, eksternSøknadIdJanuar)
+        sendBehandlingOpprettet(vedtaksperiodeIdJanuar, søknadIdJanuar)
+        sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdJanuar) // Feil1: Ettersom januar-søknaden er den som sparker i gang showet, så peker alt på den
+
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser[vedtaksperiodeIdMars])
+        assertEquals(setOf(eksternSøknadIdJanuar, eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars)) // Feil1: Mars-perioden får kobling mot januarSøknad
+
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser[vedtaksperiodeIdJanuar]) // Feil2: Vi trenger ikke noe mer fra arbeidsgiver her
+        assertEquals(setOf(eksternSøknadIdJanuar), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdJanuar))
     }
 
     private fun sendSøknad(søknadId: UUID, eksternSøknadId: UUID = UUID.randomUUID()) {
@@ -107,6 +134,7 @@ class BehandlingstatusTest {
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
+    private fun sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeId: UUID) = sendVedtaksperiodeVenter(vedtaksperiodeId, "GODKJENNING")
     private fun sendBehandlingLukket(vedtaksperiodeId: UUID) {
         @Language("JSON")
         val melding = """{
@@ -142,6 +170,8 @@ class BehandlingstatusTest {
                 forrige?.plus(melding.status)?.toMutableList() ?: mutableListOf(melding.status)
             }
         }
+
+        fun eksterneSøknadIder(vedtaksperiodeId: UUID) = sendteMeldinger[vedtaksperiodeId]?.mapNotNull { it.eksternSøknadId }?.toSet() ?: emptySet()
     }
 
 }
