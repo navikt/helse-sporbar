@@ -46,12 +46,12 @@ class BehandlingstatusTest {
         val vedtaksperiodeId = UUID.randomUUID()
         sendSøknad(søknadId, eksternSøknadId)
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
-        sendVedtaksperiodeVenter(vedtaksperiodeId, "GODKJENNING")
+        sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeId)
         sendBehandlingLukket(vedtaksperiodeId)
 
         assertEquals(setOf(eksternSøknadId), sisPublisher.eksterneSøknadIder(vedtaksperiodeId))
-        assertEquals(4, sisPublisher.sendteMeldinger[vedtaksperiodeId]?.size)
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser[vedtaksperiodeId])
+        assertEquals(4, sisPublisher.sendteMeldinger(vedtaksperiodeId).size)
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser(vedtaksperiodeId))
     }
 
     @Test
@@ -62,8 +62,8 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
         sendBehandlingForkastet(vedtaksperiodeId)
 
-        assertEquals(3, sisPublisher.sendteMeldinger[vedtaksperiodeId]?.size)
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, BEHANDLES_UTENFOR_SPEIL), sisPublisher.sendteStatuser[vedtaksperiodeId])
+        assertEquals(3, sisPublisher.sendteMeldinger(vedtaksperiodeId).size)
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, BEHANDLES_UTENFOR_SPEIL), sisPublisher.sendteStatuser(vedtaksperiodeId))
     }
 
     @Test
@@ -75,7 +75,7 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdMars)
         sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeIdMars)
         sendBehandlingLukket(vedtaksperiodeIdMars)
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser[vedtaksperiodeIdMars])
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
         assertEquals(setOf(eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars))
 
         val søknadIdJanuar = UUID.randomUUID()
@@ -86,10 +86,10 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeIdJanuar, søknadIdJanuar)
         sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdJanuar) // Feil1: Ettersom januar-søknaden er den som sparker i gang showet, så peker alt på den
 
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser[vedtaksperiodeIdMars])
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
         assertEquals(setOf(eksternSøknadIdJanuar, eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars)) // Feil1: Mars-perioden får kobling mot januarSøknad
 
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser[vedtaksperiodeIdJanuar]) // Feil2: Vi trenger ikke noe mer fra arbeidsgiver her
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdJanuar)) // Feil2: Vi trenger ikke noe mer fra arbeidsgiver her
         assertEquals(setOf(eksternSøknadIdJanuar), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdJanuar))
     }
 
@@ -160,8 +160,8 @@ class BehandlingstatusTest {
     }
 
     private class TestSisPublisher: SisPublisher {
-        val sendteMeldinger = mutableMapOf<UUID, MutableList<Behandlingstatusmelding>>()
-        val sendteStatuser = mutableMapOf<UUID, MutableList<Behandlingstatusmelding.Behandlingstatustype>>()
+        private val sendteMeldinger = mutableMapOf<UUID, MutableList<Behandlingstatusmelding>>()
+        private val sendteStatuser = mutableMapOf<UUID, MutableList<Behandlingstatusmelding.Behandlingstatustype>>()
         override fun send(vedtaksperiodeId: UUID, melding: Behandlingstatusmelding) {
             sendteMeldinger.compute(vedtaksperiodeId) { _, forrige ->
                 forrige?.plus(melding)?.toMutableList() ?: mutableListOf(melding)
@@ -172,6 +172,8 @@ class BehandlingstatusTest {
         }
 
         fun eksterneSøknadIder(vedtaksperiodeId: UUID) = sendteMeldinger[vedtaksperiodeId]?.mapNotNull { it.eksternSøknadId }?.toSet() ?: emptySet()
+        fun sendteMeldinger(vedtaksperiodeId: UUID) = sendteMeldinger.getOrDefault(vedtaksperiodeId, mutableListOf()).toList()
+        fun sendteStatuser(vedtaksperiodeId: UUID) = sendteStatuser.getOrDefault(vedtaksperiodeId, mutableListOf()).toList()
     }
 
 }
