@@ -119,6 +119,18 @@ class BehandlingstatusTest {
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdAG2))
     }
 
+    @Test
+    fun `Venter på søknad på annen arbeidsgiver`() {
+        val søknadId = UUID.randomUUID()
+        val vedtaksperiodeId = UUID.randomUUID()
+
+        sendSøknad(søknadId)
+        sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
+        sendVedtaksperiodeVenter(vedtaksperiodeId, "SØKNAD", vedtaksperiodeId)
+
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeId))
+    }
+
     private fun sendSøknad(søknadId: UUID, eksternSøknadId: UUID = UUID.randomUUID()) {
         @Language("JSON")
         val melding = """{
