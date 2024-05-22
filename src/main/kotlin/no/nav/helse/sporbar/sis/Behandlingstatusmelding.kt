@@ -10,7 +10,7 @@ data class Behandlingstatusmelding(
     val status: Behandlingstatustype,
     val eksternSøknadId: UUID? = null
 ) {
-    val versjon = "1.2.0-beta"
+    val versjon = "1.2.1-beta"
 
     enum class Behandlingstatustype {
         OPPRETTET,

@@ -14,8 +14,7 @@ import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VEN
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
 import no.nav.helse.sporbar.sis.SisPublisher
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterPåSøknadEllerInntektsmeldingForAnnenPeriodeRiver
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterPåGodkjenningRiver
+import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -31,8 +30,7 @@ class BehandlingstatusTest {
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
         BehandlingOpprettetRiver(testRapid, dokumentDao, sisPublisher)
-        VedtaksperiodeVenterPåGodkjenningRiver(testRapid, sisPublisher)
-        VedtaksperiodeVenterPåSøknadEllerInntektsmeldingForAnnenPeriodeRiver(testRapid, sisPublisher)
+        VedtaksperiodeVenterRiver(testRapid, sisPublisher)
         BehandlingLukketRiver(testRapid, sisPublisher)
         BehandlingForkastetRiver(testRapid, sisPublisher)
     }
@@ -112,7 +110,7 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeIdAG2, søknadIdAG2)
 
         // Arbeidsgiver 1 sender inn inntektsmelding
-        sendVedtaksperiodeVenter(vedtaksperiodeIdAG1, "INNTEKTSMELDING", vedtaksperiodeIdAG2)
+        sendVedtaksperiodeVenter(vedtaksperiodeIdAG1, "INNTEKTSMELDING", vedtaksperiodeIdAG2, venterPåOrganisasjonsnummer = "AG2")
         sendVedtaksperiodeVenter(vedtaksperiodeIdAG2, "INNTEKTSMELDING", vedtaksperiodeIdAG2)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdAG1))
@@ -129,6 +127,19 @@ class BehandlingstatusTest {
         sendVedtaksperiodeVenter(vedtaksperiodeId, "SØKNAD", vedtaksperiodeId)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeId))
+    }
+
+    @Test
+    fun `Venter selv på inntektsmelding skal ikke gi ny status`() {
+        val søknadId = UUID.randomUUID()
+        val vedtaksperiodeId = UUID.randomUUID()
+
+        sendSøknad(søknadId)
+        sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
+
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeId))
+        sendVedtaksperiodeVenter(vedtaksperiodeId, "INNTEKTSMELDING", vedtaksperiodeId)
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeId))
     }
 
     private fun sendSøknad(søknadId: UUID, eksternSøknadId: UUID = UUID.randomUUID()) {
@@ -156,16 +167,18 @@ class BehandlingstatusTest {
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
-    private fun sendVedtaksperiodeVenter(vedtaksperiodeId: UUID, hva: String, venterPå: UUID = vedtaksperiodeId) {
+    private fun sendVedtaksperiodeVenter(vedtaksperiodeId: UUID, hva: String, venterPåVedtaksperiodeId: UUID = vedtaksperiodeId, venterPåOrganisasjonsnummer: String = "999999999") {
         @Language("JSON")
         val melding = """{
           "@event_name": "vedtaksperiode_venter",
           "@id": "${UUID.randomUUID()}",
           "@opprettet": "${LocalDateTime.now()}",
           "vedtaksperiodeId": "$vedtaksperiodeId",
+          "organisasjonsnummer": "999999999",
           "behandlingId": "${UUID.randomUUID()}",
           "venterPå": {
-            "vedtaksperiodeId": "$venterPå",
+            "vedtaksperiodeId": "$venterPåVedtaksperiodeId",
+            "organisasjonsnummer": "$venterPåOrganisasjonsnummer",
             "venteårsak": {
               "hva": "$hva"
             }
@@ -185,7 +198,6 @@ class BehandlingstatusTest {
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
-
     private fun sendBehandlingForkastet(vedtaksperiodeId: UUID) {
         @Language("JSON")
         val melding = """{
@@ -214,5 +226,4 @@ class BehandlingstatusTest {
         fun sendteMeldinger(vedtaksperiodeId: UUID) = sendteMeldinger.getOrDefault(vedtaksperiodeId, mutableListOf()).toList()
         fun sendteStatuser(vedtaksperiodeId: UUID) = sendteStatuser.getOrDefault(vedtaksperiodeId, mutableListOf()).toList()
     }
-
 }
