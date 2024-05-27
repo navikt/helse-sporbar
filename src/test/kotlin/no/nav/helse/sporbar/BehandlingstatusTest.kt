@@ -30,7 +30,7 @@ class BehandlingstatusTest {
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
         BehandlingOpprettetRiver(testRapid, dokumentDao, sisPublisher)
-        VedtaksperiodeVenterRiver(testRapid, sisPublisher)
+        VedtaksperiodeVenterRiver(testRapid, dokumentDao, sisPublisher)
         BehandlingLukketRiver(testRapid, sisPublisher)
         BehandlingForkastetRiver(testRapid, sisPublisher)
     }
@@ -47,7 +47,7 @@ class BehandlingstatusTest {
         val vedtaksperiodeId = UUID.randomUUID()
         sendSøknad(søknadId, eksternSøknadId)
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
-        sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeId)
+        sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeId, søknadId = søknadId)
         sendBehandlingLukket(vedtaksperiodeId)
 
         assertEquals(setOf(eksternSøknadId), sisPublisher.eksterneSøknadIder(vedtaksperiodeId))
@@ -74,7 +74,7 @@ class BehandlingstatusTest {
         val vedtaksperiodeIdMars = UUID.randomUUID()
         sendSøknad(søknadIdMars, eksternSøknadIdMars)
         sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdMars)
-        sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeIdMars)
+        sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeIdMars, søknadId = søknadIdMars)
         sendBehandlingLukket(vedtaksperiodeIdMars)
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
         assertEquals(setOf(eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars))
@@ -86,8 +86,8 @@ class BehandlingstatusTest {
         sendSøknad(søknadIdJanuar, eksternSøknadIdJanuar)
         sendBehandlingOpprettet(vedtaksperiodeIdJanuar, søknadIdJanuar)
         sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdJanuar) // Feil1: Ettersom januar-søknaden er den som sparker i gang showet, så peker alt på den
-        sendVedtaksperiodeVenter(vedtaksperiodeIdJanuar, "INNTEKTSMELDING", vedtaksperiodeIdJanuar)
-        sendVedtaksperiodeVenter(vedtaksperiodeIdMars, "INNTEKTSMELDING", vedtaksperiodeIdJanuar)
+        sendVedtaksperiodeVenter(vedtaksperiodeIdJanuar, "INNTEKTSMELDING", vedtaksperiodeIdJanuar, søknadId = søknadIdJanuar)
+        sendVedtaksperiodeVenter(vedtaksperiodeIdMars, "INNTEKTSMELDING", vedtaksperiodeIdJanuar, søknadId = søknadIdMars)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
         assertEquals(setOf(eksternSøknadIdJanuar, eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars)) // Feil1: Mars-perioden får kobling mot januarSøknad
@@ -110,8 +110,8 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeIdAG2, søknadIdAG2)
 
         // Arbeidsgiver 1 sender inn inntektsmelding
-        sendVedtaksperiodeVenter(vedtaksperiodeIdAG1, "INNTEKTSMELDING", vedtaksperiodeIdAG2, venterPåOrganisasjonsnummer = "AG2")
-        sendVedtaksperiodeVenter(vedtaksperiodeIdAG2, "INNTEKTSMELDING", vedtaksperiodeIdAG2)
+        sendVedtaksperiodeVenter(vedtaksperiodeIdAG1, "INNTEKTSMELDING", vedtaksperiodeIdAG2, venterPåOrganisasjonsnummer = "AG2", søknadId = søknadIdAG1)
+        sendVedtaksperiodeVenter(vedtaksperiodeIdAG2, "INNTEKTSMELDING", vedtaksperiodeIdAG2, søknadId = søknadIdAG2)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdAG1))
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdAG2))
@@ -124,7 +124,7 @@ class BehandlingstatusTest {
 
         sendSøknad(søknadId)
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
-        sendVedtaksperiodeVenter(vedtaksperiodeId, "SØKNAD", vedtaksperiodeId)
+        sendVedtaksperiodeVenter(vedtaksperiodeId, "SØKNAD", vedtaksperiodeId, søknadId = søknadId)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeId))
     }
@@ -138,7 +138,7 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeId))
-        sendVedtaksperiodeVenter(vedtaksperiodeId, "INNTEKTSMELDING", vedtaksperiodeId)
+        sendVedtaksperiodeVenter(vedtaksperiodeId, "INNTEKTSMELDING", vedtaksperiodeId, søknadId = søknadId)
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeId))
     }
 
@@ -158,22 +158,21 @@ class BehandlingstatusTest {
         val melding = """{
           "@event_name": "behandling_opprettet",
           "@id": "${UUID.randomUUID()}",
-          "kilde": {
-            "meldingsreferanseId": "$søknadId"
-          },
           "@opprettet": "${LocalDateTime.now()}",
           "vedtaksperiodeId": "$vedtaksperiodeId",
-          "behandlingId": "${UUID.randomUUID()}"
+          "behandlingId": "${UUID.randomUUID()}",
+          "søknadIder": ["$søknadId"]
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
-    private fun sendVedtaksperiodeVenter(vedtaksperiodeId: UUID, hva: String, venterPåVedtaksperiodeId: UUID = vedtaksperiodeId, venterPåOrganisasjonsnummer: String = "999999999") {
+    private fun sendVedtaksperiodeVenter(vedtaksperiodeId: UUID, hva: String, venterPåVedtaksperiodeId: UUID = vedtaksperiodeId, venterPåOrganisasjonsnummer: String = "999999999", søknadId: UUID) {
         @Language("JSON")
         val melding = """{
           "@event_name": "vedtaksperiode_venter",
           "@id": "${UUID.randomUUID()}",
           "@opprettet": "${LocalDateTime.now()}",
           "vedtaksperiodeId": "$vedtaksperiodeId",
+          "hendelser": ["$søknadId"],
           "organisasjonsnummer": "999999999",
           "behandlingId": "${UUID.randomUUID()}",
           "venterPå": {
@@ -186,7 +185,7 @@ class BehandlingstatusTest {
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }
-    private fun sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeId: UUID) = sendVedtaksperiodeVenter(vedtaksperiodeId, "GODKJENNING")
+    private fun sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeId: UUID, søknadId: UUID) = sendVedtaksperiodeVenter(vedtaksperiodeId, "GODKJENNING", søknadId = søknadId)
     private fun sendBehandlingLukket(vedtaksperiodeId: UUID) {
         @Language("JSON")
         val melding = """{
@@ -222,7 +221,7 @@ class BehandlingstatusTest {
             }
         }
 
-        fun eksterneSøknadIder(vedtaksperiodeId: UUID) = sendteMeldinger[vedtaksperiodeId]?.mapNotNull { it.eksternSøknadId }?.toSet() ?: emptySet()
+        fun eksterneSøknadIder(vedtaksperiodeId: UUID) = sendteMeldinger[vedtaksperiodeId]?.flatMap { it.eksterneSøknadIder }?.toSet() ?: emptySet()
         fun sendteMeldinger(vedtaksperiodeId: UUID) = sendteMeldinger.getOrDefault(vedtaksperiodeId, mutableListOf()).toList()
         fun sendteStatuser(vedtaksperiodeId: UUID) = sendteStatuser.getOrDefault(vedtaksperiodeId, mutableListOf()).toList()
     }

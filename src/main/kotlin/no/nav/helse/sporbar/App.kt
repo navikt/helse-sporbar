@@ -82,7 +82,7 @@ fun launchApplication(env: Map<String, String>) {
 
         val sisPublisher = KafkaSisPublisher(aivenProducer)
         BehandlingOpprettetRiver(this, dokumentDao, sisPublisher)
-        VedtaksperiodeVenterRiver(this, sisPublisher)
+        VedtaksperiodeVenterRiver(this, dokumentDao, sisPublisher)
         BehandlingLukketRiver(this, sisPublisher)
         BehandlingForkastetRiver(this, sisPublisher)
 

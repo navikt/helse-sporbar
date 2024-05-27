@@ -8,9 +8,9 @@ data class Behandlingstatusmelding(
     val behandlingId: UUID,
     val tidspunkt: OffsetDateTime,
     val status: Behandlingstatustype,
-    val eksternSøknadId: UUID? = null
+    val eksterneSøknadIder: Set<UUID>
 ) {
-    val versjon = "1.2.1-beta"
+    val versjon = "2.0.0"
 
     enum class Behandlingstatustype {
         OPPRETTET,
@@ -22,9 +22,9 @@ data class Behandlingstatusmelding(
     }
 
     companion object {
-        fun behandlingOpprettet(vedtaksperiodeId: UUID, behandlingId: UUID, tidspunkt: OffsetDateTime, eksternSøknadId: UUID) =
-            Behandlingstatusmelding(vedtaksperiodeId, behandlingId, tidspunkt, Behandlingstatustype.OPPRETTET, eksternSøknadId)
-        fun behandlingstatus(vedtaksperiodeId: UUID, behandlingId: UUID, tidspunkt: OffsetDateTime, status: Behandlingstatustype) =
-            Behandlingstatusmelding(vedtaksperiodeId, behandlingId, tidspunkt, status, null)
+        fun behandlingOpprettet(vedtaksperiodeId: UUID, behandlingId: UUID, tidspunkt: OffsetDateTime, eksterneSøknadIder: Set<UUID>) =
+            Behandlingstatusmelding(vedtaksperiodeId, behandlingId, tidspunkt, Behandlingstatustype.OPPRETTET, eksterneSøknadIder)
+        fun behandlingstatus(vedtaksperiodeId: UUID, behandlingId: UUID, tidspunkt: OffsetDateTime, status: Behandlingstatustype, eksterneSøknadIder: Set<UUID> = emptySet()) =
+            Behandlingstatusmelding(vedtaksperiodeId, behandlingId, tidspunkt, status, eksterneSøknadIder)
     }
 }

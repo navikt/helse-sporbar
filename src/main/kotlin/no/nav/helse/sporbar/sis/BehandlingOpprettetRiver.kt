@@ -1,7 +1,6 @@
 package no.nav.helse.sporbar.sis
 
 import com.fasterxml.jackson.databind.JsonNode
-import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.util.UUID
 import no.nav.helse.rapids_rivers.JsonMessage
@@ -14,7 +13,6 @@ import no.nav.helse.rapids_rivers.toUUID
 import no.nav.helse.sporbar.Dokument
 import no.nav.helse.sporbar.DokumentDao
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
-import org.intellij.lang.annotations.Language
 import org.slf4j.LoggerFactory
 
 internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dokumentDao: DokumentDao, private val sisPublisher: SisPublisher) :
@@ -24,7 +22,7 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dok
         River(rapid).apply {
             validate {
                 it.demandValue("@event_name", "behandling_opprettet")
-                it.requireKey("vedtaksperiodeId", "behandlingId", "kilde.meldingsreferanseId")
+                it.requireKey("vedtaksperiodeId", "behandlingId", "søknadIder")
                 it.require("@opprettet", JsonNode::asLocalDateTime)
             }
         }.register(this)
@@ -38,13 +36,15 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dok
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
-        val internSøknadId = packet["kilde.meldingsreferanseId"].asText().toUUID()
-        val søknad = dokumentDao.finn(listOf(internSøknadId)).firstOrNull { it.type == Dokument.Type.Søknad } ?: return
-        val søknadId = søknad.dokumentId
+        val interneSøknadIder = packet["søknadIder"].map { it.asText().toUUID() }
+        val eksterneSøknadIder = eksterneSøknadIder(interneSøknadIder).takeUnless { it.isEmpty() } ?: return sikkerlogg.error("Nå kom det en behandling_opprettet uten at vi fant eksterne søknadIder. Er ikke dét rart?")
         val tidspunkt = packet["@opprettet"].asLocalDateTime().atZone(ZoneId.of("Europe/Oslo")).toOffsetDateTime()
-        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingOpprettet(vedtaksperiodeId, behandlingId, tidspunkt, søknadId))
-        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding(vedtaksperiodeId, behandlingId, tidspunkt, VENTER_PÅ_ARBEIDSGIVER))
+        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingOpprettet(vedtaksperiodeId, behandlingId, tidspunkt, eksterneSøknadIder))
+        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, VENTER_PÅ_ARBEIDSGIVER))
     }
+
+    private fun eksterneSøknadIder(interneSøknadIder: List<UUID>) =
+        dokumentDao.finn(interneSøknadIder).filter { it.type == Dokument.Type.Søknad }.map { it.dokumentId }.toSet()
 
     private companion object {
         private val sikkerlogg = LoggerFactory.getLogger("tjenestekall")

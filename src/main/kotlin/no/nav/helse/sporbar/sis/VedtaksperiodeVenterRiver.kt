@@ -11,6 +11,8 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import no.nav.helse.rapids_rivers.toUUID
+import no.nav.helse.sporbar.Dokument
+import no.nav.helse.sporbar.DokumentDao
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ANNEN_PERIODE
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
@@ -19,14 +21,14 @@ import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.INNTEKTSME
 import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.SØKNAD
 import org.slf4j.LoggerFactory
 
-internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val sisPublisher: SisPublisher) : River.PacketListener {
+internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val dokumentDao: DokumentDao, private val sisPublisher: SisPublisher, ) : River.PacketListener {
 
     init {
         River(rapid).apply {
             validate {
                 it.demandValue("@event_name", "vedtaksperiode_venter")
                 it.demandAny("venterPå.venteårsak.hva", listOf("SØKNAD", "INNTEKTSMELDING", "GODKJENNING"))
-                it.requireKey("vedtaksperiodeId", "behandlingId", "organisasjonsnummer", "venterPå.vedtaksperiodeId", "venterPå.organisasjonsnummer")
+                it.requireKey("vedtaksperiodeId", "behandlingId", "organisasjonsnummer", "venterPå.vedtaksperiodeId", "venterPå.organisasjonsnummer", "hendelser")
                 it.require("@opprettet", JsonNode::asLocalDateTime)
             }
         }.register(this)
@@ -39,9 +41,12 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val si
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
+        val interneHendelseIder = packet["hendelser"].map { it.asText().toUUID() }
+        val eksterneSøknadIder = eksterneSøknadIder(interneHendelseIder).takeUnless { it.isEmpty() } ?: return sikkerlogg.error("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Er ikke dét rart?")
         val vedtaksperiodeVenter = VedtaksperiodeVenter(
             vedtaksperiodeId = vedtaksperiodeId,
             behandlingId = packet["behandlingId"].asText().toUUID(),
+            eksterneSøknadIder = eksterneSøknadIder,
             tidspunkt = packet["@opprettet"].asLocalDateTime().atZone(ZoneId.of("Europe/Oslo")).toOffsetDateTime(),
             venteårsak = Venteårsak.valueOf(packet["venterPå.venteårsak.hva"].asText()),
             venterPåAnnenPeriode = vedtaksperiodeId != packet["venterPå.vedtaksperiodeId"].asText().toUUID(),
@@ -50,22 +55,27 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val si
         vedtaksperiodeVenter.håndter(sisPublisher)
     }
 
+    private fun eksterneSøknadIder(interneHendelseIder: List<UUID>) =
+        dokumentDao.finn(interneHendelseIder).filter { it.type == Dokument.Type.Søknad }.map { it.dokumentId }.toSet()
+
+
     private enum class Venteårsak { SØKNAD, INNTEKTSMELDING, GODKJENNING }
 
     private class VedtaksperiodeVenter private constructor(
         private val vedtaksperiodeId: UUID,
         private val behandlingId: UUID,
+        private val eksterneSøknadIder: Set<UUID>,
         private val tidspunkt: OffsetDateTime,
         private val venterPå: VenterPå) {
 
-        constructor(vedtaksperiodeId: UUID, behandlingId: UUID, tidspunkt: OffsetDateTime, venteårsak: Venteårsak, venterPåAnnenPeriode: Boolean, venterPåAnnenArbeidsgiver: Boolean) :
-                this(vedtaksperiodeId, behandlingId, tidspunkt, venterPå(venteårsak, venterPåAnnenPeriode, venterPåAnnenArbeidsgiver))
+        constructor(vedtaksperiodeId: UUID, behandlingId: UUID, eksterneSøknadIder: Set<UUID>, tidspunkt: OffsetDateTime, venteårsak: Venteårsak, venterPåAnnenPeriode: Boolean, venterPåAnnenArbeidsgiver: Boolean) :
+                this(vedtaksperiodeId, behandlingId, eksterneSøknadIder, tidspunkt, venterPå(venteårsak, venterPåAnnenPeriode, venterPåAnnenArbeidsgiver))
 
         fun håndter(sisPublisher: SisPublisher) = venterPå.håndter(this, sisPublisher)
 
         private fun publiser(sisPublisher: SisPublisher, status: Behandlingstatustype) {
             sikkerlogg.info("Publiserer status $status som følge av at vedtaksperiode $vedtaksperiodeId, behandling $behandlingId venter på ${venterPå::class.simpleName}")
-            sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, status))
+            sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, status, eksterneSøknadIder))
         }
 
         private sealed interface VenterPå {
@@ -83,7 +93,7 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val si
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) =
                 vedtaksperiodeVenter.publiser(sisPublisher, VENTER_PÅ_SAKSBEHANDLER)
         }
-        object Inntektsmelding: VenterPå {
+        data object Inntektsmelding: VenterPå {
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) {
                 // Ettersom vi går automatisk til VENTER_PÅ_ARBEIDSGIVER ved opprettelse av behandling publiserer vi ikke noe
             }
