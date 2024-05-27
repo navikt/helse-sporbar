@@ -110,11 +110,6 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val do
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) =
                 vedtaksperiodeVenter.publiser(sisPublisher, VENTER_PÅ_ANNEN_PERIODE)
         }
-        data object UventetVentesituasjon: VenterPå {
-            override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) {
-                sikkerlogg.error("Uventet ventesituasjon for vedtaksperiode ${vedtaksperiodeVenter.vedtaksperiodeId}, behandling ${vedtaksperiodeVenter.behandlingId}")
-            }
-        }
 
         private companion object {
             private fun venterPå(venteårsak: Venteårsak, venterPåAnnenPeriode: Boolean, venterPåAnnenArbeidsgiver: Boolean): VenterPå {
@@ -128,7 +123,7 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val do
 
                 if (venteårsak == SØKNAD) return Søknad
 
-                return UventetVentesituasjon
+                error("Klarte ikke evaluere hva vedtaksperioden venter på. venteårsak=$venteårsak, venterPåAnnenPeriode=$venterPåAnnenPeriode, venterPåAnnenArbeidsgiver=$venterPåAnnenArbeidsgiver")
             }
         }
     }
