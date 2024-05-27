@@ -2,7 +2,6 @@ package no.nav.helse.sporbar.sis
 
 import com.fasterxml.jackson.databind.JsonNode
 import java.time.OffsetDateTime
-import java.time.ZoneId
 import java.util.UUID
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
@@ -11,11 +10,12 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import no.nav.helse.rapids_rivers.toUUID
-import no.nav.helse.sporbar.Dokument
 import no.nav.helse.sporbar.DokumentDao
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ANNEN_PERIODE
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.eksterneSøknadIder
 import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.GODKJENNING
 import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.INNTEKTSMELDING
 import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.SØKNAD
@@ -42,22 +42,18 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val do
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val interneHendelseIder = packet["hendelser"].map { it.asText().toUUID() }
-        val eksterneSøknadIder = eksterneSøknadIder(interneHendelseIder).takeUnless { it.isEmpty() } ?: return sikkerlogg.error("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Er ikke dét rart?")
+        val eksterneSøknadIder = dokumentDao.eksterneSøknadIder(interneHendelseIder) ?: return sikkerlogg.error("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Er ikke dét rart?")
         val vedtaksperiodeVenter = VedtaksperiodeVenter(
             vedtaksperiodeId = vedtaksperiodeId,
             behandlingId = packet["behandlingId"].asText().toUUID(),
             eksterneSøknadIder = eksterneSøknadIder,
-            tidspunkt = packet["@opprettet"].asLocalDateTime().atZone(ZoneId.of("Europe/Oslo")).toOffsetDateTime(),
+            tidspunkt = packet["@opprettet"].asOffsetDateTime(),
             venteårsak = Venteårsak.valueOf(packet["venterPå.venteårsak.hva"].asText()),
             venterPåAnnenPeriode = vedtaksperiodeId != packet["venterPå.vedtaksperiodeId"].asText().toUUID(),
             venterPåAnnenArbeidsgiver = packet["organisasjonsnummer"].asText() != packet["venterPå.organisasjonsnummer"].asText()
         )
         vedtaksperiodeVenter.håndter(sisPublisher)
     }
-
-    private fun eksterneSøknadIder(interneHendelseIder: List<UUID>) =
-        dokumentDao.finn(interneHendelseIder).filter { it.type == Dokument.Type.Søknad }.map { it.dokumentId }.toSet()
-
 
     private enum class Venteårsak { SØKNAD, INNTEKTSMELDING, GODKJENNING }
 

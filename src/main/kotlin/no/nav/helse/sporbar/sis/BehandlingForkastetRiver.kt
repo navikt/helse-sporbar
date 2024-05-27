@@ -1,7 +1,6 @@
 package no.nav.helse.sporbar.sis
 
 import com.fasterxml.jackson.databind.JsonNode
-import java.time.ZoneId
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
 import no.nav.helse.rapids_rivers.MessageProblems
@@ -10,6 +9,7 @@ import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDateTime
 import no.nav.helse.rapids_rivers.toUUID
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.BEHANDLES_UTENFOR_SPEIL
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
 import org.slf4j.LoggerFactory
 
 internal class BehandlingForkastetRiver(rapid: RapidsConnection, private val sisPublisher: SisPublisher) :
@@ -33,7 +33,7 @@ internal class BehandlingForkastetRiver(rapid: RapidsConnection, private val sis
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
-        val tidspunkt = packet["@opprettet"].asLocalDateTime().atZone(ZoneId.of("Europe/Oslo")).toOffsetDateTime()
+        val tidspunkt = packet["@opprettet"].asOffsetDateTime()
         sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, BEHANDLES_UTENFOR_SPEIL))
     }
 
