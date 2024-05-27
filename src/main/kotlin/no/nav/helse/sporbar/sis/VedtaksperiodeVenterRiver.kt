@@ -71,15 +71,15 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val si
         private sealed interface VenterPå {
             fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher)
         }
-        object Godkjenning: VenterPå {
+        data object Godkjenning: VenterPå {
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) =
                 vedtaksperiodeVenter.publiser(sisPublisher, VENTER_PÅ_SAKSBEHANDLER)
         }
-        object GodkjenningAnnenPeriode: VenterPå {
+        data object GodkjenningAnnenPeriode: VenterPå {
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) =
                 vedtaksperiodeVenter.publiser(sisPublisher, VENTER_PÅ_SAKSBEHANDLER)
         }
-        object GodkjenningAnnenArbeidsgiver: VenterPå {
+        data object GodkjenningAnnenArbeidsgiver: VenterPå {
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) =
                 vedtaksperiodeVenter.publiser(sisPublisher, VENTER_PÅ_SAKSBEHANDLER)
         }
@@ -88,19 +88,19 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val si
                 // Ettersom vi går automatisk til VENTER_PÅ_ARBEIDSGIVER ved opprettelse av behandling publiserer vi ikke noe
             }
         }
-        object InntektsmeldingAnnenPeriode: VenterPå {
+        data object InntektsmeldingAnnenPeriode: VenterPå {
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) =
                 vedtaksperiodeVenter.publiser(sisPublisher, VENTER_PÅ_ANNEN_PERIODE)
         }
-        object InntektsmeldingAnnenArbeidsgiver: VenterPå {
+        data object InntektsmeldingAnnenArbeidsgiver: VenterPå {
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) =
                 vedtaksperiodeVenter.publiser(sisPublisher, VENTER_PÅ_ANNEN_PERIODE)
         }
-        object Søknad: VenterPå {
+        data object Søknad: VenterPå {
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) =
                 vedtaksperiodeVenter.publiser(sisPublisher, VENTER_PÅ_ANNEN_PERIODE)
         }
-        object UventetVentesituasjon: VenterPå {
+        data object UventetVentesituasjon: VenterPå {
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) {
                 sikkerlogg.error("Uventet ventesituasjon for vedtaksperiode ${vedtaksperiodeVenter.vedtaksperiodeId}, behandling ${vedtaksperiodeVenter.behandlingId}")
             }
