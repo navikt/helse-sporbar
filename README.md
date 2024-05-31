@@ -10,7 +10,6 @@ Data om sykepenger kan konsumeres ved å lese inn en eller begge disse topic-ene
 
 * `tbd.vedtak`
 * `tbd.utbetaling`
-* `tbd.inntektsmeldingstatus`
 
 ### Tilgang
 

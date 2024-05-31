@@ -6,8 +6,6 @@ import com.networknt.schema.JsonSchema
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusTest
-import no.nav.helse.sporbar.inntektsmelding.Producer.Melding
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.header.Headers
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,7 +16,7 @@ internal object JsonSchemaValidator {
 
     private fun String.getSchema() = JsonSchemaFactory
         .getInstance(SpecVersion.VersionFlag.V7)
-        .getSchema(InntektsmeldingStatusTest::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
+        .getSchema(JsonSchemaValidator::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
 
     private val inntektsmeldingstatusSchema by lazy { "inntektsmeldingstatus".getSchema() }
     private val vedtakFattetSchema by lazy { "vedtak__fattet".getSchema() }
@@ -71,3 +69,10 @@ internal object JsonSchemaValidator {
         json = mapper.readTree(value())
     ).validertJson()
 }
+
+class Melding(
+    internal val topic: String,
+    internal val meldingstype: Meldingstype,
+    internal val key: String,
+    internal val json: JsonNode
+)

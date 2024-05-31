@@ -7,14 +7,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.util.Properties
 import no.nav.helse.rapids_rivers.RapidApplication
 import no.nav.helse.rapids_rivers.RapidsConnection
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusMediator
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusPubliserer
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeEndretRiver
-import no.nav.helse.sporbar.inntektsmelding.InntektsmeldingStatusVedtaksperiodeForkastetRiver
-import no.nav.helse.sporbar.inntektsmelding.Kafka
-import no.nav.helse.sporbar.inntektsmelding.PostgresInntektsmeldingStatusDao
-import no.nav.helse.sporbar.inntektsmelding.TrengerIkkeInntektsmeldingRiver
-import no.nav.helse.sporbar.inntektsmelding.TrengerInntektsmeldingRiver
 import no.nav.helse.sporbar.sis.BehandlingForkastetRiver
 import no.nav.helse.sporbar.sis.BehandlingLukketRiver
 import no.nav.helse.sporbar.sis.BehandlingOpprettetRiver
@@ -55,11 +47,6 @@ fun launchApplication(env: Map<String, String>) {
         val spesialsakDao = SpesialsakDao(dataSourceBuilder::dataSource)
         val aivenProducer = createAivenProducer(env)
 
-        val inntektsmeldingStatusDao = PostgresInntektsmeldingStatusDao(dataSourceBuilder::dataSource)
-        val inntektsmeldingStatusMediator = InntektsmeldingStatusMediator(
-            inntektsmeldingStatusDao = inntektsmeldingStatusDao,
-            producer = Kafka(aivenProducer)
-        )
         val vedtakFattetMediator = VedtakFattetMediator(
             dokumentDao = dokumentDao,
             producer = aivenProducer
@@ -74,11 +61,6 @@ fun launchApplication(env: Map<String, String>) {
         UtbetalingUtbetaltRiver(this, utbetalingMediator, spesialsakDao)
         UtbetalingUtenUtbetalingRiver(this, utbetalingMediator, spesialsakDao)
         AnnulleringRiver(this, aivenProducer)
-        TrengerInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
-        TrengerIkkeInntektsmeldingRiver(this, inntektsmeldingStatusMediator)
-        InntektsmeldingStatusVedtaksperiodeForkastetRiver(this, inntektsmeldingStatusMediator)
-        InntektsmeldingStatusVedtaksperiodeEndretRiver(this, inntektsmeldingStatusMediator)
-        InntektsmeldingStatusPubliserer(this, inntektsmeldingStatusMediator)
 
         val sisPublisher = KafkaSisPublisher(aivenProducer)
         BehandlingOpprettetRiver(this, dokumentDao, sisPublisher)
