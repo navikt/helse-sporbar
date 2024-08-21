@@ -49,7 +49,6 @@ internal class UtbetalingTest {
     private val testRapid = TestRapid()
     private val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
     private val dokumentDao = DokumentDao { TestDatabase.dataSource }
-    private val spesialsakDao = SpesialsakDao { TestDatabase.dataSource }
 
     private val vedtakFattetMediator = VedtakFattetMediator(
         dokumentDao = dokumentDao,
@@ -63,8 +62,8 @@ internal class UtbetalingTest {
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
         VedtakFattetRiver(testRapid, vedtakFattetMediator)
-        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, spesialsakDao)
-        UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator, spesialsakDao)
+        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator)
+        UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator)
     }
 
     @BeforeEach
@@ -143,46 +142,6 @@ internal class UtbetalingTest {
             ),
             avvistDag
         )
-    }
-
-    @Test
-    fun `utbetaling_utbetalt - ignorerer vedtaksperiode i blocklist`() {
-        val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
-        opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId)))
-        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
-    }
-
-    @Test
-    fun `utbetaling_uten_utbetaling - ignorerer vedtaksperiode i blocklist`() {
-        val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
-        opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId), "utbetaling_uten_utbetaling"))
-        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
-    }
-
-    @Test
-    fun `utbetaling_utbetalt - periode som har vært spesialsak én gang er ikke det neste gang`() {
-        val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
-        opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId)))
-        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
-        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId)))
-        verify(exactly = 1) { producerMock.send( capture(captureSlot) ) }
-    }
-
-    @Test
-    fun `utbetaling_uten_utbetaling - periode som har vært spesialsak én gang er ikke det neste gang`() {
-        val vedtaksperiodeId = "bf453475-21f8-4ad1-9055-45f110411f5f"
-        opprettSpesialsak(UUID.fromString(vedtaksperiodeId))
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId), "utbetaling_uten_utbetaling"))
-        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
-        testRapid.sendTestMessage(utbetalingUtbetaltMed0KrINettobeløp(setOf(vedtaksperiodeId), "utbetaling_uten_utbetaling"))
-        verify(exactly = 1) { producerMock.send( capture(captureSlot) ) }
     }
 
     @Test
@@ -371,14 +330,6 @@ internal class UtbetalingTest {
 
     private fun utbetalingUtbetaltSendt(idSett: IdSett, event: String = "utbetaling_utbetalt") {
         testRapid.sendTestMessage(utbetalingUtbetalt(idSett, event))
-    }
-
-    private fun opprettSpesialsak(vedtaksperiodeId: UUID) {
-        @Language("PostgreSQL")
-        val query = "INSERT INTO spesialsak (vedtaksperiode_id) VALUES (:vedtaksperiode_id)"
-        sessionOf(TestDatabase.dataSource).use {
-            it.run(queryOf(query, mapOf("vedtaksperiode_id" to vedtaksperiodeId)).asUpdate)
-        }
     }
 
     @Language("json")

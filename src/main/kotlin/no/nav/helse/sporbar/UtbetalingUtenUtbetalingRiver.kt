@@ -12,8 +12,7 @@ private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 internal class UtbetalingUtenUtbetalingRiver(
     rapidsConnection: RapidsConnection,
-    private val utbetalingMediator: UtbetalingMediator,
-    private val spesialsakDao: SpesialsakDao
+    private val utbetalingMediator: UtbetalingMediator
 ) : River.PacketListener {
 
     init {
@@ -94,12 +93,6 @@ internal class UtbetalingUtenUtbetalingRiver(
 
         val arbeidsgiverOppdrag = parseOppdrag(packet["arbeidsgiverOppdrag"])
         val personOppdrag = parseOppdrag(packet["personOppdrag"])
-
-        val vedtaksperiode = packet["vedtaksperiodeIder"].map(JsonNode::asText).singleOrNull()
-        if (vedtaksperiode != null && IngenMeldingOmVedtak(spesialsakDao).ignorerMeldingOmVedtak(vedtaksperiode, arbeidsgiverOppdrag, personOppdrag)) {
-            spesialsakDao.slett(UUID.fromString(vedtaksperiode))
-            return sikkerLog.info("Ignorerer denne meldingen om vedtak for $vedtaksperiode fordi den er spesialsak, og anser den ikke lenger som spesialsak")
-        }
 
         utbetalingMediator.utbetalingUtenUtbetaling(
             UtbetalingUtbetalt(
