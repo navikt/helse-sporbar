@@ -39,7 +39,6 @@ internal class UtbetalingUtenUtbetalingRiver(
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
                 it.require("korrelasjonsId") { id -> UUID.fromString(id.asText()) }
-                it.interestedIn("vedtaksperiodeIder")
 
                 it.requireKey("arbeidsgiverOppdrag.mottaker", "arbeidsgiverOppdrag.fagområde", "arbeidsgiverOppdrag.fagsystemId",
                     "arbeidsgiverOppdrag.nettoBeløp", "arbeidsgiverOppdrag.stønadsdager")

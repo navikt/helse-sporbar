@@ -6,8 +6,6 @@ import io.mockk.verify
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
-import kotliquery.queryOf
-import kotliquery.sessionOf
 import no.nav.helse.rapids_rivers.asLocalDate
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
@@ -15,7 +13,6 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -142,36 +139,6 @@ internal class UtbetalingTest {
             ),
             avvistDag
         )
-    }
-
-    @Test
-    fun `utbetaling_utbetalt - mapper vedtaksperiodeIder til antallVedtak`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltMedVedtaksperiodeIder())
-        verify { producerMock.send( capture(captureSlot) ) }
-
-        val utbetalingUtbetalt = captureSlot.last()
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
-
-        val antallVedtak = utbetalingUtbetaltJson.path("antallVedtak").asInt()
-        assertEquals(1, antallVedtak)
-    }
-
-    @Test
-    fun `utbetaling_uten_utbetaling - mapper vedtaksperiodeIder til antallVedtak`() {
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtenUtbetalingMedVedtaksperiodeIder())
-        verify { producerMock.send( capture(captureSlot) ) }
-
-        val utbetalingUtenUtbetaling = captureSlot.last()
-        val utbetalingUtenUtbetalingJson = utbetalingUtenUtbetaling.validertJson()
-
-        val antallVedtak = utbetalingUtenUtbetalingJson.path("antallVedtak").asInt()
-
-        assertFalse(utbetalingUtenUtbetalingJson.path("arbeidsgiverOppdrag").isNull) { "Denne skal være assertTrue når toggelen NULLE_UT_TOMME_OPPDRAG fjernes (eller settes til true mannuelt)" }
-        assertFalse(utbetalingUtenUtbetalingJson.path("personOppdrag").isNull) { "Denne skal være assertTrue når toggelen NULLE_UT_TOMME_OPPDRAG fjernes (eller settes til true mannuelt)" }
-        assertEquals(LocalDate.of(2021,7,15), utbetalingUtenUtbetalingJson.path("foreløpigBeregnetSluttPåSykepenger").asLocalDate())
-        assertEquals(1, antallVedtak)
     }
 
     @Test
@@ -394,7 +361,6 @@ internal class UtbetalingTest {
   "type": "$UTBETALINGSTYPE",
   "tidspunkt": "$TIDSSTEMPEL",
   "automatiskBehandling": "$AUTOMATISK_BEHANDLING",
-  "vedtaksperiodeIder": [],
   "@event_name": "$event",
   "arbeidsgiverOppdrag": {
     "mottaker": "$ORGNUMMER",
@@ -502,7 +468,6 @@ internal class UtbetalingTest {
   "type": "REVURDERING",
   "tidspunkt": "${LocalDateTime.now()}",
   "automatiskBehandling": "true",
-  "vedtaksperiodeIder": [],
   "arbeidsgiverOppdrag": {
     "mottaker": "123456789",
     "fagområde": "SPREF",
@@ -605,194 +570,6 @@ internal class UtbetalingTest {
 
 
     @Language("json")
-    private fun utbetalingUtbetaltMedVedtaksperiodeIder(
-        id: UUID = UUID.randomUUID(),
-        utbetalingId: UUID = UUID.randomUUID()
-    ) = """{
-  "@id": "$id",
-  "fødselsnummer": "12345678910",
-  "utbetalingId": "$utbetalingId",
-  "korrelasjonsId": "${UUID.randomUUID()}",
-  "@event_name": "utbetaling_utbetalt",
-  "fom": "2021-05-06",
-  "tom": "2021-05-13",
-  "maksdato": "2021-07-15",
-  "forbrukteSykedager": "217",
-  "gjenståendeSykedager": "31",
-  "stønadsdager": 35,
-  "ident": "Automatisk behandlet",
-  "epost": "tbd@nav.no",
-  "type": "REVURDERING",
-  "tidspunkt": "${LocalDateTime.now()}",
-  "automatiskBehandling": "true",
-  "arbeidsgiverOppdrag": {
-    "mottaker": "123456789",
-    "fagområde": "SPREF",
-    "linjer": [
-      {
-        "fom": "2021-05-06",
-        "tom": "2021-05-13",
-        "sats": 1431,
-        "grad": 100.0,
-        "stønadsdager": 35,
-        "totalbeløp": 38360
-      }
-    ],
-    "fagsystemId": "123",
-    "endringskode": "ENDR",
-    "tidsstempel": "${LocalDateTime.now()}",
-    "nettoBeløp": "38360",
-    "stønadsdager": 35,
-    "fom": "2021-05-06",
-    "tom": "2021-05-13"
-  },
-  "personOppdrag": {
-    "mottaker": "123456789",
-    "fagområde": "SP",
-    "linjer": [],
-    "fagsystemId": "123",
-    "endringskode": "NY",
-    "tidsstempel": "${LocalDateTime.now()}",
-    "nettoBeløp": 0,
-    "stønadsdager": 0,
-    "fom": "${LocalDate.MIN}",
-    "tom": "${LocalDate.MAX}"
-  },
-  "utbetalingsdager": [
-        {
-          "dato": "2021-05-06",
-          "type": "NavDag"
-        }
-  ],
-  "@opprettet": "${LocalDateTime.now()}",
-  "aktørId": "123",
-  "organisasjonsnummer": "123456789",
-  "vedtaksperiodeIder": ["${UUID.randomUUID()}"]
-}
-    """
-    @Language("json")
-    private fun utbetalingUtbetaltMed0KrINettobeløp(vedtaksperioder: Set<String>, event: String = "utbetaling_utbetalt") = """{
-  "@id": "${UUID.randomUUID()}",
-  "fødselsnummer": "12345678910",
-  "utbetalingId": "${UUID.randomUUID()}",
-  "korrelasjonsId": "${UUID.randomUUID()}",
-  "@event_name": "$event",
-  "fom": "2021-05-06",
-  "tom": "2021-05-13",
-  "maksdato": "2021-07-15",
-  "forbrukteSykedager": "217",
-  "gjenståendeSykedager": "31",
-  "stønadsdager": 35,
-  "ident": "Automatisk behandlet",
-  "epost": "tbd@nav.no",
-  "type": "REVURDERING",
-  "tidspunkt": "${LocalDateTime.now()}",
-  "automatiskBehandling": "true",
-  "arbeidsgiverOppdrag": {
-    "mottaker": "123456789",
-    "fagområde": "SPREF",
-    "linjer": [
-      {
-        "fom": "2021-05-06",
-        "tom": "2021-05-13",
-        "sats": 1431,
-        "grad": 100.0,
-        "stønadsdager": 35,
-        "totalbeløp": 38360
-      }
-    ],
-    "fagsystemId": "123",
-    "endringskode": "ENDR",
-    "tidsstempel": "${LocalDateTime.now()}",
-    "nettoBeløp": 0,
-    "stønadsdager": 35,
-    "fom": "2021-05-06",
-    "tom": "2021-05-13"
-  },
-  "personOppdrag": {
-    "mottaker": "123456789",
-    "fagområde": "SP",
-    "linjer": [],
-    "fagsystemId": "123",
-    "endringskode": "NY",
-    "tidsstempel": "${LocalDateTime.now()}",
-    "nettoBeløp": 0,
-    "stønadsdager": 0,
-    "fom": "${LocalDate.MIN}",
-    "tom": "${LocalDate.MAX}"
-  },
-  "utbetalingsdager": [
-        {
-          "dato": "2021-05-06",
-          "type": "NavDag"
-        }
-  ],
-  "@opprettet": "${LocalDateTime.now()}",
-  "aktørId": "123",
-  "organisasjonsnummer": "123456789",
-  "vedtaksperiodeIder": [${vedtaksperioder.joinToString { "\"$it\"" }}]
-}
-    """
-
-    @Language("json")
-    private fun utbetalingUtenUtbetalingMedVedtaksperiodeIder(
-        id: UUID = UUID.randomUUID(),
-        utbetalingId: UUID = UUID.randomUUID()
-    ) = """{
-  "@id": "$id",
-  "fødselsnummer": "12345678910",
-  "utbetalingId": "$utbetalingId",
-  "korrelasjonsId": "${UUID.randomUUID()}",
-  "@event_name": "utbetaling_uten_utbetaling",
-  "fom": "-999999999-01-01",
-  "tom": "+999999999-12-31",
-  "maksdato": "2021-07-15",
-  "forbrukteSykedager": "217",
-  "gjenståendeSykedager": "31",
-  "stønadsdager": 35,
-  "ident": "Automatisk behandlet",
-  "epost": "tbd@nav.no",
-  "type": "REVURDERING",
-  "tidspunkt": "${LocalDateTime.now()}",
-  "automatiskBehandling": "true",
-  "arbeidsgiverOppdrag": {
-    "mottaker": "123456789",
-    "fagområde": "SPREF",
-    "linjer": [],
-    "fagsystemId": "123",
-    "endringskode": "NY",
-    "tidsstempel": "${LocalDateTime.now()}",
-    "nettoBeløp": 0,
-    "stønadsdager": 0,
-    "fom": "-999999999-01-01",
-    "tom": "-999999999-01-01"
-  },
-  "personOppdrag": {
-    "mottaker": "123456789",
-    "fagområde": "SP",
-    "linjer": [],
-    "fagsystemId": "123",
-    "endringskode": "NY",
-    "tidsstempel": "${LocalDateTime.now()}",
-    "nettoBeløp": 0,
-    "stønadsdager": 0,
-    "fom": "-999999999-01-01",
-    "tom": "-999999999-01-01"
-  },
-  "utbetalingsdager": [
-        {
-          "dato": "2021-05-06",
-          "type": "Fridag"
-        }
-  ],
-  "@opprettet": "${LocalDateTime.now()}",
-  "aktørId": "123",
-  "organisasjonsnummer": "123456789",
-  "vedtaksperiodeIder": ["${UUID.randomUUID()}", "${UUID.randomUUID()}"]
-}
-    """
-
-    @Language("json")
     private fun utbetalingUtbetaltMedArbeidIkkeGjenopptattDag() = """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
@@ -863,8 +640,7 @@ internal class UtbetalingTest {
   ],
   "@opprettet": "${LocalDateTime.now()}",
   "aktørId": "123",
-  "organisasjonsnummer": "123456789",
-  "vedtaksperiodeIder": ["${UUID.randomUUID()}", "${UUID.randomUUID()}"]
+  "organisasjonsnummer": "123456789"
 }
     """
     @Language("json")
@@ -929,8 +705,7 @@ internal class UtbetalingTest {
   ],
   "@opprettet": "${LocalDateTime.now()}",
   "aktørId": "123",
-  "organisasjonsnummer": "123456789",
-  "vedtaksperiodeIder": ["${UUID.randomUUID()}", "${UUID.randomUUID()}"]
+  "organisasjonsnummer": "123456789"
 }
     """
 
@@ -997,8 +772,7 @@ internal class UtbetalingTest {
   ],
   "@opprettet": "${LocalDateTime.now()}",
   "aktørId": "123",
-  "organisasjonsnummer": "123456789",
-  "vedtaksperiodeIder": ["${UUID.randomUUID()}", "${UUID.randomUUID()}"]
+  "organisasjonsnummer": "123456789"
 }
     """
 
