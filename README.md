@@ -36,9 +36,6 @@ JSON Schema for annullering ([view](https://json-schema.app/view/%23?url=https%3
 
 `OBS:` på `aapen-helse-sporbar` inneholdt beløp-feltet "beløp til utbetaling per dag etter gradering", dette beløpet ligger nå i dagsats-feltet.
 
-#### tbd.inntektsmeldingstatus
-
-JSON Schema for inntektsmeldingstatus ([view](https://json-schema.app/view/%23?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnavikt%2Fhelse-sporbar%2Fmaster%2Fsrc%2Ftest%2Fresources%2Fjson-schema%2Ftbd.inntektsmeldingstatus.json) | [raw](src/test/resources/json-schema/tbd.inntektsmeldingstatus.json))
 
 ## Oppgradering av gradle wrapper
 Finn nyeste versjon av gradle her: https://gradle.org/releases/
