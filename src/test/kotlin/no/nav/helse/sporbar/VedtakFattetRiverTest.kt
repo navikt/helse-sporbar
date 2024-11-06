@@ -3,7 +3,11 @@ package no.nav.helse.sporbar
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
+import com.github.navikt.tbd_libs.result_object.ok
+import com.github.navikt.tbd_libs.speed.IdentResponse
+import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.mockk.clearAllMocks
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -18,6 +22,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
+import org.junit.jupiter.api.AfterEach
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class VedtakFattetRiverTest {
@@ -49,15 +54,26 @@ internal class VedtakFattetRiverTest {
     private val utbetalingMediator = UtbetalingMediator(
         producer = producerMock
     )
+    private val speedClient = mockk<SpeedClient>()
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
-        VedtakFattetRiver(testRapid, vedtakFattetMediator)
-        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator)
+        VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)
+        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
     }
 
     @BeforeEach
     fun setup() {
+        every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
+            fødselsnummer = FØDSELSNUMMER,
+            aktørId = AKTØRID,
+            npid = null,
+            kilde = IdentResponse.KildeResponse.PDL
+        ).ok()
+    }
+
+    @AfterEach
+    fun after() {
         testRapid.reset()
         clearAllMocks()
     }
@@ -304,7 +320,6 @@ internal class VedtakFattetRiverTest {
   "@event_name": "vedtak_fattet",
   "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
   "@opprettet": "$TIDSSTEMPEL",
-  "aktørId": "$AKTØRID",
   "fødselsnummer": "$FØDSELSNUMMER",
   "organisasjonsnummer": "$ORGNUMMER",
   "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
@@ -342,7 +357,6 @@ internal class VedtakFattetRiverTest {
       "@event_name": "vedtak_fattet",
       "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
       "@opprettet": "$TIDSSTEMPEL",
-      "aktørId": "$AKTØRID",
       "fødselsnummer": "$FØDSELSNUMMER",
       "organisasjonsnummer": "$ORGNUMMER",
       "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
@@ -437,7 +451,6 @@ internal class VedtakFattetRiverTest {
         "id": "75be4efa-fa13-44a9-afc2-6583dd87d626",
         "opprettet": "2020-06-12T09:20:31.985479"
     },
-    "aktørId": "42",
     "fødselsnummer": "$FØDSELSNUMMER"
 }
 """

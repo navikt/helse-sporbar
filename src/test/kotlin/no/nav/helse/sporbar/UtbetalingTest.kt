@@ -2,7 +2,11 @@ package no.nav.helse.sporbar
 
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
+import com.github.navikt.tbd_libs.result_object.ok
+import com.github.navikt.tbd_libs.speed.IdentResponse
+import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.mockk.clearAllMocks
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.time.LocalDate
@@ -12,6 +16,7 @@ import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -55,16 +60,27 @@ internal class UtbetalingTest {
     private val utbetalingMediator = UtbetalingMediator(
         producer = producerMock
     )
+    private val speedClient = mockk<SpeedClient>()
 
     init {
         NyttDokumentRiver(testRapid, dokumentDao)
-        VedtakFattetRiver(testRapid, vedtakFattetMediator)
-        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator)
-        UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator)
+        VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)
+        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
+        UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator, speedClient)
     }
 
     @BeforeEach
     fun setup() {
+        every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
+            fødselsnummer = FØDSELSNUMMER,
+            aktørId = AKTØRID,
+            npid = null,
+            kilde = IdentResponse.KildeResponse.PDL
+        ).ok()
+    }
+
+    @AfterEach
+    fun after() {
         testRapid.reset()
         clearAllMocks()
     }
@@ -323,7 +339,6 @@ internal class UtbetalingTest {
     "@event_name": "vedtak_fattet",
     "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
     "@opprettet": "$TIDSSTEMPEL",
-    "aktørId": "$AKTØRID",
     "fødselsnummer": "$FØDSELSNUMMER",
     "organisasjonsnummer": "$ORGNUMMER",
     "tags": [],
@@ -441,7 +456,6 @@ internal class UtbetalingTest {
   ],
   "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec01",
   "@opprettet": "$TIDSSTEMPEL",
-  "aktørId": "$AKTØRID",
   "fødselsnummer": "$FØDSELSNUMMER",
   "organisasjonsnummer": "$ORGNUMMER"
 }
@@ -563,7 +577,6 @@ internal class UtbetalingTest {
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",
-  "aktørId": "123",
   "organisasjonsnummer": "123456789"
 }
     """
@@ -639,7 +652,6 @@ internal class UtbetalingTest {
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",
-  "aktørId": "123",
   "organisasjonsnummer": "123456789"
 }
     """
@@ -704,7 +716,6 @@ internal class UtbetalingTest {
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",
-  "aktørId": "123",
   "organisasjonsnummer": "123456789"
 }
     """
@@ -771,7 +782,6 @@ internal class UtbetalingTest {
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",
-  "aktørId": "123",
   "organisasjonsnummer": "123456789"
 }
     """
@@ -845,7 +855,6 @@ internal class UtbetalingTest {
         "id": "75be4efa-fa13-44a9-afc2-6583dd87d626",
         "opprettet": "2020-06-12T09:20:31.985479"
     },
-    "aktørId": "42",
     "fødselsnummer": "$FØDSELSNUMMER"
 }
 """

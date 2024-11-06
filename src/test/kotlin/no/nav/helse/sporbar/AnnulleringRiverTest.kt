@@ -4,7 +4,11 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
 import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
+import com.github.navikt.tbd_libs.result_object.ok
+import com.github.navikt.tbd_libs.speed.IdentResponse
+import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.mockk.CapturingSlot
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -34,9 +38,16 @@ class AnnulleringRiverTest {
 
     private val testRapid = TestRapid()
     private val aivenProducerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
-
+    private val speedClient = mockk<SpeedClient> {
+        every { hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
+            fødselsnummer = fødselsnummer,
+            aktørId = "aktørId",
+            npid = null,
+            kilde = IdentResponse.KildeResponse.PDL
+        ).ok()
+    }
     init {
-        AnnulleringRiver(testRapid, aivenProducerMock)
+        AnnulleringRiver(testRapid, aivenProducerMock, speedClient)
     }
 
     @Test
@@ -121,7 +132,6 @@ class AnnulleringRiverTest {
     ) = """
     {
         "fødselsnummer": "$fødselsnummer",
-        "aktørId": "1427484794278",
         "organisasjonsnummer": "$organisasjonsnummer",
         "tidspunkt": "$tidsstempel",
         "fom": "$fom",

@@ -6,24 +6,30 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
+import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
-import no.nav.helse.sporbar.UtbetalingUtbetalt.OppdragDto.Companion.parseOppdrag
-import no.nav.helse.sporbar.UtbetalingUtbetalt.OppdragDto.UtbetalingslinjeDto.Companion.parseLinje
+import com.github.navikt.tbd_libs.result_object.getOrThrow
+import com.github.navikt.tbd_libs.retry.retryBlocking
+import com.github.navikt.tbd_libs.speed.SpeedClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
 import java.util.UUID
+import no.nav.helse.sporbar.dto.BegrunnelseDto
+import no.nav.helse.sporbar.dto.OppdragDto.Companion.parseOppdrag
+import no.nav.helse.sporbar.dto.UtbetalingUtbetaltDto
+import no.nav.helse.sporbar.dto.UtbetalingdagDto
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
-private val NULLE_UT_TOMME_OPPDRAG = System.getenv("NULLE_UT_TOMME_OPPDRAG")?.toBoolean() ?: false
+val NULLE_UT_TOMME_OPPDRAG = System.getenv("NULLE_UT_TOMME_OPPDRAG")?.toBoolean() ?: false
 
 internal class UtbetalingUtbetaltRiver(
     rapidsConnection: RapidsConnection,
-    private val utbetalingMediator: UtbetalingMediator
+    private val utbetalingMediator: UtbetalingMediator,
+    private val speedClient: SpeedClient
 ) : River.PacketListener {
 
     init {
@@ -31,7 +37,6 @@ internal class UtbetalingUtbetaltRiver(
             validate {
                 it.demandValue("@event_name", "utbetaling_utbetalt")
                 it.requireKey(
-                    "aktørId",
                     "fødselsnummer",
                     "@id",
                     "organisasjonsnummer",
@@ -79,8 +84,16 @@ internal class UtbetalingUtbetaltRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        val fødselsnummer = packet["fødselsnummer"].asText()
-        val aktørId = packet["aktørId"].asText()
+        val callId = packet["@id"].asText()
+        withMDC("callId" to callId) {
+            håndterUtbetalingUtbetalt(packet, callId)
+        }
+    }
+
+    private fun håndterUtbetalingUtbetalt(packet: JsonMessage, callId: String) {
+        val ident = packet["fødselsnummer"].asText()
+        val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
+
         val organisasjonsnummer = packet["organisasjonsnummer"].asText()
         val fom = packet["fom"].asLocalDate()
         val tom = packet["tom"].asLocalDate()
@@ -93,7 +106,7 @@ internal class UtbetalingUtbetaltRiver(
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
         val type = packet["type"].asText()
         val utbetalingsdager = packet["utbetalingsdager"].toList().map { dag ->
-            UtbetalingUtbetalt.UtbetalingdagDto(
+            UtbetalingdagDto(
                 dato = dag["dato"].asLocalDate(),
                 type = dag["type"].dagtype,
                 begrunnelser = dag.path("begrunnelser").takeUnless(JsonNode::isMissingOrNull)
@@ -104,14 +117,12 @@ internal class UtbetalingUtbetaltRiver(
         val arbeidsgiverOppdrag = parseOppdrag(packet["arbeidsgiverOppdrag"])
         val personOppdrag = parseOppdrag(packet["personOppdrag"])
 
-
         utbetalingMediator.utbetalingUtbetalt(
-            UtbetalingUtbetalt(
-                event = "utbetaling_utbetalt",
+            UtbetalingUtbetaltDto(
                 utbetalingId = utbetalingId,
                 korrelasjonsId = korrelasjonsId,
-                fødselsnummer = fødselsnummer,
-                aktørId = aktørId,
+                fødselsnummer = identer.fødselsnummer,
+                aktørId = identer.aktørId,
                 organisasjonsnummer = organisasjonsnummer,
                 fom = fom,
                 tom = tom,
@@ -132,124 +143,27 @@ internal class UtbetalingUtbetaltRiver(
     }
 }
 
-data class UtbetalingUtbetalt(
-    val event: String,
-    val utbetalingId: UUID,
-    val korrelasjonsId: UUID,
-    val fødselsnummer: String,
-    val aktørId: String,
-    val organisasjonsnummer: String,
-    val fom: LocalDate,
-    val tom: LocalDate,
-    val forbrukteSykedager: Int,
-    val gjenståendeSykedager: Int,
-    val stønadsdager: Int,
-    val automatiskBehandling: Boolean,
-    val arbeidsgiverOppdrag: OppdragDto?,
-    val personOppdrag: OppdragDto?,
-    val type: String,
-    val utbetalingsdager: List<UtbetalingdagDto>,
-    val antallVedtak: Int?,
-    val foreløpigBeregnetSluttPåSykepenger: LocalDate
-) {
-    enum class Begrunnelse {
-        AndreYtelserAap,
-        AndreYtelserDagpenger,
-        AndreYtelserForeldrepenger,
-        AndreYtelserOmsorgspenger,
-        AndreYtelserOpplaringspenger,
-        AndreYtelserPleiepenger,
-        AndreYtelserSvangerskapspenger,
-        SykepengedagerOppbrukt,
-        SykepengedagerOppbruktOver67,
-        MinimumInntekt,
-        EgenmeldingUtenforArbeidsgiverperiode,
-        MinimumSykdomsgrad,
-        ManglerOpptjening,
-        ManglerMedlemskap,
-        EtterDødsdato,
-        Over70,
-        MinimumInntektOver67,
-        NyVilkårsprøvingNødvendig,
-        UKJENT
-    }
-
-        data class OppdragDto(
-            val mottaker: String,
-            val fagområde: String,
-            val fagsystemId: String,
-            val nettoBeløp: Int,
-            val stønadsdager: Int,
-            val fom: LocalDate,
-            val tom: LocalDate,
-            val utbetalingslinjer: List<UtbetalingslinjeDto>
-        ) {
-            companion object {
-                fun parseOppdrag(oppdrag: JsonNode) =
-                    OppdragDto(
-                        mottaker = oppdrag["mottaker"].asText(),
-                        fagområde = oppdrag["fagområde"].asText(),
-                        fagsystemId = oppdrag["fagsystemId"].asText(),
-                        nettoBeløp = oppdrag["nettoBeløp"].asInt(),
-                        stønadsdager = oppdrag["stønadsdager"].asInt(),
-                        fom = oppdrag["fom"].asLocalDate(),
-                        tom = oppdrag["tom"].asLocalDate(),
-                        utbetalingslinjer = oppdrag["linjer"].map { linje -> parseLinje(linje) }
-                    ).takeUnless { NULLE_UT_TOMME_OPPDRAG && it.utbetalingslinjer.isEmpty() }
-            }
-
-            data class UtbetalingslinjeDto(
-                val fom: LocalDate,
-                val tom: LocalDate,
-                val dagsats: Int,
-                val totalbeløp: Int,
-                val grad: Double,
-                val stønadsdager: Int
-            ) {
-                companion object {
-                    fun parseLinje(linje: JsonNode) =
-                        UtbetalingslinjeDto(
-                            fom = linje["fom"].asLocalDate(),
-                            tom = linje["tom"].asLocalDate(),
-                            dagsats = linje["sats"].asInt(),
-                            totalbeløp = linje["totalbeløp"].asInt(),
-                            grad = linje["grad"].asDouble(),
-                            stønadsdager = linje["stønadsdager"].asInt()
-                        )
-                }
-            }
-        }
-        data class UtbetalingdagDto(
-            val dato: LocalDate,
-            val type: String,
-            val begrunnelser: List<Begrunnelse>
-        )
-}
-
-internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<UtbetalingUtbetalt.Begrunnelse> = begrunnelser.map {
+internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<BegrunnelseDto> = begrunnelser.map {
     when (it.asText()) {
-        "SykepengedagerOppbrukt" -> UtbetalingUtbetalt.Begrunnelse.SykepengedagerOppbrukt
-        "SykepengedagerOppbruktOver67" -> UtbetalingUtbetalt.Begrunnelse.SykepengedagerOppbruktOver67
-        "MinimumInntekt" -> UtbetalingUtbetalt.Begrunnelse.MinimumInntekt
-        "MinimumInntektOver67" -> UtbetalingUtbetalt.Begrunnelse.MinimumInntektOver67
-        "EgenmeldingUtenforArbeidsgiverperiode" -> UtbetalingUtbetalt.Begrunnelse.EgenmeldingUtenforArbeidsgiverperiode
-        "AndreYtelserAap" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserAap
-        "AndreYtelserDagpenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserDagpenger
-        "AndreYtelserForeldrepenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserForeldrepenger
-        "AndreYtelserOmsorgspenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserOmsorgspenger
-        "AndreYtelserOpplaringspenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserOpplaringspenger
-        "AndreYtelserPleiepenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserPleiepenger
-        "AndreYtelserSvangerskapspenger" -> UtbetalingUtbetalt.Begrunnelse.AndreYtelserSvangerskapspenger
-        "MinimumSykdomsgrad" -> UtbetalingUtbetalt.Begrunnelse.MinimumSykdomsgrad
-        "ManglerOpptjening" -> UtbetalingUtbetalt.Begrunnelse.ManglerOpptjening
-        "ManglerMedlemskap" -> UtbetalingUtbetalt.Begrunnelse.ManglerMedlemskap
-        "EtterDødsdato" -> UtbetalingUtbetalt.Begrunnelse.EtterDødsdato
-        "Over70" -> UtbetalingUtbetalt.Begrunnelse.Over70
-        "NyVilkårsprøvingNødvendig" -> UtbetalingUtbetalt.Begrunnelse.NyVilkårsprøvingNødvendig
-        else -> {
-            log.error("Ukjent begrunnelse $it")
-            UtbetalingUtbetalt.Begrunnelse.UKJENT
-        }
+        "SykepengedagerOppbrukt" -> BegrunnelseDto.SykepengedagerOppbrukt
+        "SykepengedagerOppbruktOver67" -> BegrunnelseDto.SykepengedagerOppbruktOver67
+        "MinimumInntekt" -> BegrunnelseDto.MinimumInntekt
+        "MinimumInntektOver67" -> BegrunnelseDto.MinimumInntektOver67
+        "EgenmeldingUtenforArbeidsgiverperiode" -> BegrunnelseDto.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserAap" -> BegrunnelseDto.AndreYtelserAap
+        "AndreYtelserDagpenger" -> BegrunnelseDto.AndreYtelserDagpenger
+        "AndreYtelserForeldrepenger" -> BegrunnelseDto.AndreYtelserForeldrepenger
+        "AndreYtelserOmsorgspenger" -> BegrunnelseDto.AndreYtelserOmsorgspenger
+        "AndreYtelserOpplaringspenger" -> BegrunnelseDto.AndreYtelserOpplaringspenger
+        "AndreYtelserPleiepenger" -> BegrunnelseDto.AndreYtelserPleiepenger
+        "AndreYtelserSvangerskapspenger" -> BegrunnelseDto.AndreYtelserSvangerskapspenger
+        "MinimumSykdomsgrad" -> BegrunnelseDto.MinimumSykdomsgrad
+        "ManglerOpptjening" -> BegrunnelseDto.ManglerOpptjening
+        "ManglerMedlemskap" -> BegrunnelseDto.ManglerMedlemskap
+        "EtterDødsdato" -> BegrunnelseDto.EtterDødsdato
+        "Over70" -> BegrunnelseDto.Over70
+        "NyVilkårsprøvingNødvendig" -> BegrunnelseDto.NyVilkårsprøvingNødvendig
+        else -> error("Ukjent begrunnelse $it")
     }
 }
 

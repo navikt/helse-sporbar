@@ -40,6 +40,14 @@ spec:
         databases:
           - name: sporbar
             envVarPrefix: DATABASE
+  accessPolicy:
+    outbound:
+      rules:
+        - application: speed-api
+  azure:
+    application:
+      enabled: true
+      tenant: trygdeetaten.no
   env:
   - name: KAFKA_RAPID_TOPIC
     value: tbd.rapid.v1

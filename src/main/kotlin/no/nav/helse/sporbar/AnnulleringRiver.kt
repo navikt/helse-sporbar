@@ -6,16 +6,19 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
+import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
+import com.github.navikt.tbd_libs.result_object.getOrThrow
+import com.github.navikt.tbd_libs.retry.retryBlocking
+import com.github.navikt.tbd_libs.speed.SpeedClient
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.UUID
+import no.nav.helse.sporbar.dto.AnnulleringDto
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
@@ -23,6 +26,7 @@ private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
 class AnnulleringRiver(
     rapidsConnection: RapidsConnection,
     private val aivenProducer: KafkaProducer<String, String>,
+    private val speedClient: SpeedClient
 ):
     River.PacketListener {
     init {
@@ -30,6 +34,7 @@ class AnnulleringRiver(
             validate {
                 it.demandValue("@event_name", "utbetaling_annullert")
                 it.requireKey(
+                    "@id",
                     "fødselsnummer",
                     "organisasjonsnummer",
                     "tidspunkt",
@@ -48,10 +53,19 @@ class AnnulleringRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        val fødselsnummer = packet["fødselsnummer"].asText()
+        val callId = packet["@id"].asText()
+        withMDC("callId" to callId) {
+            håndterAnnullering(packet, callId)
+        }
+    }
+
+    private fun håndterAnnullering(packet: JsonMessage, callId: String) {
+        val ident = packet["fødselsnummer"].asText()
+        val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
+
         val annulleringDto = AnnulleringDto(
             organisasjonsnummer = packet["organisasjonsnummer"].asText(),
-            fødselsnummer = fødselsnummer,
+            fødselsnummer = identer.fødselsnummer,
             tidsstempel = packet["tidspunkt"].asLocalDateTime(),
             fom = packet["fom"].asLocalDate(),
             tom = packet["tom"].asLocalDate(),
@@ -60,32 +74,9 @@ class AnnulleringRiver(
             arbeidsgiverFagsystemId = packet["arbeidsgiverFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText(),
             personFagsystemId = packet["personFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText()
         )
-        val annulleringJson = objectMapper.valueToTree<JsonNode>(annulleringDto)
-        aivenProducer.send(
-            ProducerRecord(
-                "tbd.utbetaling",
-                null,
-                fødselsnummer,
-                annulleringJson.toString(),
-                listOf(Meldingstype.Annullering.header())
-            )
-        )
+        val annulleringJson = objectMapper.writeValueAsString(annulleringDto)
+        aivenProducer.send(ProducerRecord("tbd.utbetaling", null, identer.fødselsnummer, annulleringJson, listOf(Meldingstype.Annullering.header())))
         log.info("Publiserte annullering")
         sikkerLog.info("Publiserte annullering $annulleringJson")
-    }
-
-    data class AnnulleringDto(
-        val utbetalingId: UUID,
-        val korrelasjonsId: UUID,
-        val organisasjonsnummer: String,
-        val tidsstempel: LocalDateTime,
-        val fødselsnummer: String,
-        val fom: LocalDate,
-        val tom: LocalDate,
-        val arbeidsgiverFagsystemId: String?,
-        val personFagsystemId: String?) {
-        val event = "utbetaling_annullert"
-        @Deprecated("trengs så lenge vi produserer til on-prem")
-        val orgnummer: String = organisasjonsnummer
     }
 }

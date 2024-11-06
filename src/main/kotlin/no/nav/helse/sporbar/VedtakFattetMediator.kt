@@ -1,9 +1,12 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.node.ObjectNode
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
+import no.nav.helse.sporbar.dto.BegrunnelseForEksternDto
+import no.nav.helse.sporbar.dto.DokumentForEkstern
+import no.nav.helse.sporbar.dto.FastsattEtterHovedregelForEksternDto
+import no.nav.helse.sporbar.dto.FastsattEtterSkjønnForEksternDto
+import no.nav.helse.sporbar.dto.FastsattIInfotrygdForEksternDto
+import no.nav.helse.sporbar.dto.PeriodeForEksternDto
+import no.nav.helse.sporbar.dto.VedtakFattetForEksternDto
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
@@ -17,18 +20,10 @@ internal class VedtakFattetMediator(
     private val producer: KafkaProducer<String, String>
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
-
         val dokumenter: List<Dokument> = dokumentDao.finn(vedtakFattet.hendelseIder)
-        val meldingForEkstern = objectMapper.valueToTree<ObjectNode>(oversett(vedtakFattet, dokumenter))
-        producer.send(
-            ProducerRecord(
-                "tbd.vedtak",
-                null,
-                vedtakFattet.fødselsnummer,
-                meldingForEkstern.toString(),
-                listOf(Meldingstype.VedtakFattet.header())
-            )
-        )
+        val eksternDto = oversett(vedtakFattet, dokumenter)
+        val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
+        producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(Meldingstype.VedtakFattet.header())))
         sikkerLogg.info("Publiserer vedtakFattet {}", meldingForEkstern)
         log.info("Publiserte vedtakFattet for {}", dokumenter.map { it.dokumentId })
     }
@@ -46,7 +41,13 @@ internal class VedtakFattetMediator(
             grunnlagForSykepengegrunnlag = vedtakFattet.grunnlagForSykepengegrunnlag,
             grunnlagForSykepengegrunnlagPerArbeidsgiver = vedtakFattet.grunnlagForSykepengegrunnlagPerArbeidsgiver,
             begrensning = vedtakFattet.begrensning,
-            dokumenter = dokumenter,
+            dokumenter = dokumenter.map {
+                DokumentForEkstern(it.dokumentId, when (it.type) {
+                    Dokument.Type.Sykmelding -> DokumentForEkstern.Type.Sykmelding
+                    Dokument.Type.Søknad -> DokumentForEkstern.Type.Søknad
+                    Dokument.Type.Inntektsmelding -> DokumentForEkstern.Type.Inntektsmelding
+                })
+            },
             utbetalingId = vedtakFattet.utbetalingId,
             vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt,
             sykepengegrunnlagsfakta = vedtakFattet.sykepengegrunnlagsfakta?.let { oversett(it) },
@@ -59,8 +60,7 @@ internal class VedtakFattetMediator(
                     }
                 )
             },
-            tags = vedtakFattet.tags,
-            versjon = "1.2.0"
+            tags = vedtakFattet.tags
         )
     }
 
@@ -90,70 +90,5 @@ internal class VedtakFattetMediator(
         )
     }
 }
-
-data class BegrunnelseForEksternDto(
-    val type: String,
-    val begrunnelse: String,
-    val perioder: List<PeriodeForEksternDto>
-)
-
-data class PeriodeForEksternDto(
-    val fom: LocalDate,
-    val tom: LocalDate
-)
-
-data class VedtakFattetForEksternDto(
-    val fødselsnummer: String,
-    val aktørId: String,
-    val organisasjonsnummer: String,
-    val fom: LocalDate,
-    val tom: LocalDate,
-    val skjæringstidspunkt: LocalDate,
-    val dokumenter: List<Dokument>,
-    val inntekt: Double,
-    val sykepengegrunnlag: Double,
-    val grunnlagForSykepengegrunnlag: Double,
-    val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
-    val begrensning: String,
-    val utbetalingId: UUID?,
-    val vedtakFattetTidspunkt: LocalDateTime,
-    val sykepengegrunnlagsfakta: SykepengegrunnlagsfaktaForEksternDto?,
-    val begrunnelser: List<BegrunnelseForEksternDto>,
-    val versjon: String,
-    val tags: Set<String>
-)
-
-sealed class SykepengegrunnlagsfaktaForEksternDto
-
-data class FastsattEtterHovedregelForEksternDto(
-    val fastsatt: String,
-    val omregnetÅrsinntekt: Double,
-    val innrapportertÅrsinntekt: Double,
-    val avviksprosent: Double,
-    val `6G`: Double,
-    val tags: Set<String>,
-    val arbeidsgivere: List<Arbeidsgiver>
-): SykepengegrunnlagsfaktaForEksternDto() {
-    data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double)
-}
-
-data class FastsattEtterSkjønnForEksternDto(
-    val fastsatt: String,
-    val omregnetÅrsinntekt: Double,
-    val innrapportertÅrsinntekt: Double,
-    val skjønnsfastsatt: Double,
-    val avviksprosent: Double,
-    val `6G`: Double,
-    val tags: Set<String>,
-    val arbeidsgivere: List<Arbeidsgiver>
-): SykepengegrunnlagsfaktaForEksternDto() {
-    data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double, val skjønnsfastsatt: Double)
-}
-
-data class FastsattIInfotrygdForEksternDto(
-    val fastsatt: String,
-    val omregnetÅrsinntekt: Double,
-) : SykepengegrunnlagsfaktaForEksternDto()
-
 
 

@@ -6,20 +6,27 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
+import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
-import no.nav.helse.sporbar.UtbetalingUtbetalt.OppdragDto.Companion.parseOppdrag
+import com.github.navikt.tbd_libs.result_object.getOrThrow
+import com.github.navikt.tbd_libs.retry.retryBlocking
+import com.github.navikt.tbd_libs.speed.SpeedClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import no.nav.helse.sporbar.dto.OppdragDto.Companion.parseOppdrag
+import no.nav.helse.sporbar.dto.UtbetalingUtenUtbetalingDto
+import no.nav.helse.sporbar.dto.UtbetalingdagDto
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 internal class UtbetalingUtenUtbetalingRiver(
     rapidsConnection: RapidsConnection,
-    private val utbetalingMediator: UtbetalingMediator
+    private val utbetalingMediator: UtbetalingMediator,
+    private val speedClient: SpeedClient
 ) : River.PacketListener {
 
     init {
@@ -27,7 +34,6 @@ internal class UtbetalingUtenUtbetalingRiver(
             validate {
                 it.demandValue("@event_name", "utbetaling_uten_utbetaling")
                 it.requireKey(
-                    "aktørId",
                     "fødselsnummer",
                     "@id",
                     "organisasjonsnummer",
@@ -75,8 +81,16 @@ internal class UtbetalingUtenUtbetalingRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        val fødselsnummer = packet["fødselsnummer"].asText()
-        val aktørId = packet["aktørId"].asText()
+        val callId = packet["@id"].asText()
+        withMDC("callId" to callId) {
+            håndterUtbetalingUtenUtbetaling(packet, callId)
+        }
+    }
+
+    private fun håndterUtbetalingUtenUtbetaling(packet: JsonMessage, callId: String) {
+        val ident = packet["fødselsnummer"].asText()
+        val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
+
         val organisasjonsnummer = packet["organisasjonsnummer"].asText()
         val fom = packet["fom"].asLocalDate()
         val tom = packet["tom"].asLocalDate()
@@ -88,8 +102,8 @@ internal class UtbetalingUtenUtbetalingRiver(
         val stønadsdager = packet["stønadsdager"].asInt()
         val type = packet["type"].asText()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
-        val utbetalingsdager = packet["utbetalingsdager"].toList().map{ dag ->
-            UtbetalingUtbetalt.UtbetalingdagDto(
+        val utbetalingsdager = packet["utbetalingsdager"].toList().map { dag ->
+            UtbetalingdagDto(
                 dato = dag["dato"].asLocalDate(),
                 type = dag["type"].dagtype,
                 begrunnelser = dag.path("begrunnelser").takeUnless(JsonNode::isMissingOrNull)
@@ -101,12 +115,11 @@ internal class UtbetalingUtenUtbetalingRiver(
         val personOppdrag = parseOppdrag(packet["personOppdrag"])
 
         utbetalingMediator.utbetalingUtenUtbetaling(
-            UtbetalingUtbetalt(
-                event = "utbetaling_uten_utbetaling",
+            UtbetalingUtenUtbetalingDto(
                 utbetalingId = utbetalingId,
                 korrelasjonsId = korrelasjonsId,
-                fødselsnummer = fødselsnummer,
-                aktørId = aktørId,
+                fødselsnummer = identer.fødselsnummer,
+                aktørId = identer.aktørId,
                 organisasjonsnummer = organisasjonsnummer,
                 fom = fom,
                 tom = tom,

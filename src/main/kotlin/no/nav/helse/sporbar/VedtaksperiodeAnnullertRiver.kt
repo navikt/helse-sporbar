@@ -4,11 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
+import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
-import java.time.LocalDate
+import com.github.navikt.tbd_libs.result_object.getOrThrow
+import com.github.navikt.tbd_libs.retry.retryBlocking
+import com.github.navikt.tbd_libs.speed.SpeedClient
 import java.util.UUID
+import no.nav.helse.sporbar.dto.VedtakAnnullertDto
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
@@ -19,7 +23,8 @@ private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 internal class VedtaksperiodeAnnullertRiver(
     rapidsConnection: RapidsConnection,
-    private val aivenProducer: KafkaProducer<String, String>
+    private val aivenProducer: KafkaProducer<String, String>,
+    private val speedClient: SpeedClient
 ) : River.PacketListener {
 
     init {
@@ -27,7 +32,6 @@ internal class VedtaksperiodeAnnullertRiver(
             validate {
                 it.demandValue("@event_name", "vedtaksperiode_annullert")
                 it.requireKey(
-                    "aktørId",
                     "fødselsnummer",
                     "@id",
                     "organisasjonsnummer",
@@ -45,38 +49,27 @@ internal class VedtaksperiodeAnnullertRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        val fødselsnummer = packet["fødselsnummer"].asText()
+        val callId = packet["@id"].asText()
+        withMDC("callId" to callId) {
+            håndterAnnullering(packet, callId)
+        }
+    }
+    private fun håndterAnnullering(packet: JsonMessage, callId: String) {
+        val ident = packet["fødselsnummer"].asText()
+        val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
+
         val vedtakAnnullertDto = VedtakAnnullertDto(
-            fødselsnummer = fødselsnummer,
-            aktørId = packet["aktørId"].asText(),
+            fødselsnummer = identer.fødselsnummer,
+            aktørId = identer.aktørId,
             organisasjonsnummer = packet["organisasjonsnummer"].asText(),
             vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText()),
             fom = packet["fom"].asLocalDate(),
             tom = packet["tom"].asLocalDate()
         )
-        val vedtakAnnullertJson = objectMapper.valueToTree<JsonNode>(vedtakAnnullertDto)
-        aivenProducer.send(
-            ProducerRecord(
-                "tbd.vedtak",
-                null,
-                fødselsnummer,
-                vedtakAnnullertJson.toString(),
-                listOf(Meldingstype.VedtakAnnullert.header())
-            )
-        )
+        val vedtakAnnullertJson = objectMapper.writeValueAsString(vedtakAnnullertDto)
+        aivenProducer.send(ProducerRecord("tbd.vedtak", null, identer.fødselsnummer, vedtakAnnullertJson, listOf(Meldingstype.VedtakAnnullert.header())))
 
-        log.info("Sender vedtakAnnullert: ${packet["@id"].asText()}")
+        log.info("Sender vedtakAnnullert: $callId")
         sikkerLog.info("Sender vedtakAnnullert: $vedtakAnnullertJson")
     }
-
-    data class VedtakAnnullertDto(
-        val fødselsnummer: String,
-        val aktørId: String,
-        val organisasjonsnummer: String,
-        val vedtaksperiodeId: UUID,
-        val fom: LocalDate,
-        val tom: LocalDate,
-        val event: String = "vedtak_annullert",
-        val versjon: String = "1.0.0"
-    )
 }

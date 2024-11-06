@@ -7,9 +7,13 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
+import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
+import com.github.navikt.tbd_libs.result_object.getOrThrow
+import com.github.navikt.tbd_libs.retry.retryBlocking
+import com.github.navikt.tbd_libs.speed.SpeedClient
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -22,7 +26,8 @@ private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 
 internal class VedtakFattetRiver(
     rapidsConnection: RapidsConnection,
-    private val vedtakFattetMediator: VedtakFattetMediator
+    private val vedtakFattetMediator: VedtakFattetMediator,
+    private val speedClient: SpeedClient
 ) : River.PacketListener {
 
     init {
@@ -30,7 +35,6 @@ internal class VedtakFattetRiver(
             validate {
                 it.demandValue("@event_name", "vedtak_fattet")
                 it.requireKey(
-                    "aktørId",
                     "fødselsnummer",
                     "@id",
                     "vedtaksperiodeId",
@@ -61,8 +65,16 @@ internal class VedtakFattetRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        val fødselsnummer = packet["fødselsnummer"].asText()
-        val aktørId = packet["aktørId"].asText()
+        val callId = packet["@id"].asText()
+        withMDC("callId" to callId) {
+            håndterVedtakFattet(packet, callId)
+        }
+    }
+
+    private fun håndterVedtakFattet(packet: JsonMessage, callId: String) {
+        val ident = packet["fødselsnummer"].asText()
+        val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
+
         val organisasjonsnummer = packet["organisasjonsnummer"].asText()
         val fom = packet["fom"].asLocalDate()
         val tom = packet["tom"].asLocalDate()
@@ -94,8 +106,8 @@ internal class VedtakFattetRiver(
 
         vedtakFattetMediator.vedtakFattet(
             VedtakFattet(
-                fødselsnummer = fødselsnummer,
-                aktørId = aktørId,
+                fødselsnummer = identer.fødselsnummer,
+                aktørId = identer.aktørId,
                 organisasjonsnummer = organisasjonsnummer,
                 fom = fom,
                 tom = tom,
