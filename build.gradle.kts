@@ -1,11 +1,12 @@
 val mainClass = "no.nav.helse.sporbar.AppKt"
 val jvmTarget = 21
 
-val rapidsAndRiversVersion = "2024020507581707116327.1c34df474331"
-val ktorVersion = "2.3.12"
+val rapidsAndRiversVersion = "2024110520091730833744.40f3b6aa7090"
+val tbdLibsVersion = "2024.11.06-12.37-f870e704"
+val ktorVersion = "3.0.1"
 val junitJupiterVersion = "5.10.2"
-val testcontainersVersion = "1.19.5"
-val mockkVersion = "1.13.9"
+val testcontainersVersion = "1.20.3"
+val mockkVersion = "1.13.13"
 val postgresqlVersion = "42.7.2"
 val kotliqueryVersion = "1.9.0"
 val hikariCPVersion = "5.0.1"
@@ -14,7 +15,7 @@ val jsonSchemaValidatorVersion = "1.0.73"
 val jsonassertVersion = "1.5.1"
 
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "2.0.21"
 }
 
 dependencies {
@@ -34,6 +35,7 @@ dependencies {
     implementation("org.flywaydb:flyway-core:$flywaycoreVersion")
     implementation("com.github.seratch:kotliquery:$kotliqueryVersion")
 
+    testImplementation("com.github.navikt.tbd-libs:rapids-and-rivers-test:$tbdLibsVersion")
     testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
@@ -70,7 +72,7 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "8.5"
+        gradleVersion = "8.10.2"
     }
 
     withType<Test> {
