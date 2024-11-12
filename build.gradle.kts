@@ -1,5 +1,4 @@
 val mainClass = "no.nav.helse.sporbar.AppKt"
-val jvmTarget = 21
 
 val rapidsAndRiversVersion = "2024110520091730833744.40f3b6aa7090"
 val tbdLibsVersion = "2024.11.06-12.37-f870e704"
@@ -66,14 +65,13 @@ repositories {
     maven("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
 }
 
-tasks {
-
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(jvmTarget)
-        }
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of("21"))
     }
+}
 
+tasks {
     withType<Test> {
         useJUnitPlatform()
         testLogging {
