@@ -4,8 +4,10 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
+import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
+import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -31,12 +33,12 @@ internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val
             }
         }.register(this)
     }
-    override fun onError(problems: MessageProblems, context: MessageContext) {
+    override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
         logg.error("Forstod ikke nytt dokument (se sikkerLogg for detaljer)")
         sikkerLogg.error("Forstod ikke nytt dokument: ${problems.toExtendedReport()}")
     }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext) {
+    override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
         try {
             val hendelseId = UUID.fromString(packet["@id"].textValue())
             val opprettet = packet["@opprettet"].asLocalDateTime()

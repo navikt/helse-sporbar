@@ -9,11 +9,13 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
 import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
+import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
 import com.github.navikt.tbd_libs.result_object.getOrThrow
 import com.github.navikt.tbd_libs.retry.retryBlocking
 import com.github.navikt.tbd_libs.speed.SpeedClient
+import io.micrometer.core.instrument.MeterRegistry
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -59,12 +61,12 @@ internal class VedtakFattetRiver(
         }.register(this)
     }
 
-    override fun onError(problems: MessageProblems, context: MessageContext) {
+    override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
         log.error("forstod ikke vedtak_fattet. (se sikkerlogg for melding)")
         sikkerLog.error("forstod ikke vedtak_fattet:\n${problems.toExtendedReport()}")
     }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext) {
+    override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
         val callId = packet["@id"].asText()
         withMDC("callId" to callId) {
             håndterVedtakFattet(packet, callId)

@@ -6,8 +6,10 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.toUUID
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
+import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
+import io.micrometer.core.instrument.MeterRegistry
 import no.nav.helse.sporbar.DokumentDao
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
@@ -27,12 +29,12 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dok
         }.register(this)
     }
 
-    override fun onError(problems: MessageProblems, context: MessageContext) {
+    override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
         logg.info("Håndterer ikke behandling_opprettet pga. problem: se sikker logg")
         sikkerlogg.info("Håndterer ikke behandling_opprettet pga. problem: {}", problems.toExtendedReport())
     }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext) {
+    override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
         val interneSøknadIder = packet["søknadIder"].map { it.asText().toUUID() }

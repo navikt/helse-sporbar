@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
@@ -8,17 +7,19 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
 import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
+import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
 import com.github.navikt.tbd_libs.result_object.getOrThrow
 import com.github.navikt.tbd_libs.retry.retryBlocking
 import com.github.navikt.tbd_libs.speed.SpeedClient
+import io.micrometer.core.instrument.MeterRegistry
+import no.nav.helse.sporbar.dto.AnnulleringDto
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
-import no.nav.helse.sporbar.dto.AnnulleringDto
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog: Logger = LoggerFactory.getLogger("tjenestekall")
@@ -48,11 +49,11 @@ class AnnulleringRiver(
         }.register(this)
     }
 
-    override fun onError(problems: MessageProblems, context: MessageContext) {
+    override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
         sikkerLog.error("forstod ikke utbetaling_annullert: ${problems.toExtendedReport()}")
     }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext) {
+    override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
         val callId = packet["@id"].asText()
         withMDC("callId" to callId) {
             håndterAnnullering(packet, callId)

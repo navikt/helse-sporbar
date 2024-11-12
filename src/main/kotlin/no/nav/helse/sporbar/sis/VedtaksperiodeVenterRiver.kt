@@ -6,8 +6,10 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.toUUID
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
+import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
+import io.micrometer.core.instrument.MeterRegistry
 import java.time.OffsetDateTime
 import java.util.UUID
 import no.nav.helse.sporbar.DokumentDao
@@ -34,12 +36,12 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val do
         }.register(this)
     }
 
-    override fun onError(problems: MessageProblems, context: MessageContext) {
+    override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
         logg.info("Håndterer ikke vedtaksperiode_venter pga. problem: se sikker logg")
         sikkerlogg.info("Håndterer ikke vedtaksperiode_venter pga. problem: {}", problems.toExtendedReport())
     }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext) {
+    override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val interneHendelseIder = packet["hendelser"].map { it.asText().toUUID() }
         val eksterneSøknadIder = dokumentDao.eksterneSøknadIder(interneHendelseIder) ?: return sikkerlogg.error("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Er ikke dét rart?")
