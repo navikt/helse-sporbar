@@ -27,9 +27,11 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val do
 
     init {
         River(rapid).apply {
+            precondition {
+                it.requireValue("@event_name", "vedtaksperiode_venter")
+                it.requireAny("venterPå.venteårsak.hva", listOf("SØKNAD", "INNTEKTSMELDING", "GODKJENNING"))
+            }
             validate {
-                it.demandValue("@event_name", "vedtaksperiode_venter")
-                it.demandAny("venterPå.venteårsak.hva", listOf("SØKNAD", "INNTEKTSMELDING", "GODKJENNING"))
                 it.requireKey("vedtaksperiodeId", "behandlingId", "organisasjonsnummer", "venterPå.vedtaksperiodeId", "venterPå.organisasjonsnummer", "hendelser")
                 it.require("@opprettet", JsonNode::asLocalDateTime)
             }

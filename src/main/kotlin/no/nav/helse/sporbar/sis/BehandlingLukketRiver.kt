@@ -19,8 +19,8 @@ internal class BehandlingLukketRiver(rapid: RapidsConnection, private val sisPub
 
     init {
         River(rapid).apply {
+            precondition { it.requireValue("@event_name", "behandling_lukket") }
             validate {
-                it.demandValue("@event_name", "behandling_lukket")
                 it.requireKey("vedtaksperiodeId", "behandlingId")
                 it.require("@opprettet", JsonNode::asLocalDateTime)
             }

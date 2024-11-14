@@ -32,8 +32,8 @@ class AnnulleringRiver(
     River.PacketListener {
     init {
         River(rapidsConnection).apply {
+            precondition { it.requireValue("@event_name", "utbetaling_annullert") }
             validate {
-                it.demandValue("@event_name", "utbetaling_annullert")
                 it.requireKey(
                     "@id",
                     "fødselsnummer",

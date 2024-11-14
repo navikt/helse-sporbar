@@ -31,8 +31,8 @@ internal class VedtaksperiodeAnnullertRiver(
 
     init {
         River(rapidsConnection).apply {
+            precondition { it.requireValue("@event_name", "vedtaksperiode_annullert") }
             validate {
-                it.demandValue("@event_name", "vedtaksperiode_annullert")
                 it.requireKey(
                     "fødselsnummer",
                     "@id",

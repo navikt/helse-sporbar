@@ -36,8 +36,8 @@ internal class UtbetalingUtbetaltRiver(
 
     init {
         River(rapidsConnection).apply {
+            precondition { it.requireValue("@event_name", "utbetaling_utbetalt") }
             validate {
-                it.demandValue("@event_name", "utbetaling_utbetalt")
                 it.requireKey(
                     "fødselsnummer",
                     "@id",

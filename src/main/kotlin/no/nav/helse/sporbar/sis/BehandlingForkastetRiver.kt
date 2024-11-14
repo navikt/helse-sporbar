@@ -19,8 +19,8 @@ internal class BehandlingForkastetRiver(rapid: RapidsConnection, private val sis
 
     init {
         River(rapid).apply {
+            precondition { it.requireValue("@event_name", "behandling_forkastet") }
             validate {
-                it.demandValue("@event_name", "behandling_forkastet")
                 it.requireKey("vedtaksperiodeId", "behandlingId")
                 it.require("@opprettet", JsonNode::asLocalDateTime)
             }

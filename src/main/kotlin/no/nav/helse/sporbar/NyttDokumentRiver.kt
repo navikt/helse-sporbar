@@ -23,8 +23,10 @@ internal class NyttDokumentRiver(rapidsConnection: RapidsConnection, private val
     }
     init {
         River(rapidsConnection).apply {
+            precondition {
+                it.requireAny("@event_name", listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver", "sendt_søknad_arbeidsledig"))
+            }
             validate {
-                it.demandAny("@event_name", listOf("inntektsmelding", "ny_søknad", "sendt_søknad_nav", "sendt_søknad_arbeidsgiver", "sendt_søknad_arbeidsledig"))
                 it.requireKey("@opprettet")
                 it.require("@id") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("inntektsmeldingId") { id -> UUID.fromString(id.asText()) }
