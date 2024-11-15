@@ -6,10 +6,10 @@ val ktorVersion = "3.0.1"
 val junitJupiterVersion = "5.11.3"
 val testcontainersVersion = "1.20.3"
 val mockkVersion = "1.13.13"
-val postgresqlVersion = "42.7.2"
+val postgresqlVersion = "42.7.4"
 val kotliqueryVersion = "1.9.0"
 val hikariCPVersion = "6.1.0"
-val flywaycoreVersion = "9.15.0"
+val flywayVersion = "10.21.0"
 val jsonSchemaValidatorVersion = "1.0.73"
 val jsonassertVersion = "1.5.1"
 
@@ -34,7 +34,7 @@ dependencies {
 
     implementation("com.zaxxer:HikariCP:$hikariCPVersion")
     implementation("org.postgresql:postgresql:$postgresqlVersion")
-    implementation("org.flywaydb:flyway-core:$flywaycoreVersion")
+    implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
     implementation("com.github.seratch:kotliquery:$kotliqueryVersion")
 
     testImplementation("com.github.navikt.tbd-libs:rapids-and-rivers-test:$tbdLibsVersion")
