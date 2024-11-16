@@ -1,10 +1,9 @@
 val mainClass = "no.nav.helse.sporbar.AppKt"
 
 val rapidsAndRiversVersion = "2024111509181731658731.11009b44c672"
-val tbdLibsVersion = "2024.11.15-09.09-08ca346b"
+val tbdLibsVersion = "2024.11.16-11.06-2a807bca"
 val ktorVersion = "3.0.1"
 val junitJupiterVersion = "5.11.3"
-val testcontainersVersion = "1.20.3"
 val mockkVersion = "1.13.13"
 val postgresqlVersion = "42.7.4"
 val kotliqueryVersion = "1.9.0"
@@ -38,14 +37,13 @@ dependencies {
     implementation("com.github.seratch:kotliquery:$kotliqueryVersion")
 
     testImplementation("com.github.navikt.tbd-libs:rapids-and-rivers-test:$tbdLibsVersion")
-    testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-    testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
+    testImplementation("com.github.navikt.tbd-libs:postgres-testdatabaser:$tbdLibsVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("com.networknt:json-schema-validator:$jsonSchemaValidatorVersion")
     testImplementation("org.skyscreamer:jsonassert:$jsonassertVersion")
 
+    testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 repositories {
@@ -77,6 +75,12 @@ tasks {
         testLogging {
             events("skipped", "failed")
         }
+
+        val parallellDisabled = System.getenv("CI" ) == "true"
+        systemProperty("junit.jupiter.execution.parallel.enabled", parallellDisabled.not().toString())
+        systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+        systemProperty("junit.jupiter.execution.parallel.config.strategy", "fixed")
+        systemProperty("junit.jupiter.execution.parallel.config.fixed.parallelism", "8")
     }
 
     withType<Jar> {

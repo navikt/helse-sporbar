@@ -4,28 +4,13 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import java.util.*
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class NyttDokumentRiverTest {
 
-    private val testRapid = TestRapid()
-    private val dokumentDao = DokumentDao { TestDatabase.dataSource }
-
-    init {
-        NyttDokumentRiver(testRapid, dokumentDao)
-    }
-
-    @BeforeEach
-    fun setup() {
-        testRapid.reset()
-    }
-
     @Test
-    fun `ny søknad hendelse`() {
+    fun `ny søknad hendelse`() = e2e {
         val nySøknadHendelseId = UUID.randomUUID()
         val sykmeldingId = UUID.randomUUID()
         val søknadId = UUID.randomUUID()
@@ -37,7 +22,7 @@ internal class NyttDokumentRiverTest {
     }
 
     @Test
-    fun `sendt søknad arbeidsledig`() {
+    fun `sendt søknad arbeidsledig`() = e2e {
         val nySøknadHendelseId = UUID.randomUUID()
         val sykmeldingId = UUID.randomUUID()
         val søknadId = UUID.randomUUID()
@@ -49,7 +34,7 @@ internal class NyttDokumentRiverTest {
     }
 
     @Test
-    fun `duplikate hendelser for ny søknad hendelse og en sendt søknad hendelse`() {
+    fun `duplikate hendelser for ny søknad hendelse og en sendt søknad hendelse`() = e2e {
         val nySøknadHendelseId = UUID.randomUUID()
         val sendtSøknadHendelseId = UUID.randomUUID()
         val sykmeldingId = UUID.randomUUID()
@@ -66,7 +51,7 @@ internal class NyttDokumentRiverTest {
     }
 
     @Test
-    fun `ny søknad hendelse med hendelseId som ikke er gyldig UUID-format`() {
+    fun `ny søknad hendelse med hendelseId som ikke er gyldig UUID-format`() = e2e {
         val nySøknadHendelseId = "1234-1234-1234-1234"
         val sykmeldingId = UUID.randomUUID().toString()
         val søknadId = UUID.randomUUID().toString()
@@ -76,7 +61,7 @@ internal class NyttDokumentRiverTest {
     }
 
     @Test
-    fun `ny søknad hendelse med sykmeldingId som ikke er gyldig UUID-format`() {
+    fun `ny søknad hendelse med sykmeldingId som ikke er gyldig UUID-format`() = e2e {
         val nySøknadHendelseId = UUID.randomUUID().toString()
         val sykmeldingId = "3456-3456-3456-3456"
         val søknadId = UUID.randomUUID().toString()
@@ -86,7 +71,7 @@ internal class NyttDokumentRiverTest {
     }
 
     @Test
-    fun `ny søknad hendelse med søknadId som ikke er gyldig UUID-format`() {
+    fun `ny søknad hendelse med søknadId som ikke er gyldig UUID-format`() = e2e {
         val nySøknadHendelseId = UUID.randomUUID().toString()
         val sykmeldingId = UUID.randomUUID().toString()
         val søknadId = "5678-5678-5678-5678"
@@ -95,15 +80,35 @@ internal class NyttDokumentRiverTest {
         }
     }
 
+    private data class E2ETestContext(
+        val testRapid: TestRapid,
+        val dokumentDao: DokumentDao
+    ) {
+        init {
+            NyttDokumentRiver(testRapid, dokumentDao)
+        }
+    }
+    private fun e2e(testblokk: E2ETestContext.() -> Unit) {
+        val testDataSource = databaseContainer.nyTilkobling()
+        try {
+            val testRapid = TestRapid()
+            val ds = testDataSource.ds
+            val dokumentDao = DokumentDao { ds }
+            testblokk(E2ETestContext(testRapid, dokumentDao))
+        } finally {
+            databaseContainer.droppTilkobling(testDataSource)
+        }
+    }
+
     @Language("JSON")
-    private fun nySøknadMessage(
+    private fun E2ETestContext.nySøknadMessage(
         nySøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
         søknadDokumentId: UUID
     ) = nySøknadMessage(nySøknadHendelseId.toString(), sykmeldingDokumentId.toString(), søknadDokumentId.toString())
 
     @Language("JSON")
-    private fun nySøknadMessage(
+    private fun E2ETestContext.nySøknadMessage(
         nySøknadHendelseId: String,
         sykmeldingDokumentId: String,
         søknadDokumentId: String
@@ -117,7 +122,7 @@ internal class NyttDokumentRiverTest {
         }"""
 
     @Language("JSON")
-    private fun sendtSøknadMessage(
+    private fun E2ETestContext.sendtSøknadMessage(
         nySøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
         søknadDokumentId: UUID
@@ -131,7 +136,7 @@ internal class NyttDokumentRiverTest {
         }"""
 
     @Language("JSON")
-    private fun sendtSøknadArbeidsledigMessage(
+    private fun E2ETestContext.sendtSøknadArbeidsledigMessage(
         nySøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
         søknadDokumentId: UUID

@@ -5,25 +5,20 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
 import com.github.navikt.tbd_libs.result_object.ok
 import com.github.navikt.tbd_libs.speed.IdentResponse
 import com.github.navikt.tbd_libs.speed.SpeedClient
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
 import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.*
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class UtbetalingTest {
 
     companion object {
@@ -48,45 +43,8 @@ internal class UtbetalingTest {
         val VEDTAK_FATTET_TIDSPUNKT = LocalDateTime.now()
     }
 
-    private val testRapid = TestRapid()
-    private val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
-    private val dokumentDao = DokumentDao { TestDatabase.dataSource }
-
-    private val vedtakFattetMediator = VedtakFattetMediator(
-        dokumentDao = dokumentDao,
-        producer = producerMock
-    )
-
-    private val utbetalingMediator = UtbetalingMediator(
-        producer = producerMock
-    )
-    private val speedClient = mockk<SpeedClient>()
-
-    init {
-        NyttDokumentRiver(testRapid, dokumentDao)
-        VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)
-        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
-        UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator, speedClient)
-    }
-
-    @BeforeEach
-    fun setup() {
-        every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
-            fødselsnummer = FØDSELSNUMMER,
-            aktørId = AKTØRID,
-            npid = null,
-            kilde = IdentResponse.KildeResponse.PDL
-        ).ok()
-    }
-
-    @AfterEach
-    fun after() {
-        testRapid.reset()
-        clearAllMocks()
-    }
-
     @Test
-    fun `vedtakFattet med tilhørende utbetalingUtbetalt`() {
+    fun `vedtakFattet med tilhørende utbetalingUtbetalt`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
@@ -128,7 +86,7 @@ internal class UtbetalingTest {
     }
 
     @Test
-    fun `utbetaling - mapper ut begrunnelser på avviste dager `() {
+    fun `utbetaling - mapper ut begrunnelser på avviste dager `() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltEnAvvistDag())
         verify { producerMock.send( capture(captureSlot) ) }
@@ -158,7 +116,7 @@ internal class UtbetalingTest {
     }
 
     @Test
-    fun `utbetaling_utbetalt - mapper AndreYtelserDag hele veien ut`() {
+    fun `utbetaling_utbetalt - mapper AndreYtelserDag hele veien ut`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMedAndreYtelserDag())
         verify { producerMock.send( capture(captureSlot) ) }
@@ -176,7 +134,7 @@ internal class UtbetalingTest {
     }
 
     @Test
-    fun `utbetaling_utbetalt - mapper ArbeidIkkeGjenopptattDag hele veien ut`() {
+    fun `utbetaling_utbetalt - mapper ArbeidIkkeGjenopptattDag hele veien ut`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtbetaltMedArbeidIkkeGjenopptattDag())
         verify { producerMock.send( capture(captureSlot) ) }
@@ -194,7 +152,7 @@ internal class UtbetalingTest {
     }
 
     @Test
-    fun `utbetaling_uten_utbetaling - mapper ArbeidIkkeGjenopptattDag hele veien ut`() {
+    fun `utbetaling_uten_utbetaling - mapper ArbeidIkkeGjenopptattDag hele veien ut`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         testRapid.sendTestMessage(utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag())
         verify { producerMock.send( capture(captureSlot) ) }
@@ -212,7 +170,7 @@ internal class UtbetalingTest {
     }
 
     @Test
-    fun `vedtakFattet med tilhørende utbetalingUtenUtbetaling`() {
+    fun `vedtakFattet med tilhørende utbetalingUtenUtbetaling`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
@@ -231,7 +189,48 @@ internal class UtbetalingTest {
         assertEquals("utbetaling_uten_utbetaling", utbetalingUtbetaltJson["event"].textValue())
     }
 
-    private fun sykmeldingSendt(
+    private data class E2ETestContext(
+        val testRapid: TestRapid,
+        val dokumentDao: DokumentDao
+    ) {
+        val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
+        val vedtakFattetMediator = VedtakFattetMediator(
+            dokumentDao = dokumentDao,
+            producer = producerMock
+        )
+
+        val utbetalingMediator = UtbetalingMediator(
+            producer = producerMock
+        )
+        val speedClient = mockk<SpeedClient>()
+
+        init {
+            NyttDokumentRiver(testRapid, dokumentDao)
+            VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)
+            UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
+            UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator, speedClient)
+
+            every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
+                fødselsnummer = FØDSELSNUMMER,
+                aktørId = AKTØRID,
+                npid = null,
+                kilde = IdentResponse.KildeResponse.PDL
+            ).ok()
+        }
+    }
+    private fun e2e(testblokk: E2ETestContext.() -> Unit) {
+        val testDataSource = databaseContainer.nyTilkobling()
+        try {
+            val testRapid = TestRapid()
+            val ds = testDataSource.ds
+            val dokumentDao = DokumentDao { ds }
+            testblokk(E2ETestContext(testRapid, dokumentDao))
+        } finally {
+            databaseContainer.droppTilkobling(testDataSource)
+        }
+    }
+
+    private fun E2ETestContext.sykmeldingSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId)
     ) {
@@ -252,7 +251,7 @@ internal class UtbetalingTest {
         )
     }
 
-    private fun søknadSendt(
+    private fun E2ETestContext.søknadSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.sendtSøknadHendelseId)
     ) {
@@ -273,7 +272,7 @@ internal class UtbetalingTest {
         )
     }
 
-    private fun inntektsmeldingSendt(
+    private fun E2ETestContext.inntektsmeldingSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.inntektsmeldingHendelseId)
     ) {
@@ -293,7 +292,7 @@ internal class UtbetalingTest {
         )
     }
 
-    private fun vedtakFattetMedUtbetalingSendt(
+    private fun E2ETestContext.vedtakFattetMedUtbetalingSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
@@ -311,12 +310,12 @@ internal class UtbetalingTest {
         testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett))
     }
 
-    private fun utbetalingUtbetaltSendt(idSett: IdSett, event: String = "utbetaling_utbetalt") {
+    private fun E2ETestContext.utbetalingUtbetaltSendt(idSett: IdSett, event: String = "utbetaling_utbetalt") {
         testRapid.sendTestMessage(utbetalingUtbetalt(idSett, event))
     }
 
     @Language("json")
-    private fun vedtakFattetMedUtbetaling(
+    private fun E2ETestContext.vedtakFattetMedUtbetaling(
         idSett: IdSett,
         hendelser: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
@@ -362,7 +361,7 @@ internal class UtbetalingTest {
 
 
     @Language("json")
-    private fun utbetalingUtbetalt(idSett: IdSett, event: String, utbetalingId: UUID = idSett.utbetalingId) = """{
+    private fun E2ETestContext.utbetalingUtbetalt(idSett: IdSett, event: String, utbetalingId: UUID = idSett.utbetalingId) = """{
   "utbetalingId": "$utbetalingId",
   "korrelasjonsId": "${idSett.korrelasjonsId}",
   "fom": "$FOM",
@@ -462,7 +461,7 @@ internal class UtbetalingTest {
     """
 
     @Language("json")
-    private fun utbetalingUtbetaltEnAvvistDag(
+    private fun E2ETestContext.utbetalingUtbetaltEnAvvistDag(
         id: UUID = UUID.randomUUID(),
         utbetalingId: UUID = UUID.randomUUID()
     ) = """{
@@ -583,7 +582,7 @@ internal class UtbetalingTest {
 
 
     @Language("json")
-    private fun utbetalingUtbetaltMedArbeidIkkeGjenopptattDag() = """{
+    private fun E2ETestContext.utbetalingUtbetaltMedArbeidIkkeGjenopptattDag() = """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
   "utbetalingId": "${UUID.randomUUID()}",
@@ -656,7 +655,7 @@ internal class UtbetalingTest {
 }
     """
     @Language("json")
-    private fun utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag() = """{
+    private fun E2ETestContext.utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag() = """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
   "utbetalingId": "${UUID.randomUUID()}",
@@ -721,7 +720,7 @@ internal class UtbetalingTest {
     """
 
     @Language("json")
-    private fun utbetalingUtbetaltMedAndreYtelserDag() = """{
+    private fun E2ETestContext.utbetalingUtbetaltMedAndreYtelserDag() = """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
   "utbetalingId": "${UUID.randomUUID()}",
@@ -787,7 +786,7 @@ internal class UtbetalingTest {
     """
 
     @Language("JSON")
-    private fun nySøknadMessage(
+    private fun E2ETestContext.nySøknadMessage(
         nySøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
         søknadDokumentId: UUID
@@ -801,7 +800,7 @@ internal class UtbetalingTest {
         }"""
 
     @Language("JSON")
-    private fun sendtSøknadMessage(
+    private fun E2ETestContext.sendtSøknadMessage(
         sendtSøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
         søknadDokumentId: UUID
@@ -815,7 +814,7 @@ internal class UtbetalingTest {
         }"""
 
     @Language("JSON")
-    private fun inntektsmeldingMessage(
+    private fun E2ETestContext.inntektsmeldingMessage(
         inntektsmeldingHendelseId: UUID,
         inntektsmeldingDokumentId: UUID
     ) =
@@ -827,7 +826,7 @@ internal class UtbetalingTest {
         }"""
 
     @Language("JSON")
-    private fun vedtaksperiodeEndret(
+    private fun E2ETestContext.vedtaksperiodeEndret(
         forrige: String,
         gjeldendeTilstand: String,
         vedtaksperiodeId: UUID,

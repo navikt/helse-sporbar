@@ -1,35 +1,11 @@
 package no.nav.helse.sporbar
 
+import com.github.navikt.tbd_libs.test_support.CleanupStrategy
+import com.github.navikt.tbd_libs.test_support.DatabaseContainers
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
 import org.testcontainers.containers.PostgreSQLContainer
 
-object TestDatabase {
-    private val postgres = PostgreSQLContainer<Nothing>("postgres:13").also { it.start() }
-
-    val dataSource by lazy {
-        HikariDataSource(HikariConfig().apply {
-            jdbcUrl = postgres.jdbcUrl
-            username = postgres.username
-            password = postgres.password
-            maximumPoolSize = 3
-            minimumIdle = 1
-            idleTimeout = 10001
-            connectionTimeout = 1000
-            maxLifetime = 30001
-            initializationFailTimeout = 5000
-        })
-    }
-
-    init {
-        Flyway.configure()
-            .dataSource(dataSource)
-            .load()
-            .migrate()
-
-        Runtime.getRuntime().addShutdownHook(Thread {
-            dataSource.close()
-        })
-    }
-}
+private val cleanupStrategy = CleanupStrategy.tables("dokument, flyway_schema_history, hendelse, hendelse_dokument, oppdrag, utbetaling, vedtak, vedtak_hendelse, vedtak_tilstand, vedtaksperiode, vedtaksperiode_hendelse")
+val databaseContainer = DatabaseContainers.container("sporbar", cleanupStrategy)

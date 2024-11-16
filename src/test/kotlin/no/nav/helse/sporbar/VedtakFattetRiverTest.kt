@@ -10,6 +10,7 @@ import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.nav.helse.sporbar.BehandlingstatusTest.TestSisPublisher
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
@@ -22,9 +23,12 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
+import no.nav.helse.sporbar.sis.BehandlingForkastetRiver
+import no.nav.helse.sporbar.sis.BehandlingLukketRiver
+import no.nav.helse.sporbar.sis.BehandlingOpprettetRiver
+import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver
 import org.junit.jupiter.api.AfterEach
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class VedtakFattetRiverTest {
 
     companion object {
@@ -43,43 +47,8 @@ internal class VedtakFattetRiverTest {
         val VEDTAK_FATTET_TIDSPUNKT = LocalDateTime.now()
     }
 
-    private val testRapid = TestRapid()
-    private val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
-    private val dokumentDao = DokumentDao { TestDatabase.dataSource }
-
-    private val vedtakFattetMediator = VedtakFattetMediator(
-        dokumentDao = dokumentDao,
-        producer = producerMock
-    )
-    private val utbetalingMediator = UtbetalingMediator(
-        producer = producerMock
-    )
-    private val speedClient = mockk<SpeedClient>()
-
-    init {
-        NyttDokumentRiver(testRapid, dokumentDao)
-        VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)
-        UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
-    }
-
-    @BeforeEach
-    fun setup() {
-        every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
-            fødselsnummer = FØDSELSNUMMER,
-            aktørId = AKTØRID,
-            npid = null,
-            kilde = IdentResponse.KildeResponse.PDL
-        ).ok()
-    }
-
-    @AfterEach
-    fun after() {
-        testRapid.reset()
-        clearAllMocks()
-    }
-
     @Test
-    fun `vedtakFattet uten utbetaling`() {
+    fun `vedtakFattet uten utbetaling`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
@@ -113,7 +82,7 @@ internal class VedtakFattetRiverTest {
     }
 
     @Test
-    fun `vedtakFattet med utbetaling`() {
+    fun `vedtakFattet med utbetaling`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
@@ -140,7 +109,7 @@ internal class VedtakFattetRiverTest {
     }
 
     @Test
-    fun `vedtakFattet med begrunnelser`() {
+    fun `vedtakFattet med begrunnelser`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
@@ -170,7 +139,7 @@ internal class VedtakFattetRiverTest {
     }
 
     @Test
-    fun `vedtakFattet med tags`() {
+    fun `vedtakFattet med tags`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
@@ -198,7 +167,45 @@ internal class VedtakFattetRiverTest {
         assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G"), vedtakFattetJson["tags"].map { it.asText() })
     }
 
-    private fun sykmeldingSendt(
+    private data class E2ETestContext(
+        val testRapid: TestRapid,
+        val dokumentDao: DokumentDao
+    ) {
+        val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
+        val vedtakFattetMediator = VedtakFattetMediator(
+            dokumentDao = dokumentDao,
+            producer = producerMock
+        )
+        val utbetalingMediator = UtbetalingMediator(
+            producer = producerMock
+        )
+        val speedClient = mockk<SpeedClient>()
+
+        init {
+            NyttDokumentRiver(testRapid, dokumentDao)
+            VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)
+            UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
+
+            every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
+                fødselsnummer = FØDSELSNUMMER,
+                aktørId = AKTØRID,
+                npid = null,
+                kilde = IdentResponse.KildeResponse.PDL
+            ).ok()
+        }
+    }
+    private fun e2e(testblokk: E2ETestContext.() -> Unit) {
+        val testDataSource = databaseContainer.nyTilkobling()
+        try {
+            val testRapid = TestRapid()
+            val dokumentDao = DokumentDao(testDataSource::ds)
+            testblokk(E2ETestContext(testRapid, dokumentDao))
+        } finally {
+            databaseContainer.droppTilkobling(testDataSource)
+        }
+    }
+
+    private fun E2ETestContext.sykmeldingSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId)
     ) {
@@ -219,7 +226,7 @@ internal class VedtakFattetRiverTest {
         )
     }
 
-    private fun søknadSendt(
+    private fun E2ETestContext.søknadSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.sendtSøknadHendelseId)
     ) {
@@ -240,7 +247,7 @@ internal class VedtakFattetRiverTest {
         )
     }
 
-    private fun inntektsmeldingSendt(
+    private fun E2ETestContext.inntektsmeldingSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.inntektsmeldingHendelseId)
     ) {
@@ -260,7 +267,7 @@ internal class VedtakFattetRiverTest {
         )
     }
 
-    private fun vedtakFattetMedUtbetalingSendt(
+    private fun E2ETestContext.vedtakFattetMedUtbetalingSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
@@ -281,7 +288,7 @@ internal class VedtakFattetRiverTest {
         testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, begrunnelser = begrunnelser, tags = tags))
     }
 
-    private fun vedtakFattetUtenUtbetalingSendt(
+    private fun E2ETestContext.vedtakFattetUtenUtbetalingSendt(
         idSett: IdSett,
         hendelseIder: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
@@ -300,7 +307,7 @@ internal class VedtakFattetRiverTest {
     }
 
     @Language("json")
-    private fun vedtakFattetUtenUtbetaling(
+    private fun E2ETestContext.vedtakFattetUtenUtbetaling(
         idSett: IdSett,
         hendelser: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
@@ -329,7 +336,7 @@ internal class VedtakFattetRiverTest {
     """
 
     @Language("json")
-    private fun vedtakFattetMedUtbetaling(
+    private fun E2ETestContext.vedtakFattetMedUtbetaling(
         idSett: IdSett,
         hendelser: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
@@ -383,7 +390,7 @@ internal class VedtakFattetRiverTest {
     }
 
     @Language("JSON")
-    private fun nySøknadMessage(
+    private fun E2ETestContext.nySøknadMessage(
         nySøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
         søknadDokumentId: UUID
@@ -397,7 +404,7 @@ internal class VedtakFattetRiverTest {
         }"""
 
     @Language("JSON")
-    private fun sendtSøknadMessage(
+    private fun E2ETestContext.sendtSøknadMessage(
         sendtSøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
         søknadDokumentId: UUID
@@ -411,7 +418,7 @@ internal class VedtakFattetRiverTest {
         }"""
 
     @Language("JSON")
-    private fun inntektsmeldingMessage(
+    private fun E2ETestContext.inntektsmeldingMessage(
         inntektsmeldingHendelseId: UUID,
         inntektsmeldingDokumentId: UUID
     ) =
@@ -423,7 +430,7 @@ internal class VedtakFattetRiverTest {
         }"""
 
     @Language("JSON")
-    private fun vedtaksperiodeEndret(
+    private fun E2ETestContext.vedtaksperiodeEndret(
         forrige: String,
         gjeldendeTilstand: String,
         vedtaksperiodeId: UUID,
