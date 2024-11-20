@@ -6,28 +6,19 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
 import com.github.navikt.tbd_libs.result_object.ok
 import com.github.navikt.tbd_libs.speed.IdentResponse
 import com.github.navikt.tbd_libs.speed.SpeedClient
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import no.nav.helse.sporbar.BehandlingstatusTest.TestSisPublisher
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.*
-import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
-import no.nav.helse.sporbar.sis.BehandlingForkastetRiver
-import no.nav.helse.sporbar.sis.BehandlingLukketRiver
-import no.nav.helse.sporbar.sis.BehandlingOpprettetRiver
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver
-import org.junit.jupiter.api.AfterEach
 
 internal class VedtakFattetRiverTest {
 
@@ -146,7 +137,7 @@ internal class VedtakFattetRiverTest {
         sykmeldingSendt(idSett)
         søknadSendt(idSett)
         inntektsmeldingSendt(idSett)
-        vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode", "Personutbetaling", "SykepengegrunnlagUnder2G"))
+        vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode", "Personutbetaling", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"))
 
         verify { producerMock.send( capture(captureSlot) ) }
 
@@ -164,7 +155,7 @@ internal class VedtakFattetRiverTest {
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .contains(idSett.søknadDokumentId))
 
-        assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G"), vedtakFattetJson["tags"].map { it.asText() })
+        assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"), vedtakFattetJson["tags"].map { it.asText() })
     }
 
     private data class E2ETestContext(

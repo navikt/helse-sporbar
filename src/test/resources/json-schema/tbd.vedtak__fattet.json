@@ -293,7 +293,7 @@
       "items": {
         "type": "string",
         "description": "Type tag",
-        "enum": ["IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G"]
+        "enum": ["IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"]
       }
     }
   },

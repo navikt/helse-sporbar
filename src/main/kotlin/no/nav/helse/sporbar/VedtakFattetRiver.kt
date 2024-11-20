@@ -132,7 +132,7 @@ internal class VedtakFattetRiver(
     }
 
     companion object {
-        val TAGS_TIL_DELING_UTAD: Set<String> = setOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G")
+        val TAGS_TIL_DELING_UTAD: Set<String> = setOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn")
     }
 }
 
