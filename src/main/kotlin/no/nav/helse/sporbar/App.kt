@@ -8,6 +8,7 @@ import com.github.navikt.tbd_libs.azure.createAzureTokenClientFromEnvironment
 import com.github.navikt.tbd_libs.kafka.AivenConfig
 import com.github.navikt.tbd_libs.kafka.ConsumerProducerFactory
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
+import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
 import com.github.navikt.tbd_libs.speed.SpeedClient
 import java.net.http.HttpClient
 import no.nav.helse.rapids_rivers.RapidApplication
@@ -48,12 +49,17 @@ fun launchApplication(env: Map<String, String>) {
             objectMapper = objectMapper,
             tokenProvider = azureClient
         )
+        val spedisjonClient = SpedisjonClient(
+            httpClient = HttpClient.newHttpClient(),
+            objectMapper = objectMapper,
+            tokenProvider = azureClient
+        )
 
         val dokumentDao = DokumentDao(dataSourceBuilder::dataSource)
         val aivenProducer = factory.createProducer()
 
         val vedtakFattetMediator = VedtakFattetMediator(
-            dokumentDao = dokumentDao,
+            spedisjonClient = spedisjonClient,
             producer = aivenProducer
         )
         val utbetalingMediator = UtbetalingMediator(aivenProducer)
@@ -66,8 +72,8 @@ fun launchApplication(env: Map<String, String>) {
         AnnulleringRiver(this, aivenProducer, speedClient)
 
         val sisPublisher = KafkaSisPublisher(aivenProducer)
-        BehandlingOpprettetRiver(this, dokumentDao, sisPublisher)
-        VedtaksperiodeVenterRiver(this, dokumentDao, sisPublisher)
+        BehandlingOpprettetRiver(this, spedisjonClient, sisPublisher)
+        VedtaksperiodeVenterRiver(this, spedisjonClient, sisPublisher)
         BehandlingLukketRiver(this, sisPublisher)
         BehandlingForkastetRiver(this, sisPublisher)
 

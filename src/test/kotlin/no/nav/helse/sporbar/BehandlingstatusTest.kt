@@ -1,6 +1,12 @@
 package no.nav.helse.sporbar
 
 import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
+import com.github.navikt.tbd_libs.result_object.ok
+import com.github.navikt.tbd_libs.spedisjon.HentMeldingResponse
+import com.github.navikt.tbd_libs.spedisjon.HentMeldingerResponse
+import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
+import io.mockk.every
+import io.mockk.mockk
 import no.nav.helse.sporbar.sis.*
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.*
 import org.intellij.lang.annotations.Language
@@ -116,39 +122,37 @@ class BehandlingstatusTest {
 
     private data class E2ETestContext(
         val testRapid: TestRapid,
-        val dokumentDao: DokumentDao,
         val sisPublisher: TestSisPublisher
     ) {
+        val spedisjonClient: SpedisjonClient = mockk()
+
         init {
-            NyttDokumentRiver(testRapid, dokumentDao)
-            BehandlingOpprettetRiver(testRapid, dokumentDao, sisPublisher)
-            VedtaksperiodeVenterRiver(testRapid, dokumentDao, sisPublisher)
+            BehandlingOpprettetRiver(testRapid, spedisjonClient, sisPublisher)
+            VedtaksperiodeVenterRiver(testRapid, spedisjonClient, sisPublisher)
             BehandlingLukketRiver(testRapid, sisPublisher)
             BehandlingForkastetRiver(testRapid, sisPublisher)
         }
     }
     private fun e2e(testblokk: E2ETestContext.() -> Unit) {
-        val testDataSource = databaseContainer.nyTilkobling()
-        try {
-            val testRapid = TestRapid()
-            val dokumentDao = DokumentDao(testDataSource::ds)
-            val sisPublisher = TestSisPublisher()
-            testblokk(E2ETestContext(testRapid, dokumentDao, sisPublisher))
-        } finally {
-            databaseContainer.droppTilkobling(testDataSource)
-        }
+        val testRapid = TestRapid()
+        val sisPublisher = TestSisPublisher()
+        testblokk(E2ETestContext(testRapid, sisPublisher))
     }
 
     private fun E2ETestContext.sendSøknad(søknadId: UUID, eksternSøknadId: UUID = UUID.randomUUID()) {
-        @Language("JSON")
-        val melding = """{
-          "@event_name": "sendt_søknad_nav",
-          "@id": "$søknadId",
-          "id": "$eksternSøknadId",
-          "sykmeldingId": "${UUID.randomUUID()}",
-          "@opprettet": "${LocalDateTime.now()}"
-        }""".trimIndent()
-        testRapid.sendTestMessage(melding)
+        every {
+            spedisjonClient.hentMeldinger(any(), any())
+        } returns HentMeldingerResponse(listOf(
+            HentMeldingResponse(
+                type = "sendt_søknad_nav",
+                fnr = "",
+                internDokumentId = søknadId,
+                eksternDokumentId = eksternSøknadId,
+                rapportertDato = LocalDateTime.now(),
+                duplikatkontroll = "",
+                jsonBody = "{}"
+            )
+        )).ok()
     }
     private fun E2ETestContext.sendBehandlingOpprettet(vedtaksperiodeId: UUID, søknadId: UUID) {
         @Language("JSON")

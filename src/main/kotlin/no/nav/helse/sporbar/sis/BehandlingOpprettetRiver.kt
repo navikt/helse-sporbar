@@ -9,14 +9,18 @@ import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
+import com.github.navikt.tbd_libs.result_object.getOrThrow
+import com.github.navikt.tbd_libs.retry.retryBlocking
+import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
 import io.micrometer.core.instrument.MeterRegistry
-import no.nav.helse.sporbar.DokumentDao
+import net.logstash.logback.argument.StructuredArguments.kv
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
-import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.eksterneSøknadIder
+import no.nav.helse.sporbar.tilSøknader
 import org.slf4j.LoggerFactory
+import java.util.*
 
-internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dokumentDao: DokumentDao, private val sisPublisher: SisPublisher) :
+internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val spedisjonClient: SpedisjonClient, private val sisPublisher: SisPublisher) :
     River.PacketListener {
 
     init {
@@ -38,7 +42,12 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val dok
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
         val interneSøknadIder = packet["søknadIder"].map { it.asText().toUUID() }
-        val eksterneSøknadIder = dokumentDao.eksterneSøknadIder(interneSøknadIder) ?: return sikkerlogg.error("Nå kom det en behandling_opprettet uten at vi fant eksterne søknadIder. Er ikke dét rart?")
+        val callId = UUID.randomUUID().toString()
+        logg.info("Henter dokumenter {}", kv("callId", callId))
+        sikkerlogg.info("Henter dokumenter {}", kv("callId", callId))
+        val eksterneSøknadIder = retryBlocking {
+            spedisjonClient.hentMeldinger(interneSøknadIder, callId).getOrThrow().tilSøknader()
+        } ?: return sikkerlogg.error("Nå kom det en behandling_opprettet uten at vi fant eksterne søknadIder. Er ikke dét rart?")
         val tidspunkt = packet["@opprettet"].asOffsetDateTime()
         sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingOpprettet(vedtaksperiodeId, behandlingId, tidspunkt, eksterneSøknadIder))
         sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, VENTER_PÅ_ARBEIDSGIVER))

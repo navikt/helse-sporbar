@@ -4,14 +4,14 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
 import com.github.navikt.tbd_libs.result_object.ok
+import com.github.navikt.tbd_libs.spedisjon.HentMeldingResponse
+import com.github.navikt.tbd_libs.spedisjon.HentMeldingerResponse
+import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
 import com.github.navikt.tbd_libs.speed.IdentResponse
 import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
 import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -19,6 +19,9 @@ import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.*
 
 internal class VedtakFattetRiverTest {
 
@@ -158,13 +161,15 @@ internal class VedtakFattetRiverTest {
         assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"), vedtakFattetJson["tags"].map { it.asText() })
     }
 
-    private data class E2ETestContext(
-        val testRapid: TestRapid,
-        val dokumentDao: DokumentDao
-    ) {
+    private data class E2ETestContext(val testRapid: TestRapid) {
+        val meldinger = mutableListOf<HentMeldingResponse>()
         val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
+        val spedisjonClient = mockk<SpedisjonClient> {
+            every { hentMeldinger(any(), any()) } returns HentMeldingerResponse(meldinger).ok()
+        }
+
         val vedtakFattetMediator = VedtakFattetMediator(
-            dokumentDao = dokumentDao,
+            spedisjonClient = spedisjonClient,
             producer = producerMock
         )
         val utbetalingMediator = UtbetalingMediator(
@@ -173,7 +178,6 @@ internal class VedtakFattetRiverTest {
         val speedClient = mockk<SpeedClient>()
 
         init {
-            NyttDokumentRiver(testRapid, dokumentDao)
             VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)
             UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
 
@@ -186,114 +190,55 @@ internal class VedtakFattetRiverTest {
         }
     }
     private fun e2e(testblokk: E2ETestContext.() -> Unit) {
-        val testDataSource = databaseContainer.nyTilkobling()
-        try {
-            val testRapid = TestRapid()
-            val dokumentDao = DokumentDao(testDataSource::ds)
-            testblokk(E2ETestContext(testRapid, dokumentDao))
-        } finally {
-            databaseContainer.droppTilkobling(testDataSource)
-        }
+        val testRapid = TestRapid()
+        testblokk(E2ETestContext(testRapid))
     }
 
-    private fun E2ETestContext.sykmeldingSendt(
-        idSett: IdSett,
-        hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId)
-    ) {
-        testRapid.sendTestMessage(
-            nySøknadMessage(
-                nySøknadHendelseId = idSett.nySøknadHendelseId,
-                søknadDokumentId = idSett.søknadDokumentId,
-                sykmeldingDokumentId = idSett.sykmeldingDokumentId
-            )
-        )
-        testRapid.sendTestMessage(
-            vedtaksperiodeEndret(
-                "START",
-                "MOTTATT_SYKMELDING_FERDIG_GAP",
-                idSett.vedtaksperiodeId,
-                hendelseIder
-            )
-        )
+    private fun E2ETestContext.sykmeldingSendt(idSett: IdSett) {
+        meldinger.add(HentMeldingResponse(
+            type = "ny_søknad",
+            fnr = "",
+            internDokumentId = idSett.nySøknadHendelseId,
+            eksternDokumentId = idSett.sykmeldingDokumentId,
+            rapportertDato = LocalDateTime.now(),
+            duplikatkontroll = "",
+            jsonBody = "{}"
+        ))
     }
 
-    private fun E2ETestContext.søknadSendt(
-        idSett: IdSett,
-        hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.sendtSøknadHendelseId)
-    ) {
-        testRapid.sendTestMessage(
-            sendtSøknadMessage(
-                sendtSøknadHendelseId = idSett.sendtSøknadHendelseId,
-                søknadDokumentId = idSett.søknadDokumentId,
-                sykmeldingDokumentId = idSett.sykmeldingDokumentId
-            )
-        )
-        testRapid.sendTestMessage(
-            vedtaksperiodeEndret(
-                "MOTTATT_SYKMELDING_FERDIG_GAP",
-                "AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP",
-                idSett.vedtaksperiodeId,
-                hendelseIder
-            )
-        )
+    private fun E2ETestContext.søknadSendt(idSett: IdSett) {
+        meldinger.add(HentMeldingResponse(
+            type = "sendt_søknad_nav",
+            fnr = "",
+            internDokumentId = idSett.sendtSøknadHendelseId,
+            eksternDokumentId = idSett.søknadDokumentId,
+            rapportertDato = LocalDateTime.now(),
+            duplikatkontroll = "",
+            jsonBody = "{}"
+        ))
     }
 
-    private fun E2ETestContext.inntektsmeldingSendt(
-        idSett: IdSett,
-        hendelseIder: List<UUID> = listOf(idSett.nySøknadHendelseId, idSett.inntektsmeldingHendelseId)
-    ) {
-        testRapid.sendTestMessage(
-            inntektsmeldingMessage(
-                inntektsmeldingHendelseId = idSett.inntektsmeldingHendelseId,
-                inntektsmeldingDokumentId = idSett.inntektsmeldingDokumentId
-            )
-        )
-        testRapid.sendTestMessage(
-            vedtaksperiodeEndret(
-                "AVVENTER_INNTEKTSMELDING_ELLER_HISTORIKK_FERDIG_GAP",
-                "AVVENTER_HISTORIKK",
-                idSett.vedtaksperiodeId,
-                hendelseIder
-            )
-        )
+    private fun E2ETestContext.inntektsmeldingSendt(idSett: IdSett) {
+        meldinger.add(HentMeldingResponse(
+            type = "inntektsmelding",
+            fnr = "",
+            internDokumentId = idSett.inntektsmeldingHendelseId,
+            eksternDokumentId = idSett.inntektsmeldingDokumentId,
+            rapportertDato = LocalDateTime.now(),
+            duplikatkontroll = "",
+            jsonBody = "{}"
+        ))
     }
 
     private fun E2ETestContext.vedtakFattetMedUtbetalingSendt(
         idSett: IdSett,
-        hendelseIder: List<UUID> = listOf(
-            idSett.nySøknadHendelseId,
-            idSett.sendtSøknadHendelseId,
-            idSett.inntektsmeldingHendelseId
-        ),
         begrunnelser: List<Begrunnelse> = emptyList(),
         tags: Set<String> = emptySet()
     ) {
-        testRapid.sendTestMessage(
-            vedtaksperiodeEndret(
-                "TIL UTBETALING",
-                "AVSLUTTET",
-                idSett.vedtaksperiodeId,
-                hendelseIder
-            )
-        )
         testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, begrunnelser = begrunnelser, tags = tags))
     }
 
-    private fun E2ETestContext.vedtakFattetUtenUtbetalingSendt(
-        idSett: IdSett,
-        hendelseIder: List<UUID> = listOf(
-            idSett.nySøknadHendelseId,
-            idSett.sendtSøknadHendelseId,
-            idSett.inntektsmeldingHendelseId
-    )) {
-        testRapid.sendTestMessage(
-            vedtaksperiodeEndret(
-                "TIL UTBETALING",
-                "AVSLUTTET",
-                idSett.vedtaksperiodeId,
-                hendelseIder
-            )
-        )
+    private fun E2ETestContext.vedtakFattetUtenUtbetalingSendt(idSett: IdSett) {
         testRapid.sendTestMessage(vedtakFattetUtenUtbetaling(idSett))
     }
 

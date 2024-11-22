@@ -1,26 +1,31 @@
 package no.nav.helse.sporbar
 
-import no.nav.helse.sporbar.dto.BegrunnelseForEksternDto
-import no.nav.helse.sporbar.dto.DokumentForEkstern
-import no.nav.helse.sporbar.dto.FastsattEtterHovedregelForEksternDto
-import no.nav.helse.sporbar.dto.FastsattEtterSkjønnForEksternDto
-import no.nav.helse.sporbar.dto.FastsattIInfotrygdForEksternDto
-import no.nav.helse.sporbar.dto.PeriodeForEksternDto
-import no.nav.helse.sporbar.dto.VedtakFattetForEksternDto
+import com.github.navikt.tbd_libs.result_object.getOrThrow
+import com.github.navikt.tbd_libs.retry.retryBlocking
+import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
+import net.logstash.logback.argument.StructuredArguments.kv
+import no.nav.helse.sporbar.dto.*
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 
 internal class VedtakFattetMediator(
-    private val dokumentDao: DokumentDao,
+    private val spedisjonClient: SpedisjonClient,
     private val producer: KafkaProducer<String, String>
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
-        val dokumenter: List<Dokument> = dokumentDao.finn(vedtakFattet.hendelseIder)
+        val callId = UUID.randomUUID().toString()
+        sikkerLogg.info("Henter dokumenter {}", kv("callId", callId))
+        log.info("Henter dokumenter for {}", kv("callId", callId))
+
+        val dokumenter: List<Dokument> = retryBlocking {
+            spedisjonClient.hentMeldinger(vedtakFattet.hendelseIder, callId).getOrThrow().tilDokumenter()
+        }
         val eksternDto = oversett(vedtakFattet, dokumenter)
         val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
         producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(Meldingstype.VedtakFattet.header())))

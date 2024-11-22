@@ -9,21 +9,22 @@ import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
+import com.github.navikt.tbd_libs.result_object.getOrThrow
+import com.github.navikt.tbd_libs.retry.retryBlocking
+import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
 import io.micrometer.core.instrument.MeterRegistry
-import java.time.OffsetDateTime
-import java.util.UUID
-import no.nav.helse.sporbar.DokumentDao
+import net.logstash.logback.argument.StructuredArguments.kv
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ANNEN_PERIODE
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
-import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.eksterneSøknadIder
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.GODKJENNING
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.INNTEKTSMELDING
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.SØKNAD
+import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.*
+import no.nav.helse.sporbar.tilSøknader
 import org.slf4j.LoggerFactory
+import java.time.OffsetDateTime
+import java.util.*
 
-internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val dokumentDao: DokumentDao, private val sisPublisher: SisPublisher, ) : River.PacketListener {
+internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val spedisjonClient: SpedisjonClient, private val sisPublisher: SisPublisher, ) : River.PacketListener {
 
     init {
         River(rapid).apply {
@@ -46,7 +47,14 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val do
     override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val interneHendelseIder = packet["hendelser"].map { it.asText().toUUID() }
-        val eksterneSøknadIder = dokumentDao.eksterneSøknadIder(interneHendelseIder) ?: return sikkerlogg.error("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Er ikke dét rart?")
+
+        val callId = UUID.randomUUID().toString()
+        logg.info("Henter dokumenter {}", kv("callId", callId))
+        sikkerlogg.info("Henter dokumenter {}", kv("callId", callId))
+        val eksterneSøknadIder = retryBlocking {
+            spedisjonClient.hentMeldinger(interneHendelseIder, callId).getOrThrow().tilSøknader()
+        } ?: return sikkerlogg.error("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Er ikke dét rart?")
+
         val vedtaksperiodeVenter = VedtaksperiodeVenter(
             vedtaksperiodeId = vedtaksperiodeId,
             behandlingId = packet["behandlingId"].asText().toUUID(),

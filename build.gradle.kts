@@ -1,7 +1,7 @@
 val mainClass = "no.nav.helse.sporbar.AppKt"
 
 val rapidsAndRiversVersion = "2024111809201731918023.7c8474fdd5eb"
-val tbdLibsVersion = "2024.11.16-11.06-2a807bca"
+val tbdLibsVersion = "2024.11.22-11.41-59b7a2d2"
 val ktorVersion = "3.0.1"
 val junitJupiterVersion = "5.11.3"
 val mockkVersion = "1.13.13"
@@ -21,6 +21,7 @@ dependencies {
     implementation("com.github.navikt.tbd-libs:azure-token-client-default:$tbdLibsVersion")
     implementation("com.github.navikt.tbd-libs:retry:$tbdLibsVersion")
     implementation("com.github.navikt.tbd-libs:speed-client:$tbdLibsVersion")
+    implementation("com.github.navikt.tbd-libs:spedisjon-client:$tbdLibsVersion")
 
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
