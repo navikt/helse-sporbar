@@ -1,6 +1,6 @@
 val mainClass = "no.nav.helse.sporbar.AppKt"
 
-val rapidsAndRiversVersion = "2024111809201731918023.7c8474fdd5eb"
+val rapidsAndRiversVersion = "2024112412131732446804.1b3dcc636bed"
 val tbdLibsVersion = "2024.11.22-11.41-59b7a2d2"
 val ktorVersion = "3.0.1"
 val junitJupiterVersion = "5.11.3"
