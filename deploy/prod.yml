@@ -33,16 +33,6 @@ spec:
     pool: nav-prod
   secureLogs:
     enabled: true
-  gcp:
-    sqlInstances:
-      - type: POSTGRES_15
-        diskAutoresize: true
-        pointInTimeRecovery: true
-        tier: db-custom-4-16384
-        name: sporbar
-        databases:
-          - name: sporbar
-            envVarPrefix: DATABASE
   accessPolicy:
     outbound:
       rules:

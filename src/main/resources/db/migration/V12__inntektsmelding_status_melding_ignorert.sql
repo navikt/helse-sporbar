@@ -1,1 +1,0 @@
-ALTER TABLE inntektsmelding_status ADD column melding_ignorert TIMESTAMP DEFAULT NULL

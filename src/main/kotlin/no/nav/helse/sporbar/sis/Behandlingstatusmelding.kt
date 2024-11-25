@@ -5,8 +5,6 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.util.UUID
-import no.nav.helse.sporbar.Dokument
-import no.nav.helse.sporbar.DokumentDao
 
 data class Behandlingstatusmelding(
     val vedtaksperiodeId: UUID,
@@ -34,8 +32,5 @@ data class Behandlingstatusmelding(
 
         private val Oslo = ZoneId.of("Europe/Oslo")
         internal fun JsonNode.asOffsetDateTime() = asLocalDateTime().atZone(Oslo).toOffsetDateTime()
-
-        internal fun DokumentDao.eksterneSøknadIder(interneHendelseIder: List<UUID>) =
-            finn(interneHendelseIder).filter { it.type == Dokument.Type.Søknad }.map { it.dokumentId }.toSet().takeUnless { it.isEmpty() }
     }
 }

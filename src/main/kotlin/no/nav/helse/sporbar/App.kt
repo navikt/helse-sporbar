@@ -7,17 +7,12 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.navikt.tbd_libs.azure.createAzureTokenClientFromEnvironment
 import com.github.navikt.tbd_libs.kafka.AivenConfig
 import com.github.navikt.tbd_libs.kafka.ConsumerProducerFactory
-import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
 import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
 import com.github.navikt.tbd_libs.speed.SpeedClient
-import java.net.http.HttpClient
 import no.nav.helse.rapids_rivers.RapidApplication
-import no.nav.helse.sporbar.sis.BehandlingForkastetRiver
-import no.nav.helse.sporbar.sis.BehandlingLukketRiver
-import no.nav.helse.sporbar.sis.BehandlingOpprettetRiver
-import no.nav.helse.sporbar.sis.KafkaSisPublisher
-import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver
+import no.nav.helse.sporbar.sis.*
 import org.slf4j.LoggerFactory
+import java.net.http.HttpClient
 
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .registerModule(JavaTimeModule())
@@ -36,13 +31,6 @@ fun main() {
 fun launchApplication(env: Map<String, String>) {
     val factory = ConsumerProducerFactory(AivenConfig.default)
     RapidApplication.create(env, factory).apply {
-        val dataSourceBuilder = DataSourceBuilder()
-        register(object : RapidsConnection.StatusListener {
-            override fun onStartup(rapidsConnection: RapidsConnection) {
-                dataSourceBuilder.migrate()
-            }
-        })
-
         val azureClient = createAzureTokenClientFromEnvironment(env)
         val speedClient = SpeedClient(
             httpClient = HttpClient.newHttpClient(),
@@ -55,7 +43,6 @@ fun launchApplication(env: Map<String, String>) {
             tokenProvider = azureClient
         )
 
-        val dokumentDao = DokumentDao(dataSourceBuilder::dataSource)
         val aivenProducer = factory.createProducer()
 
         val vedtakFattetMediator = VedtakFattetMediator(
@@ -64,7 +51,6 @@ fun launchApplication(env: Map<String, String>) {
         )
         val utbetalingMediator = UtbetalingMediator(aivenProducer)
 
-        NyttDokumentRiver(this, dokumentDao)
         VedtakFattetRiver(this, vedtakFattetMediator, speedClient)
         VedtaksperiodeAnnullertRiver(this, aivenProducer, speedClient)
         UtbetalingUtbetaltRiver(this, utbetalingMediator, speedClient)
