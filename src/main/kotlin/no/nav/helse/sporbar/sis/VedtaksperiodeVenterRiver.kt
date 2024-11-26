@@ -1,6 +1,9 @@
 package no.nav.helse.sporbar.sis
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.module.kotlin.convertValue
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
@@ -14,6 +17,7 @@ import com.github.navikt.tbd_libs.retry.retryBlocking
 import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
 import io.micrometer.core.instrument.MeterRegistry
 import net.logstash.logback.argument.StructuredArguments.kv
+import no.nav.helse.sporbar.objectMapper
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ANNEN_PERIODE
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_SAKSBEHANDLER
@@ -21,12 +25,27 @@ import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTi
 import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.*
 import no.nav.helse.sporbar.tilSøknader
 import org.slf4j.LoggerFactory
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.*
 
 internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val spedisjonClient: SpedisjonClient, private val sisPublisher: SisPublisher, ) : River.PacketListener {
 
     init {
+        River(rapid).apply {
+            precondition {
+                it.requireValue("@event_name", "vedtaksperioder_venter")
+            }
+            validate { it.require("@opprettet", JsonNode::asLocalDateTime) }
+            validate {
+                it.requireArray("vedtaksperioder") {
+                    requireKey("vedtaksperiodeId", "behandlingId", "organisasjonsnummer", "venterPå.vedtaksperiodeId", "venterPå.organisasjonsnummer", "hendelser")
+                }
+            }
+        }.register(this)
+
+        // todo: denne riveren er deprecated
         River(rapid).apply {
             precondition {
                 it.requireValue("@event_name", "vedtaksperiode_venter")
@@ -36,33 +55,57 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val sp
                 it.requireKey("vedtaksperiodeId", "behandlingId", "organisasjonsnummer", "venterPå.vedtaksperiodeId", "venterPå.organisasjonsnummer", "hendelser")
                 it.require("@opprettet", JsonNode::asLocalDateTime)
             }
-        }.register(this)
+        }.register(object : River.PacketListener {
+            override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
+                logg.info("Håndterer ikke vedtaksperiode_venter pga. problem: se sikker logg")
+                sikkerlogg.info("Håndterer ikke vedtaksperiode_venter pga. problem: {}", problems.toExtendedReport())
+            }
+
+            override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
+                val opprettet = packet["@opprettet"].asOffsetDateTime()
+                try {
+                    håndterVedtaksperiodeVenter(opprettet, objectMapper.readValue<VedtaksperiodeVenterDto>(packet.toJson()))
+                } catch (err: Exception) {
+                    sikkerlogg.error("Kunne ikke tolke vedtaksperiode venter: ${err.message}", err)
+                }
+            }
+        })
     }
 
     override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
-        logg.info("Håndterer ikke vedtaksperiode_venter pga. problem: se sikker logg")
-        sikkerlogg.info("Håndterer ikke vedtaksperiode_venter pga. problem: {}", problems.toExtendedReport())
+        logg.info("Håndterer ikke vedtaksperioder_venter pga. problem: se sikker logg")
+        sikkerlogg.info("Håndterer ikke vedtaksperioder_venter pga. problem: {}", problems.toExtendedReport())
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
-        val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
-        val interneHendelseIder = packet["hendelser"].map { it.asText().toUUID() }
+        val opprettet = packet["@opprettet"].asOffsetDateTime()
+        packet["vedtaksperioder"].forEach { venter ->
+            try {
+                håndterVedtaksperiodeVenter(opprettet, objectMapper.convertValue<VedtaksperiodeVenterDto>(venter))
+            } catch (err: Exception) {
+                sikkerlogg.error("Kunne ikke tolke vedtaksperiode venter: ${err.message}", err)
+            }
+        }
+    }
+
+    private fun håndterVedtaksperiodeVenter(opprettet: OffsetDateTime, node: VedtaksperiodeVenterDto) {
+        if (node.venterPå.venteårsak.hva !in listOf("SØKNAD", "INNTEKTSMELDING", "GODKJENNING")) return
 
         val callId = UUID.randomUUID().toString()
         logg.info("Henter dokumenter {}", kv("callId", callId))
         sikkerlogg.info("Henter dokumenter {}", kv("callId", callId))
         val eksterneSøknadIder = retryBlocking {
-            spedisjonClient.hentMeldinger(interneHendelseIder, callId).getOrThrow().tilSøknader()
+            spedisjonClient.hentMeldinger(node.hendelser.toList(), callId).getOrThrow().tilSøknader()
         } ?: return sikkerlogg.error("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Er ikke dét rart?")
 
         val vedtaksperiodeVenter = VedtaksperiodeVenter(
-            vedtaksperiodeId = vedtaksperiodeId,
-            behandlingId = packet["behandlingId"].asText().toUUID(),
+            vedtaksperiodeId = node.vedtaksperiodeId,
+            behandlingId = node.behandlingId,
             eksterneSøknadIder = eksterneSøknadIder,
-            tidspunkt = packet["@opprettet"].asOffsetDateTime(),
-            venteårsak = Venteårsak.valueOf(packet["venterPå.venteårsak.hva"].asText()),
-            venterPåAnnenPeriode = vedtaksperiodeId != packet["venterPå.vedtaksperiodeId"].asText().toUUID(),
-            venterPåAnnenArbeidsgiver = packet["organisasjonsnummer"].asText() != packet["venterPå.organisasjonsnummer"].asText()
+            tidspunkt = opprettet,
+            venteårsak = Venteårsak.valueOf(node.venterPå.venteårsak.hva),
+            venterPåAnnenPeriode = node.vedtaksperiodeId != node.venterPå.vedtaksperiodeId,
+            venterPåAnnenArbeidsgiver = node.organisasjonsnummer != node.venterPå.organisasjonsnummer
         )
         vedtaksperiodeVenter.håndter(sisPublisher)
     }
@@ -140,4 +183,23 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val sp
         private val sikkerlogg = LoggerFactory.getLogger("tjenestekall")
         private val logg = LoggerFactory.getLogger(VedtaksperiodeVenterRiver::class.java)
     }
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class VedtaksperiodeVenterDto(
+    val organisasjonsnummer: String,
+    val vedtaksperiodeId: UUID,
+    val behandlingId: UUID,
+    val hendelser: Set<UUID>,
+    val venterPå: VenterPå
+) {
+    data class VenterPå(
+        val vedtaksperiodeId: UUID,
+        val organisasjonsnummer: String,
+        val venteårsak: Venteårsak
+    )
+
+    data class Venteårsak(
+        val hva : String
+    )
 }
