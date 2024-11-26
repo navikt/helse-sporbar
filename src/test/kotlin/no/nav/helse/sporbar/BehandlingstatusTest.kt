@@ -169,20 +169,24 @@ class BehandlingstatusTest {
     private fun E2ETestContext.sendVedtaksperiodeVenter(vedtaksperiodeId: UUID, hva: String, venterPåVedtaksperiodeId: UUID = vedtaksperiodeId, venterPåOrganisasjonsnummer: String = "999999999", søknadId: UUID) {
         @Language("JSON")
         val melding = """{
-          "@event_name": "vedtaksperiode_venter",
+          "@event_name": "vedtaksperioder_venter",
           "@id": "${UUID.randomUUID()}",
           "@opprettet": "${LocalDateTime.now()}",
-          "vedtaksperiodeId": "$vedtaksperiodeId",
-          "hendelser": ["$søknadId"],
-          "organisasjonsnummer": "999999999",
-          "behandlingId": "${UUID.randomUUID()}",
-          "venterPå": {
-            "vedtaksperiodeId": "$venterPåVedtaksperiodeId",
-            "organisasjonsnummer": "$venterPåOrganisasjonsnummer",
-            "venteårsak": {
-              "hva": "$hva"
+          "vedtaksperioder": [
+            {
+              "vedtaksperiodeId": "$vedtaksperiodeId",
+              "hendelser": ["$søknadId"],
+              "organisasjonsnummer": "999999999",
+              "behandlingId": "${UUID.randomUUID()}",
+              "venterPå": {
+                "vedtaksperiodeId": "$venterPåVedtaksperiodeId",
+                "organisasjonsnummer": "$venterPåOrganisasjonsnummer",
+                "venteårsak": {
+                  "hva": "$hva"
+                }
+              } 
             }
-          }
+          ]
         }""".trimIndent()
         testRapid.sendTestMessage(melding)
     }

@@ -3,11 +3,9 @@ package no.nav.helse.sporbar.sis
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
-import com.github.navikt.tbd_libs.rapids_and_rivers.toUUID
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
@@ -25,12 +23,10 @@ import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTi
 import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.*
 import no.nav.helse.sporbar.tilSøknader
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.*
 
-internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val spedisjonClient: SpedisjonClient, private val sisPublisher: SisPublisher, ) : River.PacketListener {
+internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val spedisjonClient: SpedisjonClient, private val sisPublisher: SisPublisher) : River.PacketListener {
 
     init {
         River(rapid).apply {
@@ -44,32 +40,6 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val sp
                 }
             }
         }.register(this)
-
-        // todo: denne riveren er deprecated
-        River(rapid).apply {
-            precondition {
-                it.requireValue("@event_name", "vedtaksperiode_venter")
-                it.requireAny("venterPå.venteårsak.hva", listOf("SØKNAD", "INNTEKTSMELDING", "GODKJENNING"))
-            }
-            validate {
-                it.requireKey("vedtaksperiodeId", "behandlingId", "organisasjonsnummer", "venterPå.vedtaksperiodeId", "venterPå.organisasjonsnummer", "hendelser")
-                it.require("@opprettet", JsonNode::asLocalDateTime)
-            }
-        }.register(object : River.PacketListener {
-            override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
-                logg.info("Håndterer ikke vedtaksperiode_venter pga. problem: se sikker logg")
-                sikkerlogg.info("Håndterer ikke vedtaksperiode_venter pga. problem: {}", problems.toExtendedReport())
-            }
-
-            override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
-                val opprettet = packet["@opprettet"].asOffsetDateTime()
-                try {
-                    håndterVedtaksperiodeVenter(opprettet, objectMapper.readValue<VedtaksperiodeVenterDto>(packet.toJson()))
-                } catch (err: Exception) {
-                    sikkerlogg.error("Kunne ikke tolke vedtaksperiode venter: ${err.message}", err)
-                }
-            }
-        })
     }
 
     override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
