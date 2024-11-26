@@ -193,12 +193,14 @@ private data class VedtaksperiodeVenterDto(
     val hendelser: Set<UUID>,
     val venterPå: VenterPå
 ) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class VenterPå(
         val vedtaksperiodeId: UUID,
         val organisasjonsnummer: String,
         val venteårsak: Venteårsak
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Venteårsak(
         val hva : String
     )
