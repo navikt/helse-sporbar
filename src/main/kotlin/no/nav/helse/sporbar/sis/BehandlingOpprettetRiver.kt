@@ -5,6 +5,7 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.toUUID
+import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
@@ -13,7 +14,6 @@ import com.github.navikt.tbd_libs.result_object.getOrThrow
 import com.github.navikt.tbd_libs.retry.retryBlocking
 import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
 import io.micrometer.core.instrument.MeterRegistry
-import net.logstash.logback.argument.StructuredArguments.kv
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
 import no.nav.helse.sporbar.tilSøknader
@@ -43,8 +43,24 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val spe
         val behandlingId = packet["behandlingId"].asText().toUUID()
         val interneSøknadIder = packet["søknadIder"].map { it.asText().toUUID() }
         val callId = UUID.randomUUID().toString()
-        logg.info("Henter dokumenter {}", kv("callId", callId))
-        sikkerlogg.info("Henter dokumenter {}", kv("callId", callId))
+        withMDC(mapOf(
+            "vedtaksperiodeId" to "$vedtaksperiodeId",
+            "behandlingId" to "$behandlingId",
+            "callId" to callId,
+        )) {
+            behandlingOpprettet(packet, vedtaksperiodeId, behandlingId, interneSøknadIder, callId)
+        }
+    }
+
+    private fun behandlingOpprettet(
+        packet: JsonMessage,
+        vedtaksperiodeId: UUID,
+        behandlingId: UUID,
+        interneSøknadIder: List<UUID>,
+        callId: String
+    ) {
+        logg.info("Henter dokumenter for $interneSøknadIder")
+        sikkerlogg.info("Henter dokumenter for $interneSøknadIder")
         val eksterneSøknadIder = retryBlocking {
             spedisjonClient.hentMeldinger(interneSøknadIder, callId).getOrThrow().tilSøknader()
         } ?: return sikkerlogg.error("Nå kom det en behandling_opprettet uten at vi fant eksterne søknadIder. Er ikke dét rart?")

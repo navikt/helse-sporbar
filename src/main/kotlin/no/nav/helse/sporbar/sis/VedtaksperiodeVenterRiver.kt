@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
+import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
@@ -51,21 +52,29 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val sp
         val opprettet = packet["@opprettet"].asOffsetDateTime()
         packet["vedtaksperioder"].forEach { venter ->
             try {
-                håndterVedtaksperiodeVenter(opprettet, objectMapper.convertValue<VedtaksperiodeVenterDto>(venter))
+                val callId = UUID.randomUUID().toString()
+                val venterDto = objectMapper.convertValue<VedtaksperiodeVenterDto>(venter)
+                withMDC(mapOf(
+                    "vedtaksperiodeId" to "${venterDto.vedtaksperiodeId}",
+                    "behandlingId" to "${venterDto.behandlingId}",
+                    "callId" to callId,
+                )) {
+                    håndterVedtaksperiodeVenter(callId, opprettet, venterDto)
+                }
             } catch (err: Exception) {
                 sikkerlogg.error("Kunne ikke tolke vedtaksperiode venter: ${err.message}", err)
             }
         }
     }
 
-    private fun håndterVedtaksperiodeVenter(opprettet: OffsetDateTime, node: VedtaksperiodeVenterDto) {
+    private fun håndterVedtaksperiodeVenter(callId: String, opprettet: OffsetDateTime, node: VedtaksperiodeVenterDto) {
         if (node.venterPå.venteårsak.hva !in listOf("SØKNAD", "INNTEKTSMELDING", "GODKJENNING")) return
 
-        val callId = UUID.randomUUID().toString()
-        logg.info("Henter dokumenter {}", kv("callId", callId))
-        sikkerlogg.info("Henter dokumenter {}", kv("callId", callId))
+        val hendelser = node.hendelser
+        logg.info("Henter dokumenter $hendelser")
+        sikkerlogg.info("Henter dokumenter $hendelser")
         val eksterneSøknadIder = retryBlocking {
-            spedisjonClient.hentMeldinger(node.hendelser.toList(), callId).getOrThrow().tilSøknader()
+            spedisjonClient.hentMeldinger(hendelser, callId).getOrThrow().tilSøknader()
         } ?: return sikkerlogg.error("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Er ikke dét rart?")
 
         val vedtaksperiodeVenter = VedtaksperiodeVenter(
@@ -160,7 +169,7 @@ private data class VedtaksperiodeVenterDto(
     val organisasjonsnummer: String,
     val vedtaksperiodeId: UUID,
     val behandlingId: UUID,
-    val hendelser: Set<UUID>,
+    val hendelser: List<UUID>,
     val venterPå: VenterPå
 ) {
     @JsonIgnoreProperties(ignoreUnknown = true)
