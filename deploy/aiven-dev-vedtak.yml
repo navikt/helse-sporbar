@@ -27,9 +27,6 @@ spec:
         - team: flex
           application: spinnsyn-backend
           access: read
-        - team: disykefravar
-          application: dvh-sporbar-konsument-utv
-          access: read
         - team: teamnks
           application: sf-sykmelding
           access: read
