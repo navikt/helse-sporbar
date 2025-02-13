@@ -62,12 +62,12 @@ class BehandlingstatusTest {
 
         sendSøknad(søknadIdJanuar, eksternSøknadIdJanuar)
         sendBehandlingOpprettet(vedtaksperiodeIdJanuar, søknadIdJanuar)
-        sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdJanuar) // Feil1: Ettersom januar-søknaden er den som sparker i gang showet, så peker alt på den
+        sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdMars)
         sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdJanuar,  vedtaksperiodeIdJanuar, søknadId = søknadIdJanuar)
         sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdMars, vedtaksperiodeIdJanuar, søknadId = søknadIdMars)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
-        assertEquals(setOf(eksternSøknadIdJanuar, eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars)) // Feil1: Mars-perioden får kobling mot januarSøknad
+        assertEquals(setOf(eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars))
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdJanuar))
         assertEquals(setOf(eksternSøknadIdJanuar), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdJanuar))
@@ -140,7 +140,7 @@ class BehandlingstatusTest {
 
     private fun E2ETestContext.sendSøknad(søknadId: UUID, eksternSøknadId: UUID = UUID.randomUUID()) {
         every {
-            spedisjonClient.hentMeldinger(any(), any())
+            spedisjonClient.hentMeldinger(eq(listOf(søknadId)), any())
         } returns HentMeldingerResponse(listOf(
             HentMeldingResponse(
                 type = "sendt_søknad_nav",
