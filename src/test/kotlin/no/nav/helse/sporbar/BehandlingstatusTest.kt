@@ -17,7 +17,6 @@ import java.util.*
 
 class BehandlingstatusTest {
 
-
     @Test
     fun `Ny behandling som avsluttes`() = e2e {
         val søknadId = UUID.randomUUID()
@@ -64,8 +63,8 @@ class BehandlingstatusTest {
         sendSøknad(søknadIdJanuar, eksternSøknadIdJanuar)
         sendBehandlingOpprettet(vedtaksperiodeIdJanuar, søknadIdJanuar)
         sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdJanuar) // Feil1: Ettersom januar-søknaden er den som sparker i gang showet, så peker alt på den
-        sendVedtaksperiodeVenter(vedtaksperiodeIdJanuar, "INNTEKTSMELDING", vedtaksperiodeIdJanuar, søknadId = søknadIdJanuar)
-        sendVedtaksperiodeVenter(vedtaksperiodeIdMars, "INNTEKTSMELDING", vedtaksperiodeIdJanuar, søknadId = søknadIdMars)
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdJanuar,  vedtaksperiodeIdJanuar, søknadId = søknadIdJanuar)
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdMars, vedtaksperiodeIdJanuar, søknadId = søknadIdMars)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
         assertEquals(setOf(eksternSøknadIdJanuar, eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars)) // Feil1: Mars-perioden får kobling mot januarSøknad
@@ -88,8 +87,8 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeIdAG2, søknadIdAG2)
 
         // Arbeidsgiver 1 sender inn inntektsmelding
-        sendVedtaksperiodeVenter(vedtaksperiodeIdAG1, "INNTEKTSMELDING", vedtaksperiodeIdAG2, venterPåOrganisasjonsnummer = "AG2", søknadId = søknadIdAG1)
-        sendVedtaksperiodeVenter(vedtaksperiodeIdAG2, "INNTEKTSMELDING", vedtaksperiodeIdAG2, søknadId = søknadIdAG2)
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdAG1, vedtaksperiodeIdAG2, venterPåOrganisasjonsnummer = "AG2", søknadId = søknadIdAG1)
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdAG2, vedtaksperiodeIdAG2, søknadId = søknadIdAG2)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdAG1))
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdAG2))
@@ -116,7 +115,7 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeId))
-        sendVedtaksperiodeVenter(vedtaksperiodeId, "INNTEKTSMELDING", vedtaksperiodeId, søknadId = søknadId)
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeId, vedtaksperiodeId, søknadId = søknadId)
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeId))
     }
 
@@ -191,6 +190,7 @@ class BehandlingstatusTest {
         testRapid.sendTestMessage(melding)
     }
     private fun E2ETestContext.sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeId: UUID, søknadId: UUID) = sendVedtaksperiodeVenter(vedtaksperiodeId, "GODKJENNING", søknadId = søknadId)
+    private fun E2ETestContext.sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeId: UUID, venterPåVedtaksperiodeId: UUID = vedtaksperiodeId, venterPåOrganisasjonsnummer: String = "999999999", søknadId: UUID) = sendVedtaksperiodeVenter(vedtaksperiodeId, "INNTEKTSMELDING", venterPåVedtaksperiodeId, venterPåOrganisasjonsnummer, søknadId)
     private fun E2ETestContext.sendBehandlingLukket(vedtaksperiodeId: UUID) {
         @Language("JSON")
         val melding = """{
