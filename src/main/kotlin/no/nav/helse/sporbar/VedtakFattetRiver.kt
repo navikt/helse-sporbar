@@ -106,6 +106,11 @@ internal class VedtakFattetRiver(
         }
         val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].takeUnless(JsonNode::isMissingOrNull)?.sykepengegrunnlagsfakta
 
+        if (utbetalingId == null) {
+            sikkerLog.info("Videreformidler ikke vedtakFattet som gjelder periode uten utbetaling:\n\t${packet.toJson()}")
+            return
+        }
+
         vedtakFattetMediator.vedtakFattet(
             VedtakFattet(
                 fødselsnummer = identer.fødselsnummer,

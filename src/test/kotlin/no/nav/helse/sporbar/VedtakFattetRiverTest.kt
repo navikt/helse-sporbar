@@ -42,7 +42,7 @@ internal class VedtakFattetRiverTest {
     }
 
     @Test
-    fun `vedtakFattet uten utbetaling`() = e2e {
+    fun `ikke vedtakFattet uten utbetaling`() = e2e {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
@@ -51,28 +51,8 @@ internal class VedtakFattetRiverTest {
         inntektsmeldingSendt(idSett)
         vedtakFattetUtenUtbetalingSendt(idSett)
 
-        verify { producerMock.send( capture(captureSlot) ) }
-
-        val vedtakFattet = captureSlot.last()
-        assertEquals(FØDSELSNUMMER, vedtakFattet.key())
-
-        val vedtakFattetJson = vedtakFattet.validertJson()
-        assertEquals(FØDSELSNUMMER, vedtakFattetJson["fødselsnummer"].textValue())
-        assertEquals(AKTØRID, vedtakFattetJson["aktørId"].textValue())
-        assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
-        assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
-        assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
-        assertEquals(INNTEKT, vedtakFattetJson["inntekt"].asDouble())
-        assertEquals(SYKEPENGEGRUNNLAG, vedtakFattetJson["sykepengegrunnlag"].asDouble())
-        assertEquals(GRUNNLAG_FOR_SYKEPENGEGRUNNLAG, vedtakFattetJson["grunnlagForSykepengegrunnlag"].asDouble())
-        assertEquals(GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER, vedtakFattetJson["grunnlagForSykepengegrunnlagPerArbeidsgiver"].toString())
-        assertEquals(BEGRENSNING, vedtakFattetJson["begrensning"].asText())
-        assertTrue(vedtakFattetJson.path("utbetalingId").isNull)
-        assertTrue(vedtakFattetJson.path("vedtaksperiodeId").isMissingNode)
-        assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
-
-        assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
-            .contains(idSett.søknadDokumentId))
+        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
+        assertTrue(captureSlot.isEmpty())
     }
 
     @Test
