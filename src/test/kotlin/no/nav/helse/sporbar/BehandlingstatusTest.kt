@@ -24,6 +24,7 @@ class BehandlingstatusTest {
         val vedtaksperiodeId = UUID.randomUUID()
         sendSøknad(søknadId, eksternSøknadId)
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeId, søknadId = søknadId)
         sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeId, søknadId = søknadId)
         sendBehandlingLukket(vedtaksperiodeId)
 
@@ -40,8 +41,8 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
         sendBehandlingForkastet(vedtaksperiodeId)
 
-        assertEquals(3, sisPublisher.sendteMeldinger(vedtaksperiodeId).size)
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, BEHANDLES_UTENFOR_SPEIL), sisPublisher.sendteStatuser(vedtaksperiodeId))
+        assertEquals(2, sisPublisher.sendteMeldinger(vedtaksperiodeId).size)
+        assertEquals(listOf(OPPRETTET, BEHANDLES_UTENFOR_SPEIL), sisPublisher.sendteStatuser(vedtaksperiodeId))
     }
 
     @Test
@@ -51,6 +52,7 @@ class BehandlingstatusTest {
         val vedtaksperiodeIdMars = UUID.randomUUID()
         sendSøknad(søknadIdMars, eksternSøknadIdMars)
         sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdMars)
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdMars, søknadId = søknadIdMars)
         sendVedtaksperiodeVenterPåGodkjenning(vedtaksperiodeIdMars, søknadId = søknadIdMars)
         sendBehandlingLukket(vedtaksperiodeIdMars)
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
@@ -61,12 +63,12 @@ class BehandlingstatusTest {
         val vedtaksperiodeIdJanuar = UUID.randomUUID()
 
         sendSøknad(søknadIdJanuar, eksternSøknadIdJanuar)
-        sendBehandlingOpprettet(vedtaksperiodeIdJanuar, søknadIdJanuar)
-        sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdMars)
-        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdJanuar,  vedtaksperiodeIdJanuar, søknadId = søknadIdJanuar)
+        sendBehandlingOpprettet(vedtaksperiodeIdJanuar, søknadIdJanuar) // Førstegangs
+        sendBehandlingOpprettet(vedtaksperiodeIdMars, søknadIdMars) // Revurdering
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdJanuar, vedtaksperiodeIdJanuar, søknadId = søknadIdJanuar)
         sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdMars, vedtaksperiodeIdJanuar, søknadId = søknadIdMars)
 
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
+        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_SAKSBEHANDLER, FERDIG, OPPRETTET, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeIdMars))
         assertEquals(setOf(eksternSøknadIdMars), sisPublisher.eksterneSøknadIder(vedtaksperiodeIdMars))
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeIdJanuar))
@@ -87,6 +89,8 @@ class BehandlingstatusTest {
         sendBehandlingOpprettet(vedtaksperiodeIdAG2, søknadIdAG2)
 
         // Arbeidsgiver 1 sender inn inntektsmelding
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdAG1, søknadId = søknadIdAG1)
+
         sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdAG1, vedtaksperiodeIdAG2, venterPåOrganisasjonsnummer = "AG2", søknadId = søknadIdAG1)
         sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeIdAG2, vedtaksperiodeIdAG2, søknadId = søknadIdAG2)
 
@@ -101,20 +105,21 @@ class BehandlingstatusTest {
 
         sendSøknad(søknadId)
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
+        sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeId, søknadId = søknadId)
         sendVedtaksperiodeVenter(vedtaksperiodeId, "SØKNAD", vedtaksperiodeId, søknadId = søknadId)
 
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER, VENTER_PÅ_ANNEN_PERIODE), sisPublisher.sendteStatuser(vedtaksperiodeId))
     }
 
     @Test
-    fun `Venter selv på inntektsmelding skal ikke gi ny status`() = e2e {
+    fun `Venter selv på inntektsmelding _ER_ signalet som sier at vi venter på arbeidsgiver`() = e2e {
         val søknadId = UUID.randomUUID()
         val vedtaksperiodeId = UUID.randomUUID()
 
         sendSøknad(søknadId)
         sendBehandlingOpprettet(vedtaksperiodeId, søknadId)
 
-        assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeId))
+        assertEquals(listOf(OPPRETTET), sisPublisher.sendteStatuser(vedtaksperiodeId))
         sendVedtaksperiodeVenterPåInntektsmelding(vedtaksperiodeId, vedtaksperiodeId, søknadId = søknadId)
         assertEquals(listOf(OPPRETTET, VENTER_PÅ_ARBEIDSGIVER), sisPublisher.sendteStatuser(vedtaksperiodeId))
     }

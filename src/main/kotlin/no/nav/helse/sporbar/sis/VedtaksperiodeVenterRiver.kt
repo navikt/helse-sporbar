@@ -26,6 +26,7 @@ import no.nav.helse.sporbar.tilSøknader
 import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
 import java.util.*
+import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 
 internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val spedisjonClient: SpedisjonClient, private val sisPublisher: SisPublisher) : River.PacketListener {
 
@@ -125,7 +126,7 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val sp
         }
         data object Inntektsmelding: VenterPå {
             override fun håndter(vedtaksperiodeVenter: VedtaksperiodeVenter, sisPublisher: SisPublisher) {
-                // Ettersom vi går automatisk til VENTER_PÅ_ARBEIDSGIVER ved opprettelse av behandling publiserer vi ikke noe
+                vedtaksperiodeVenter.publiser(sisPublisher, VENTER_PÅ_ARBEIDSGIVER)
             }
         }
         data object InntektsmeldingAnnenPeriode: VenterPå {

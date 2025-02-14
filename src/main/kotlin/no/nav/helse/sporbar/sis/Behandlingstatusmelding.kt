@@ -13,7 +13,7 @@ data class Behandlingstatusmelding(
     val status: Behandlingstatustype,
     val eksterneSøknadIder: Set<UUID>
 ) {
-    val versjon = "2.0.0"
+    val versjon = "2.0.1"
 
     enum class Behandlingstatustype {
         OPPRETTET,
@@ -29,7 +29,6 @@ data class Behandlingstatusmelding(
             Behandlingstatusmelding(vedtaksperiodeId, behandlingId, tidspunkt, Behandlingstatustype.OPPRETTET, eksterneSøknadIder)
         internal fun behandlingstatus(vedtaksperiodeId: UUID, behandlingId: UUID, tidspunkt: OffsetDateTime, status: Behandlingstatustype, eksterneSøknadIder: Set<UUID> = emptySet()) =
             Behandlingstatusmelding(vedtaksperiodeId, behandlingId, tidspunkt, status, eksterneSøknadIder)
-
         private val Oslo = ZoneId.of("Europe/Oslo")
         internal fun JsonNode.asOffsetDateTime() = asLocalDateTime().atZone(Oslo).toOffsetDateTime()
     }

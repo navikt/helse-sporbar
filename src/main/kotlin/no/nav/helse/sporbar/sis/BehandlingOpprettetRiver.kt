@@ -14,7 +14,6 @@ import com.github.navikt.tbd_libs.result_object.getOrThrow
 import com.github.navikt.tbd_libs.retry.retryBlocking
 import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
 import io.micrometer.core.instrument.MeterRegistry
-import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.VENTER_PÅ_ARBEIDSGIVER
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
 import no.nav.helse.sporbar.tilSøknader
 import org.slf4j.LoggerFactory
@@ -66,7 +65,6 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val spe
         } ?: return sikkerlogg.error("Nå kom det en behandling_opprettet uten at vi fant eksterne søknadIder. Er ikke dét rart?")
         val tidspunkt = packet["@opprettet"].asOffsetDateTime()
         sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingOpprettet(vedtaksperiodeId, behandlingId, tidspunkt, eksterneSøknadIder))
-        sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, VENTER_PÅ_ARBEIDSGIVER))
     }
 
     private companion object {
