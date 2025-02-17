@@ -19,7 +19,8 @@
     "grunnlagForSykepengegrunnlagPerArbeidsgiver",
     "begrunnelser",
     "sykepengegrunnlagsfakta",
-    "tags"
+    "tags",
+    "utbetalingId"
   ],
   "type": "object",
   "additionalProperties": false,
@@ -28,7 +29,7 @@
       "type": "string",
       "description": "schema-versjon for denne meldingen.",
       "enum": [
-        "1.2.0"
+        "1.2.1"
       ]
     },
     "fødselsnummer": {
@@ -117,10 +118,10 @@
       }
     },
     "utbetalingId": {
-      "type": ["string", "null"],
+      "type": "string",
       "format": "uuid",
       "examples": ["446eca54-befd-4851-acc3-ec300a20932a"],
-      "description": "Peker på en 'utbetaling', det vil i praksis si en melding på utbetaling-topicen.\n\nOptional da det ikke nødvendigvis er gjort en utbetaling på vedtaket."
+      "description": "Peker på en 'utbetaling', det vil i praksis si en melding på utbetaling-topicen."
     },
     "grunnlagForSykepengegrunnlagPerArbeidsgiver": {
       "type": "object",
@@ -196,10 +197,6 @@
               }
             ]
           }]
-        },
-        {
-          "type": "null",
-          "description": "Er ikke gjort noen vilkårsprøving for vedtaket."
         },
         {
           "type": "object",

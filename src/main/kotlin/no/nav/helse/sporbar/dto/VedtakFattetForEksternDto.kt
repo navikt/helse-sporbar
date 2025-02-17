@@ -23,7 +23,7 @@ data class VedtakFattetForEksternDto(
     val begrunnelser: List<BegrunnelseForEksternDto>,
     val tags: Set<String>
 ) {
-    val versjon: String = "1.2.0"
+    val versjon: String = "1.2.1"
 }
 
 class DokumentForEkstern(val dokumentId: UUID, val type: Type) {
