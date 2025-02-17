@@ -47,15 +47,15 @@ internal class VedtakFattetRiver(
                     "grunnlagForSykepengegrunnlagPerArbeidsgiver",
                     "begrensning",
                     "inntekt",
-                    "tags"
+                    "tags",
+                    "sykepengegrunnlagsfakta"
                 )
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
                 it.require("skjæringstidspunkt", JsonNode::asLocalDate)
                 it.require("vedtakFattetTidspunkt", JsonNode::asLocalDateTime)
                 it.require("@opprettet", JsonNode::asLocalDateTime)
-                it.interestedIn("utbetalingId") { id -> UUID.fromString(id.asText()) }
-                it.interestedIn("sykepengegrunnlagsfakta")
+                it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("begrunnelser")
             }
         }.register(this)
@@ -97,19 +97,9 @@ internal class VedtakFattetRiver(
                 }
             )
         } ?: emptyList()
-
-        val tags = packet["tags"].takeUnless(JsonNode::isMissingOrNull)?.map { it.asText() }
-            ?.filter { tag -> tag in TAGS_TIL_DELING_UTAD }?.toSet() ?: emptySet<String>()
-
-        val utbetalingId = packet["utbetalingId"].takeUnless(JsonNode::isMissingOrNull)?.let {
-            UUID.fromString(it.asText())
-        }
-        val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].takeUnless(JsonNode::isMissingOrNull)?.sykepengegrunnlagsfakta
-
-        if (utbetalingId == null) {
-            sikkerLog.info("Videreformidler ikke vedtakFattet som gjelder periode uten utbetaling:\n\t${packet.toJson()}")
-            return
-        }
+        val tags = packet["tags"].takeUnless(JsonNode::isMissingOrNull)?.map { it.asText() }?.filter { tag -> tag in TAGS_TIL_DELING_UTAD }?.toSet() ?: emptySet<String>()
+        val utbetalingId = UUID.fromString(packet["utbetalingId"].asText())
+        val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].sykepengegrunnlagsfakta
 
         vedtakFattetMediator.vedtakFattet(
             VedtakFattet(
@@ -165,9 +155,9 @@ internal data class VedtakFattet(
     val grunnlagForSykepengegrunnlag: Double,
     val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
     val begrensning: String,
-    val utbetalingId: UUID?,
+    val utbetalingId: UUID,
     val vedtakFattetTidspunkt: LocalDateTime,
-    val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta?,
+    val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta,
     val begrunnelser: List<Begrunnelse>,
     val tags: Set<String>
 )

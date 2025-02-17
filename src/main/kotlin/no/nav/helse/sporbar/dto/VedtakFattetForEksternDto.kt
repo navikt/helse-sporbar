@@ -17,9 +17,9 @@ data class VedtakFattetForEksternDto(
     val grunnlagForSykepengegrunnlag: Double,
     val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
     val begrensning: String,
-    val utbetalingId: UUID?,
+    val utbetalingId: UUID,
     val vedtakFattetTidspunkt: LocalDateTime,
-    val sykepengegrunnlagsfakta: SykepengegrunnlagsfaktaForEksternDto?,
+    val sykepengegrunnlagsfakta: SykepengegrunnlagsfaktaForEksternDto,
     val begrunnelser: List<BegrunnelseForEksternDto>,
     val tags: Set<String>
 ) {

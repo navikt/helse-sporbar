@@ -55,7 +55,7 @@ internal class VedtakFattetMediator(
             },
             utbetalingId = vedtakFattet.utbetalingId,
             vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt,
-            sykepengegrunnlagsfakta = vedtakFattet.sykepengegrunnlagsfakta?.let { oversett(it) },
+            sykepengegrunnlagsfakta = oversett(vedtakFattet.sykepengegrunnlagsfakta),
             begrunnelser = vedtakFattet.begrunnelser.map { begrunnelse ->
                 BegrunnelseForEksternDto(
                     begrunnelse.type,
