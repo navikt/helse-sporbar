@@ -76,7 +76,8 @@ internal class VedtaksperiodeVenterRiver(rapid: RapidsConnection, private val sp
         sikkerlogg.info("Henter dokumenter $hendelser")
         val eksterneSøknadIder = retryBlocking {
             spedisjonClient.hentMeldinger(hendelser, callId).getOrThrow().tilSøknader()
-        } ?: return sikkerlogg.error("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Er ikke dét rart?")
+        } ?: emptySet()
+        if (eksterneSøknadIder.isEmpty()) sikkerlogg.info("Nå kom det en vedtaksperiode_venter uten at vi fant eksterne søknadIder. Det er ikke rart.")
 
         val vedtaksperiodeVenter = VedtaksperiodeVenter(
             vedtaksperiodeId = node.vedtaksperiodeId,
