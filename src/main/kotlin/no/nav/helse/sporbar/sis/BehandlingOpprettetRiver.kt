@@ -62,8 +62,7 @@ internal class BehandlingOpprettetRiver(rapid: RapidsConnection, private val spe
         sikkerlogg.info("Henter dokumenter for $interneSøknadIder")
         val eksterneSøknadIder = retryBlocking {
             spedisjonClient.hentMeldinger(interneSøknadIder, callId).getOrThrow().tilSøknader()
-        } ?: emptySet()
-        if (eksterneSøknadIder.isEmpty()) sikkerlogg.info("Nå kom det en behandling_opprettet uten at vi fant eksterne søknadIder. Det er jo ikke rart.")
+        } ?: return sikkerlogg.error("Nå kom det en behandling_opprettet uten at vi fant eksterne søknadIder. Er ikke dét rart?")
         val tidspunkt = packet["@opprettet"].asOffsetDateTime()
         sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingOpprettet(vedtaksperiodeId, behandlingId, tidspunkt, eksterneSøknadIder))
     }
