@@ -1,10 +1,10 @@
 val mainClass = "no.nav.helse.sporbar.AppKt"
 
-val rapidsAndRiversVersion = "2025012712551737978926.de930d8e0feb"
-val tbdLibsVersion = "2025.01.27-12.50-76316f3b"
-val ktorVersion = "3.0.1"
-val junitJupiterVersion = "5.11.3"
-val mockkVersion = "1.13.13"
+val rapidsAndRiversVersion = "2025032719521743101565.4abbf0c3af65"
+val tbdLibsVersion = "2025.03.27-18.30-c228796d"
+val ktorVersion = "3.1.2"
+val junitJupiterVersion = "5.12.1"
+val mockkVersion = "1.13.17"
 val jsonSchemaValidatorVersion = "1.0.73"
 val jsonassertVersion = "1.5.1"
 
