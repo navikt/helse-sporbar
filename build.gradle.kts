@@ -9,7 +9,7 @@ val jsonSchemaValidatorVersion = "1.0.73"
 val jsonassertVersion = "1.5.1"
 
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "2.1.20"
 }
 
 dependencies {
