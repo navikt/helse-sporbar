@@ -41,11 +41,7 @@ internal class VedtakFattetMediator(
             fom = vedtakFattet.fom,
             tom = vedtakFattet.tom,
             skjæringstidspunkt = vedtakFattet.skjæringstidspunkt,
-            inntekt = vedtakFattet.inntekt,
             sykepengegrunnlag = vedtakFattet.sykepengegrunnlag,
-            grunnlagForSykepengegrunnlag = vedtakFattet.grunnlagForSykepengegrunnlag,
-            grunnlagForSykepengegrunnlagPerArbeidsgiver = vedtakFattet.grunnlagForSykepengegrunnlagPerArbeidsgiver,
-            begrensning = vedtakFattet.begrensning,
             dokumenter = dokumenter.map {
                 DokumentForEkstern(it.dokumentId, when (it.type) {
                     Dokument.Type.Sykmelding -> DokumentForEkstern.Type.Sykmelding

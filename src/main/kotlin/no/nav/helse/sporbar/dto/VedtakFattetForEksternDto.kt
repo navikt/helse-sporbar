@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar.dto
 
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -12,11 +13,7 @@ data class VedtakFattetForEksternDto(
     val tom: LocalDate,
     val skjæringstidspunkt: LocalDate,
     val dokumenter: List<DokumentForEkstern>,
-    val inntekt: Double,
     val sykepengegrunnlag: Double,
-    val grunnlagForSykepengegrunnlag: Double,
-    val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
-    val begrensning: String,
     val utbetalingId: UUID,
     val vedtakFattetTidspunkt: LocalDateTime,
     val sykepengegrunnlagsfakta: SykepengegrunnlagsfaktaForEksternDto,
@@ -24,7 +21,47 @@ data class VedtakFattetForEksternDto(
     val tags: Set<String>
 ) {
     val versjon: String = "1.2.1"
+
+    @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
+    val begrensning: String = when (sykepengegrunnlagsfakta) {
+        is FastsattEtterSkjønnForEksternDto -> if (sykepengegrunnlagsfakta.skjønnsfastsatt > sykepengegrunnlagsfakta.`6G`)
+            "ER_6G_BEGRENSET"
+        else
+            "ER_IKKE_6G_BEGRENSET"
+        is FastsattEtterHovedregelForEksternDto -> if (sykepengegrunnlagsfakta.omregnetÅrsinntekt > sykepengegrunnlagsfakta.`6G`)
+            "ER_6G_BEGRENSET"
+        else
+            "ER_IKKE_6G_BEGRENSET"
+        is FastsattIInfotrygdForEksternDto -> "VURDERT_I_INFOTRYGD"
+    }
+
+    @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
+    val inntekt = when (sykepengegrunnlagsfakta) {
+        is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta.skjønnsfastsatt
+        is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+        is FastsattIInfotrygdForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+    } / 12.0
+
+    @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
+    val grunnlagForSykepengegrunnlag: Double = when (sykepengegrunnlagsfakta) {
+        is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta.skjønnsfastsatt
+        is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+        is FastsattIInfotrygdForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+    }
+
+    @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
+    val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double> = when (sykepengegrunnlagsfakta) {
+        is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta
+            .arbeidsgivere
+            .associate { it.arbeidsgiver to it.skjønnsfastsatt.toDesimaler }
+        is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta
+            .arbeidsgivere
+            .associate { it.arbeidsgiver to it.omregnetÅrsinntekt.toDesimaler }
+        is FastsattIInfotrygdForEksternDto -> emptyMap()
+    }
 }
+
+private val Double.toDesimaler get() = toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
 
 class DokumentForEkstern(val dokumentId: UUID, val type: Type) {
     enum class Type {

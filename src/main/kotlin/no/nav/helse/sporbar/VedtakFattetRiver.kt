@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
@@ -43,10 +42,6 @@ internal class VedtakFattetRiver(
                     "organisasjonsnummer",
                     "hendelser",
                     "sykepengegrunnlag",
-                    "grunnlagForSykepengegrunnlag",
-                    "grunnlagForSykepengegrunnlagPerArbeidsgiver",
-                    "begrensning",
-                    "inntekt",
                     "tags",
                     "sykepengegrunnlagsfakta"
                 )
@@ -82,11 +77,7 @@ internal class VedtakFattetRiver(
         val tom = packet["tom"].asLocalDate()
         val skjæringstidspunkt = packet["skjæringstidspunkt"].asLocalDate()
         val hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) }
-        val inntekt = packet["inntekt"].asDouble()
         val sykepengegrunnlag = packet["sykepengegrunnlag"].asDouble()
-        val grunnlagForSykepengegrunnlag = packet["grunnlagForSykepengegrunnlag"].asDouble()
-        val grunnlagForSykepengegrunnlagPerArbeidsgiver = objectMapper.readValue(packet["grunnlagForSykepengegrunnlagPerArbeidsgiver"].toString(), object : TypeReference<Map<String, Double>>() {})
-        val begrensning = packet["begrensning"].asText()
         val vedtakFattetTidspunkt = packet["vedtakFattetTidspunkt"].asLocalDateTime()
         val begrunnelser = packet["begrunnelser"].takeUnless(JsonNode::isMissingOrNull)?.map { begrunnelse ->
             Begrunnelse(
@@ -110,11 +101,7 @@ internal class VedtakFattetRiver(
                 tom = tom,
                 skjæringstidspunkt = skjæringstidspunkt,
                 hendelseIder = hendelseIder,
-                inntekt = inntekt,
                 sykepengegrunnlag = sykepengegrunnlag,
-                grunnlagForSykepengegrunnlag = grunnlagForSykepengegrunnlag,
-                grunnlagForSykepengegrunnlagPerArbeidsgiver = grunnlagForSykepengegrunnlagPerArbeidsgiver,
-                begrensning = begrensning,
                 utbetalingId = utbetalingId,
                 vedtakFattetTidspunkt = vedtakFattetTidspunkt,
                 sykepengegrunnlagsfakta = sykepengegrunnlagsfakta,
@@ -150,11 +137,7 @@ internal data class VedtakFattet(
     val tom: LocalDate,
     val skjæringstidspunkt: LocalDate,
     val hendelseIder: List<UUID>,
-    val inntekt: Double,
     val sykepengegrunnlag: Double,
-    val grunnlagForSykepengegrunnlag: Double,
-    val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double>,
-    val begrensning: String,
     val utbetalingId: UUID,
     val vedtakFattetTidspunkt: LocalDateTime,
     val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta,
