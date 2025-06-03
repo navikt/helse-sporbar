@@ -30,3 +30,6 @@ spec:
     - team: flex
       application: sykepengesoknad-backend
       access: read
+    - team: helsearbeidsgiver
+      application: sykepenger-im-lps-api
+      access: read
