@@ -36,6 +36,8 @@ spec:
   accessPolicy:
     outbound:
       rules:
+        - application: logging
+          namespace: nais-system
         - application: speed-api
         - application: spedisjon
   azure:
