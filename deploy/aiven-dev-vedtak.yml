@@ -33,6 +33,3 @@ spec:
         - team: disykefravar
           application: dvh-sykefravar-airflow-kafka
           access: read
-        - team: teamfamilie
-          application: familie-ef-vedtakhendelse
-          access: read
