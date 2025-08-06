@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar
 
+import com.github.navikt.tbd_libs.rapids_and_rivers.asInstant
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
@@ -12,6 +13,10 @@ import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
 import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -19,9 +24,6 @@ import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.*
 
 internal class VedtakFattetRiverTest {
 
@@ -39,6 +41,7 @@ internal class VedtakFattetRiverTest {
         val INNTEKT = 388260.0
         val AKTØRID = "123"
         val VEDTAK_FATTET_TIDSPUNKT = LocalDateTime.now()
+        val VEDTAK_FATTET_TIDSPUNKT_INSTANT = Instant.now()
     }
 
     @Test
@@ -51,7 +54,7 @@ internal class VedtakFattetRiverTest {
         inntektsmeldingSendt(idSett)
         vedtakFattetUtenUtbetalingSendt(idSett)
 
-        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
+        verify(exactly = 0) { producerMock.send(capture(captureSlot)) }
         assertTrue(captureSlot.isEmpty())
     }
 
@@ -65,7 +68,7 @@ internal class VedtakFattetRiverTest {
         inntektsmeldingSendt(idSett)
         vedtakFattetMedUtbetalingSendt(idSett)
 
-        verify { producerMock.send( capture(captureSlot) ) }
+        verify { producerMock.send(capture(captureSlot)) }
 
         val vedtakFattet = captureSlot.last()
         assertEquals(FØDSELSNUMMER, vedtakFattet.key())
@@ -75,7 +78,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
         assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
         assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
-        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())})
+        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
@@ -95,13 +98,13 @@ internal class VedtakFattetRiverTest {
             begrunnelser = listOf(
                 Begrunnelse(
                     "SkjønnsfastsattSykepengegrunnlagFritekst", "En begrunnelse", perioder = listOf(
-                        Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
-                    )
+                    Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
+                )
                 ),
                 Begrunnelse(
                     "DelvisInnvilgelse", "Du har fått delvis innvilgelse", perioder = listOf(
-                        Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
-                    )
+                    Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
+                )
                 )
             )
         )
@@ -122,7 +125,7 @@ internal class VedtakFattetRiverTest {
         inntektsmeldingSendt(idSett)
         vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode", "Personutbetaling", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"))
 
-        verify { producerMock.send( capture(captureSlot) ) }
+        verify { producerMock.send(capture(captureSlot)) }
 
         val vedtakFattet = captureSlot.last()
         assertEquals(FØDSELSNUMMER, vedtakFattet.key())
@@ -132,7 +135,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
         assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
         assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
-        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())})
+        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
@@ -141,9 +144,30 @@ internal class VedtakFattetRiverTest {
         assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"), vedtakFattetJson["tags"].map { it.asText() })
     }
 
+    @Test
+    fun `vedtakFattet med utbetaling for selvstendig næringsdrivende`() = e2e {
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+        val idSett = IdSett()
+
+        vedtakFattetMedUtbetalingForSelvstendigNæringsdrivendeSendt(idSett)
+
+        verify { producerMock.send(capture(captureSlot)) }
+
+        val vedtakFattet = captureSlot.last()
+        assertEquals(FØDSELSNUMMER, vedtakFattet.key())
+
+        val vedtakFattetJson = vedtakFattet.validertJson()
+        assertEquals(FØDSELSNUMMER, vedtakFattetJson["fødselsnummer"].textValue())
+        assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
+        assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
+        assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
+        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
+        assertEquals(VEDTAK_FATTET_TIDSPUNKT_INSTANT, vedtakFattetJson["vedtakFattetTidspunkt"].asInstant())
+    }
+
     private data class E2ETestContext(val testRapid: TestRapid) {
         val meldinger = mutableListOf<HentMeldingResponse>()
-        val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
+        val producerMock = mockk<KafkaProducer<String, String>>(relaxed = true)
         val spedisjonClient = mockk<SpedisjonClient> {
             every { hentMeldinger(any(), any()) } returns HentMeldingerResponse(meldinger).ok()
         }
@@ -159,6 +183,7 @@ internal class VedtakFattetRiverTest {
 
         init {
             VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)
+            VedtakFattetSelvstendigNæringsdrivendeRiver(testRapid, vedtakFattetMediator, speedClient)
             UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
 
             every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
@@ -169,45 +194,52 @@ internal class VedtakFattetRiverTest {
             ).ok()
         }
     }
+
     private fun e2e(testblokk: E2ETestContext.() -> Unit) {
         val testRapid = TestRapid()
         testblokk(E2ETestContext(testRapid))
     }
 
     private fun E2ETestContext.sykmeldingSendt(idSett: IdSett) {
-        meldinger.add(HentMeldingResponse(
-            type = "ny_søknad",
-            fnr = "",
-            internDokumentId = idSett.nySøknadHendelseId,
-            eksternDokumentId = idSett.sykmeldingDokumentId,
-            rapportertDato = LocalDateTime.now(),
-            duplikatkontroll = "",
-            jsonBody = "{}"
-        ))
+        meldinger.add(
+            HentMeldingResponse(
+                type = "ny_søknad",
+                fnr = "",
+                internDokumentId = idSett.nySøknadHendelseId,
+                eksternDokumentId = idSett.sykmeldingDokumentId,
+                rapportertDato = LocalDateTime.now(),
+                duplikatkontroll = "",
+                jsonBody = "{}"
+            )
+        )
     }
 
     private fun E2ETestContext.søknadSendt(idSett: IdSett) {
-        meldinger.add(HentMeldingResponse(
-            type = "sendt_søknad_nav",
-            fnr = "",
-            internDokumentId = idSett.sendtSøknadHendelseId,
-            eksternDokumentId = idSett.søknadDokumentId,
-            rapportertDato = LocalDateTime.now(),
-            duplikatkontroll = "",
-            jsonBody = "{}"
-        ))
+        meldinger.add(
+            HentMeldingResponse(
+                type = "sendt_søknad_nav",
+                fnr = "",
+                internDokumentId = idSett.sendtSøknadHendelseId,
+                eksternDokumentId = idSett.søknadDokumentId,
+                rapportertDato = LocalDateTime.now(),
+                duplikatkontroll = "",
+                jsonBody = "{}"
+            )
+        )
     }
 
     private fun E2ETestContext.inntektsmeldingSendt(idSett: IdSett) {
-        meldinger.add(HentMeldingResponse(
-            type = "inntektsmelding",
-            fnr = "",
-            internDokumentId = idSett.inntektsmeldingHendelseId,
-            eksternDokumentId = idSett.inntektsmeldingDokumentId,
-            rapportertDato = LocalDateTime.now(),
-            duplikatkontroll = "",
-            jsonBody = "{}"
-        ))
+        meldinger.add(
+            HentMeldingResponse(
+                type = "inntektsmelding",
+                fnr = "",
+                internDokumentId = idSett.inntektsmeldingHendelseId,
+                eksternDokumentId = idSett.inntektsmeldingDokumentId,
+                rapportertDato = LocalDateTime.now(),
+                duplikatkontroll = "",
+                jsonBody = "{}"
+            )
+        )
     }
 
     private fun E2ETestContext.vedtakFattetMedUtbetalingSendt(
@@ -216,6 +248,13 @@ internal class VedtakFattetRiverTest {
         tags: Set<String> = emptySet()
     ) {
         testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, begrunnelser = begrunnelser, tags = tags))
+    }
+
+    private fun E2ETestContext.vedtakFattetMedUtbetalingForSelvstendigNæringsdrivendeSendt(
+        idSett: IdSett,
+        begrunnelser: List<Begrunnelse> = emptyList(),
+    ) {
+        testRapid.sendTestMessage(vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(idSett, begrunnelser = begrunnelser))
     }
 
     private fun E2ETestContext.vedtakFattetUtenUtbetalingSendt(idSett: IdSett) {
@@ -229,7 +268,8 @@ internal class VedtakFattetRiverTest {
             idSett.nySøknadHendelseId,
             idSett.sendtSøknadHendelseId,
             idSett.inntektsmeldingHendelseId
-    )) = """{
+        )
+    ) = """{
   "vedtaksperiodeId": "$idSett.vedtaksperiodeId",
   "fom": "$FOM",
   "tom": "$TOM",
@@ -302,6 +342,46 @@ internal class VedtakFattetRiverTest {
       "begrunnelser": $begrunnelserJson,
       "tags": ${tags.map { "\"$it\"" }}
     }
+        """
+    }
+
+    @Language("json")
+    private fun E2ETestContext.vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
+        idSett: IdSett,
+        vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
+        utbetalingId: UUID = idSett.utbetalingId,
+        begrunnelser: List<Begrunnelse> = emptyList(),
+    ): String {
+        val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
+        return """{
+          "@id": "${UUID.randomUUID()}",
+          "@event_name": "vedtak_fattet",
+          "@opprettet": "$TIDSSTEMPEL",
+          "yrkesaktivitetstype": "SELVSTENDIG", 
+          "vedtaksperiodeId": "$vedtaksperiodeId",
+          "fom": "$FOM",
+          "tom": "$TOM",
+          "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
+          "sykepengegrunnlag": 620000.0,
+          "utbetalingId": "$utbetalingId",
+          "fødselsnummer": "$FØDSELSNUMMER",
+          "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT_INSTANT",
+          "sykepengegrunnlagsfakta": {
+            "pensjonsgivendeInntekter": [
+              {
+                "år": 2023,
+                "inntekt": 750000.0
+              },
+              {
+                "år": 2024,
+                "inntekt": 850000.0
+              }
+            ],
+            "erBegrensetTil6G": true,
+            "6G": 620000.0
+          },
+          "begrunnelser": $begrunnelserJson
+        }
         """
     }
 
@@ -378,16 +458,15 @@ internal class VedtakFattetRiverTest {
 }
 """
 
-
-private data class IdSett(
-    val sykmeldingDokumentId: UUID = UUID.randomUUID(),
-    val søknadDokumentId: UUID = UUID.randomUUID(),
-    val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
-    val nySøknadHendelseId: UUID = UUID.randomUUID(),
-    val sendtSøknadHendelseId: UUID = UUID.randomUUID(),
-    val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
-    val vedtaksperiodeId: UUID = UUID.randomUUID(),
-    val utbetalingId: UUID = UUID.randomUUID()
-)
+    private data class IdSett(
+        val sykmeldingDokumentId: UUID = UUID.randomUUID(),
+        val søknadDokumentId: UUID = UUID.randomUUID(),
+        val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
+        val nySøknadHendelseId: UUID = UUID.randomUUID(),
+        val sendtSøknadHendelseId: UUID = UUID.randomUUID(),
+        val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
+        val vedtaksperiodeId: UUID = UUID.randomUUID(),
+        val utbetalingId: UUID = UUID.randomUUID()
+    )
 }
 

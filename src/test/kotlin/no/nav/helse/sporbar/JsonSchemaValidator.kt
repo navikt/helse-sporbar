@@ -19,7 +19,8 @@ internal object JsonSchemaValidator {
         .getSchema(JsonSchemaValidator::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
 
     private val inntektsmeldingstatusSchema by lazy { "inntektsmeldingstatus".getSchema() }
-    private val vedtakFattetSchema by lazy { "vedtak__fattet".getSchema() }
+    private val vedtakFattetSchema by lazy { "vedtak__fattet_arbeidstaker".getSchema() }
+    private val vedtakFattetSelvstendigNæringsdrivendeSchema by lazy { "vedtak__fattet_selvstendig_næringsdrivende".getSchema() }
     private val vedtakAnnullertSchema by lazy { "vedtak__annullert".getSchema() }
     private val utbetalingSchema by lazy { "utbetaling".getSchema() }
     private val annulleringSchema by lazy { "utbetaling__annullering".getSchema() }
@@ -29,38 +30,35 @@ internal object JsonSchemaValidator {
         assertEquals(emptySet<ValidationMessage>(), valideringsfeil) { "${json.toPrettyString()}\n" }
     }
 
-    private fun Melding.hentSchema(): Triple<String, Meldingstype, JsonSchema> = when (topic) {
-        "tbd.inntektsmeldingstatus" -> Triple("sykmeldt", Meldingstype.Inntektsmeldingstatus, inntektsmeldingstatusSchema)
-        "tbd.vedtak" -> when (json.path("event").asText()) {
-            "vedtak_annullert" -> Triple("fødselsnummer", Meldingstype.VedtakAnnullert, vedtakAnnullertSchema)
-            else -> Triple("fødselsnummer", Meldingstype.VedtakFattet, vedtakFattetSchema)
-        }
-        "aapen-helse-sporbar" -> Triple("fødselsnummer", Meldingstype.Annullering, annulleringSchema)
-        "tbd.utbetaling" -> when (json.path("event").asText()) {
-            "utbetaling_annullert" -> Triple("fødselsnummer", Meldingstype.Annullering, annulleringSchema)
-            "utbetaling_uten_utbetaling" -> Triple("fødselsnummer", Meldingstype.UtenUtbetaling, utbetalingSchema)
-            else -> Triple("fødselsnummer", Meldingstype.Utbetaling, utbetalingSchema)
-        }
-        else -> throw IllegalStateException("Mangler schema for topic $topic")
-    }.let { Triple(json.path(it.first).asText(), it.second, it.third) }
+    private fun Melding.hentSchema(): Pair<String, JsonSchema> = when (meldingstype) {
+        Meldingstype.VedtakFattet -> "fødselsnummer" to vedtakFattetSchema
+        Meldingstype.VedtakFattetSelvstendigNæringsdrivende -> "fødselsnummer" to vedtakFattetSelvstendigNæringsdrivendeSchema
+        Meldingstype.VedtakAnnullert -> "fødselsnummer" to vedtakAnnullertSchema
+        Meldingstype.Behandlingstilstand -> error("Mangler schema for meldingstype $meldingstype")
+        Meldingstype.Annullering -> "fødselsnummer" to annulleringSchema
+        Meldingstype.Utbetaling -> "fødselsnummer" to utbetalingSchema
+        Meldingstype.UtenUtbetaling -> "fødselsnummer" to utbetalingSchema
+        Meldingstype.Inntektsmeldingstatus -> "sykmeldt" to inntektsmeldingstatusSchema
+    }.let { json.path(it.first).asText() to it.second }
 
-    private fun Melding.udokumentertMelding() = (topic == "aapen-helse-sporbar" && meldingstype != Meldingstype.Annullering).also { if (it) {
-        println("⚠️ Melding $meldingstype på $topic er ikke dokumentert, og blir ikke validert.")
-    }}
+    private fun Melding.udokumentertMelding() = (topic == "aapen-helse-sporbar" && meldingstype != Meldingstype.Annullering).also {
+        if (it) {
+            println("⚠️ Melding $meldingstype på $topic er ikke dokumentert, og blir ikke validert.")
+        }
+    }
 
     internal fun Melding.validertJson(): JsonNode {
         if (udokumentertMelding()) return json
-        val (forventetFødselsnummer, forventetMeldingstype, schema) = hentSchema()
+        val (forventetFødselsnummer, schema) = hentSchema()
         assertEquals(forventetFødselsnummer, key) { "Meldinger skal publiseres med fødselsnummer som key. Key=$key, Fødselsnummer=$forventetFødselsnummer" }
-        assertEquals(forventetMeldingstype, meldingstype)
         schema.assertSchema(json)
         return json
     }
 
     private fun Headers.meldingstypeOrNull() =
         map { it.key() to String(it.value()) }
-        .singleOrNull { it.first == "type" }
-        ?.let { Meldingstype.valueOf(it.second) }
+            .singleOrNull { it.first == "type" }
+            ?.let { Meldingstype.valueOf(it.second) }
 
     internal fun ProducerRecord<String, String>.validertJson() = Melding(
         topic = topic(),

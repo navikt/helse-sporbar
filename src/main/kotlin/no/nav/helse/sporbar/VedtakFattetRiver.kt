@@ -33,7 +33,10 @@ internal class VedtakFattetRiver(
 
     init {
         River(rapidsConnection).apply {
-            precondition { it.requireValue("@event_name", "vedtak_fattet") }
+            precondition {
+                it.requireValue("@event_name", "vedtak_fattet")
+                it.forbidValue("yrkesaktivitetstype", "SELVSTENDIG")
+            }
             validate {
                 it.requireKey(
                     "fødselsnummer",
