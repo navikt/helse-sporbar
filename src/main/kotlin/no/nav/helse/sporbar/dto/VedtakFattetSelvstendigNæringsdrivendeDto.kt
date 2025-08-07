@@ -29,8 +29,11 @@ data class PeriodeSelvstendigDto(
     val tom: LocalDate
 )
 
-data class PersonsinntektDto(val år: Int, val inntekt: BigDecimal)
+data class PensjonsgivendeInntektDto(val år: Int, val inntekt: BigDecimal)
 
 data class SykepengegrunnlagsfaktaSelvstendigDto(
-    val personinntekter: List<PersonsinntektDto>,
+    val beregningsgrunnlag: BigDecimal,
+    val pensjonsgivendeInntekter: List<PensjonsgivendeInntektDto>,
+    val erBegrensetTil6G: Boolean,
+    val `6G`: BigDecimal,
 )

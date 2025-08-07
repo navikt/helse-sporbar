@@ -41,8 +41,8 @@
     },
     "sykepengegrunnlag": {
       "type": "number",
-      "examples": [343446.60],
-      "description": "Inntekten som er lagt til grunn for sykepenger, på årsnivå, begrenset oppad til 6G. Inntekter fra flere arbeidsgivere kan inngå i sykepengegrunnlaget."
+      "description": "Inntekten som er lagt til grunn for sykepenger, på årsnivå, begrenset oppad til 6G. Inntekter fra flere arbeidsgivere kan inngå i sykepengegrunnlaget.",
+      "examples": [711720.0]
     },
     "vedtakFattetTidspunkt": {
       "type": "string",
@@ -59,11 +59,16 @@
     "sykepengegrunnlagsfakta": {
       "type": "object",
       "description": "Faktaen som er lagt til grunn for å komme frem til sykepengegrunnlaget.",
-      "required": ["personinntekter"],
+      "required": ["beregningsgrunnlag","pensjonsgivendeInntekter", "erBegrensetTil6G", "6G"],
       "properties": {
-        "personinntekter": {
+        "beregningsgrunnlag": {
+          "type": "number",
+          "description": "Gjennomsnitt av justerte pensjonsgivende inntekter",
+          "examples": [900000.0]
+        },
+        "pensjonsgivendeInntekter": {
           "type": "array",
-          "description": "Ferdiglignede årsinntekter fra Skatteetaten",
+          "description": "Ferdiglignede pernsjonsgivende årsinntekter fra Skatteetaten",
           "items": {
             "type": "object",
             "required": ["år", "inntekt"],
@@ -74,10 +79,20 @@
               },
               "inntekt": {
                 "type": "number",
-                "examples": [750000]
+                "examples": [750000.0]
               }
             }
           }
+        },
+        "erBegrensetTil6G": {
+          "type": "boolean",
+          "description": "Om sykepengegrunnlaget er satt til 6G fordi beregningsgrunnlaget er større.",
+          "examples": [true]
+        },
+        "6G": {
+          "type": "number",
+          "examples": [711720.0],
+          "description": "Seks ganger grunnbeløpet som gjaldt ved skjæringstidspunktet."
         }
       }
     },

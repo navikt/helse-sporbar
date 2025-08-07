@@ -13,7 +13,7 @@ import no.nav.helse.sporbar.dto.FastsattEtterSkjønnForEksternDto
 import no.nav.helse.sporbar.dto.FastsattIInfotrygdForEksternDto
 import no.nav.helse.sporbar.dto.PeriodeForEksternDto
 import no.nav.helse.sporbar.dto.PeriodeSelvstendigDto
-import no.nav.helse.sporbar.dto.PersonsinntektDto
+import no.nav.helse.sporbar.dto.PensjonsgivendeInntektDto
 import no.nav.helse.sporbar.dto.SykepengegrunnlagsfaktaSelvstendigDto
 import no.nav.helse.sporbar.dto.VedtakFattetForEksternDto
 import no.nav.helse.sporbar.dto.VedtakFattetSelvstendigNæringsdrivendeDto
@@ -125,12 +125,15 @@ internal class VedtakFattetMediator(
         utbetalingId = vedtakFattet.utbetalingId,
         vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt,
         sykepengegrunnlagsfakta = SykepengegrunnlagsfaktaSelvstendigDto(
-            personinntekter = vedtakFattet.sykepengegrunnlagsfakta.pensjonsgivendeInntekter.map {
-                PersonsinntektDto(
+            beregningsgrunnlag = vedtakFattet.sykepengegrunnlagsfakta.beregningsgrunnlag,
+            pensjonsgivendeInntekter = vedtakFattet.sykepengegrunnlagsfakta.pensjonsgivendeInntekter.map {
+                PensjonsgivendeInntektDto(
                     år = it.år,
                     inntekt = it.inntekt
                 )
-            }
+            },
+            erBegrensetTil6G = vedtakFattet.sykepengegrunnlagsfakta.erBegrensetTil6G,
+            `6G` = vedtakFattet.sykepengegrunnlagsfakta.`6G`,
         ),
         begrunnelser = vedtakFattet.begrunnelser.map { begrunnelse ->
             BegrunnelseSelvstendigDto(

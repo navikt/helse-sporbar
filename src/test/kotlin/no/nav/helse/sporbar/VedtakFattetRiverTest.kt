@@ -151,12 +151,18 @@ internal class VedtakFattetRiverTest {
         val idSett = IdSett()
 
         val sykepengegrunnlag = BigDecimal("777777.7")
+        val beregningsgrunnlag = BigDecimal("777777.7")
         val pensjonsgivendeInntekter = listOf(2023 to BigDecimal("750000.0"), 2024 to BigDecimal("815000.0"))
+        val erBegrensetTil6G = false
+        val `6G` = BigDecimal("815000.0")
         testRapid.sendTestMessage(
             vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
                 idSett = idSett,
                 sykepengegrunnlag = sykepengegrunnlag,
-                pensjonsgivendeInntekter = pensjonsgivendeInntekter
+                beregningsgrunnlag = beregningsgrunnlag,
+                pensjonsgivendeInntekter = pensjonsgivendeInntekter,
+                erBegrensetTil6G = erBegrensetTil6G,
+                `6G` = `6G`
             )
         )
 
@@ -173,11 +179,14 @@ internal class VedtakFattetRiverTest {
         assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
         assertEquals(VEDTAK_FATTET_TIDSPUNKT_INSTANT, vedtakFattetJson["vedtakFattetTidspunkt"].asInstant())
 
-        assertEquals(sykepengegrunnlag.toString(), vedtakFattetJson["sykepengegrunnlag"].asText())
+        assertEquals(sykepengegrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlag"].asText()))
+        assertEquals(beregningsgrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["beregningsgrunnlag"].asText()))
         assertEquals(
             pensjonsgivendeInntekter.sortedBy { it.first },
-            vedtakFattetJson["sykepengegrunnlagsfakta"]["personinntekter"].map { it["år"].asInt() to BigDecimal(it["inntekt"].asText()) }.sortedBy { it.first }
+            vedtakFattetJson["sykepengegrunnlagsfakta"]["pensjonsgivendeInntekter"].map { it["år"].asInt() to BigDecimal(it["inntekt"].asText()) }.sortedBy { it.first }
         )
+        assertEquals(erBegrensetTil6G, vedtakFattetJson["sykepengegrunnlagsfakta"]["erBegrensetTil6G"].asBoolean())
+        assertEquals(`6G`, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["6G"].asText()))
     }
 
     private data class E2ETestContext(val testRapid: TestRapid) {
@@ -359,7 +368,10 @@ internal class VedtakFattetRiverTest {
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
         utbetalingId: UUID = idSett.utbetalingId,
         sykepengegrunnlag: BigDecimal,
+        beregningsgrunnlag: BigDecimal,
         pensjonsgivendeInntekter: List<Pair<Int, BigDecimal>>,
+        erBegrensetTil6G: Boolean,
+        `6G`: BigDecimal,
         begrunnelser: List<Begrunnelse> = emptyList(),
     ): String {
         val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
@@ -377,17 +389,18 @@ internal class VedtakFattetRiverTest {
           "fødselsnummer": "$FØDSELSNUMMER",
           "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT_INSTANT",
           "sykepengegrunnlagsfakta": {
+            "beregningsgrunnlag": $beregningsgrunnlag,
             "pensjonsgivendeInntekter": [${
             pensjonsgivendeInntekter.joinToString(separator = ",") { (år, inntekt) ->
-                """{
-                        "år": $år,
-                        "inntekt": $inntekt
-                    }
-                """.trimIndent()
-            }
-        }],
-            "erBegrensetTil6G": false,
-            "6G": 815493.0
+                    """{
+                            "år": $år,
+                            "inntekt": $inntekt
+                        }
+                    """.trimIndent()
+                }
+            }],
+            "erBegrensetTil6G": $erBegrensetTil6G,
+            "6G": $`6G`
           },
           "begrunnelser": $begrunnelserJson
         }

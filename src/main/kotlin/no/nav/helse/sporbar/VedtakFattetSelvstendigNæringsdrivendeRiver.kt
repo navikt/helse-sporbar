@@ -77,6 +77,7 @@ internal class VedtakFattetSelvstendigNæringsdrivendeRiver(
         val sykepengegrunnlag = BigDecimal(packet["sykepengegrunnlag"].asText())
         val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].run {
             SykepengegrunnlagsfaktaSelvstendigNæringsdrivende(
+                beregningsgrunnlag = BigDecimal(get("beregningsgrunnlag").asText()),
                 pensjonsgivendeInntekter = get("pensjonsgivendeInntekter").map {
                     PensjonsgivendeInntekter(
                         år = it.get("år").asInt(),
@@ -134,6 +135,7 @@ internal data class VedtakFattetSelvstendigNæringsdrivende(
 )
 
 data class SykepengegrunnlagsfaktaSelvstendigNæringsdrivende(
+    val beregningsgrunnlag: BigDecimal,
     val pensjonsgivendeInntekter: List<PensjonsgivendeInntekter>,
     val erBegrensetTil6G: Boolean,
     val `6G`: BigDecimal,
