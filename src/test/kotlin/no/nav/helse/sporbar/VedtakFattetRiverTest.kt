@@ -13,6 +13,7 @@ import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -149,7 +150,15 @@ internal class VedtakFattetRiverTest {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
-        vedtakFattetMedUtbetalingForSelvstendigNæringsdrivendeSendt(idSett)
+        val sykepengegrunnlag = BigDecimal("777777.7")
+        val pensjonsgivendeInntekter = listOf(2023 to BigDecimal("750000.0"), 2024 to BigDecimal("815000.0"))
+        testRapid.sendTestMessage(
+            vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
+                idSett = idSett,
+                sykepengegrunnlag = sykepengegrunnlag,
+                pensjonsgivendeInntekter = pensjonsgivendeInntekter
+            )
+        )
 
         verify { producerMock.send(capture(captureSlot)) }
 
@@ -163,6 +172,12 @@ internal class VedtakFattetRiverTest {
         assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
         assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
         assertEquals(VEDTAK_FATTET_TIDSPUNKT_INSTANT, vedtakFattetJson["vedtakFattetTidspunkt"].asInstant())
+
+        assertEquals(sykepengegrunnlag.toString(), vedtakFattetJson["sykepengegrunnlag"].asText())
+        assertEquals(
+            pensjonsgivendeInntekter.sortedBy { it.first },
+            vedtakFattetJson["sykepengegrunnlagsfakta"]["personinntekter"].map { it["år"].asInt() to BigDecimal(it["inntekt"].asText()) }.sortedBy { it.first }
+        )
     }
 
     private data class E2ETestContext(val testRapid: TestRapid) {
@@ -248,13 +263,6 @@ internal class VedtakFattetRiverTest {
         tags: Set<String> = emptySet()
     ) {
         testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, begrunnelser = begrunnelser, tags = tags))
-    }
-
-    private fun E2ETestContext.vedtakFattetMedUtbetalingForSelvstendigNæringsdrivendeSendt(
-        idSett: IdSett,
-        begrunnelser: List<Begrunnelse> = emptyList(),
-    ) {
-        testRapid.sendTestMessage(vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(idSett, begrunnelser = begrunnelser))
     }
 
     private fun E2ETestContext.vedtakFattetUtenUtbetalingSendt(idSett: IdSett) {
@@ -350,6 +358,8 @@ internal class VedtakFattetRiverTest {
         idSett: IdSett,
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
         utbetalingId: UUID = idSett.utbetalingId,
+        sykepengegrunnlag: BigDecimal,
+        pensjonsgivendeInntekter: List<Pair<Int, BigDecimal>>,
         begrunnelser: List<Begrunnelse> = emptyList(),
     ): String {
         val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
@@ -362,23 +372,22 @@ internal class VedtakFattetRiverTest {
           "fom": "$FOM",
           "tom": "$TOM",
           "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
-          "sykepengegrunnlag": 620000.0,
+          "sykepengegrunnlag": $sykepengegrunnlag,
           "utbetalingId": "$utbetalingId",
           "fødselsnummer": "$FØDSELSNUMMER",
           "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT_INSTANT",
           "sykepengegrunnlagsfakta": {
-            "pensjonsgivendeInntekter": [
-              {
-                "år": 2023,
-                "inntekt": 750000.0
-              },
-              {
-                "år": 2024,
-                "inntekt": 850000.0
-              }
-            ],
-            "erBegrensetTil6G": true,
-            "6G": 620000.0
+            "pensjonsgivendeInntekter": [${
+            pensjonsgivendeInntekter.joinToString(separator = ",") { (år, inntekt) ->
+                """{
+                        "år": $år,
+                        "inntekt": $inntekt
+                    }
+                """.trimIndent()
+            }
+        }],
+            "erBegrensetTil6G": false,
+            "6G": 815493.0
           },
           "begrunnelser": $begrunnelserJson
         }
