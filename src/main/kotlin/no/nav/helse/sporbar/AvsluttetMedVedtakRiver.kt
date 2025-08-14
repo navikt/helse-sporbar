@@ -6,6 +6,7 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
+import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
@@ -43,7 +44,6 @@ internal class AvsluttetMedVedtakRiver(
                     "skjæringstidspunkt",
                     "sykepengegrunnlag",
                     "vedtakFattetTidspunkt",
-                    "utbetalingId",
                     "sykepengegrunnlagsfakta",
                     "automatiskBehandling",
                     "forbrukteSykedager",
@@ -64,7 +64,10 @@ internal class AvsluttetMedVedtakRiver(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
-        håndterAvsluttetMedVedtak(packet)
+        val callId = packet["@id"].asText()
+        withMDC("callId" to callId) {
+            håndterAvsluttetMedVedtak(packet)
+        }
     }
 
     private fun håndterAvsluttetMedVedtak(packet: JsonMessage) {
@@ -79,7 +82,6 @@ internal class AvsluttetMedVedtakRiver(
         val skjæringstidspunkt = packet["skjæringstidspunkt"].asLocalDate()
         val sykepengegrunnlag = packet["sykepengegrunnlag"].asDouble()
         val vedtakFattetTidspunkt = packet["vedtakFattetTidspunkt"].asLocalDateTime()
-        val utbetalingId = UUID.fromString(packet["utbetalingId"].asText())
         val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].sykepengegrunnlagsfaktaAvsluttetMedVedtak()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
@@ -110,7 +112,6 @@ internal class AvsluttetMedVedtakRiver(
                 hendelseIder = hendelseIder,
                 skjæringstidspunkt = skjæringstidspunkt,
                 sykepengegrunnlag = sykepengegrunnlag,
-                utbetalingId = utbetalingId,
                 vedtakFattetTidspunkt = vedtakFattetTidspunkt,
                 sykepengegrunnlagsfakta = sykepengegrunnlagsfakta,
                 automatiskBehandling = automatiskBehandling,

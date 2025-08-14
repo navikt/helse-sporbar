@@ -16,7 +16,6 @@ internal data class AvsluttetMedVedtakDto(
     val hendelseIder: List<UUID>,
     val skjæringstidspunkt: LocalDate,
     val sykepengegrunnlag: Double,
-    val utbetalingId: UUID,
     val vedtakFattetTidspunkt: LocalDateTime,
     val sykepengegrunnlagsfakta: SykepengegrunnlagsfaktaAvsluttetMedVedtak,
     val automatiskBehandling: Boolean,

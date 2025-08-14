@@ -21,6 +21,7 @@ internal object JsonSchemaValidator {
     private val vedtakFattetSchema by lazy { "vedtak__fattet_arbeidstaker".getSchema() }
     private val vedtakFattetSelvstendigNæringsdrivendeSchema by lazy { "vedtak__fattet_selvstendig_næringsdrivende".getSchema() }
     private val vedtakAnnullertSchema by lazy { "vedtak__annullert".getSchema() }
+    private val vedtaksdataSchema by lazy { "vedtak__avsluttet".getSchema() }
     private val utbetalingSchema by lazy { "utbetaling".getSchema() }
     private val annulleringSchema by lazy { "utbetaling__annullering".getSchema() }
 
@@ -33,6 +34,7 @@ internal object JsonSchemaValidator {
         "VedtakFattet" -> "fødselsnummer" to vedtakFattetSchema
         "VedtakFattetSelvstendigNæringsdrivende" -> "fødselsnummer" to vedtakFattetSelvstendigNæringsdrivendeSchema
         "VedtakAnnullert" -> "fødselsnummer" to vedtakAnnullertSchema
+        "Vedtaksdata" -> "fødselsnummer" to vedtaksdataSchema
         "Annullering" -> "fødselsnummer" to annulleringSchema
         "Utbetaling" -> "fødselsnummer" to utbetalingSchema
         "UtenUtbetaling" -> "fødselsnummer" to utbetalingSchema
