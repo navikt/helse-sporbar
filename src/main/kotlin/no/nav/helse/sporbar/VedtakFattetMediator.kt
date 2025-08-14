@@ -39,7 +39,7 @@ internal class VedtakFattetMediator(
         }
         val eksternDto = oversett(vedtakFattet, dokumenter)
         val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
-        producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(Meldingstype.VedtakFattet.header())))
+        producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(VedtakType.VedtakFattet.header())))
         sikkerLogg.info("Publiserer vedtakFattet {}", meldingForEkstern)
         log.info("Publiserte vedtakFattet for {}", dokumenter.map { it.dokumentId })
     }
@@ -48,7 +48,7 @@ internal class VedtakFattetMediator(
         val eksternDto = oversett(vedtakFattet)
         val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
 
-        producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(Meldingstype.VedtakFattetSelvstendigNæringsdrivende.header())))
+        producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(VedtakType.VedtakFattetSelvstendigNæringsdrivende.header())))
         sikkerLogg.info("Publiserer vedtakFattet {}", meldingForEkstern)
         log.info("Publiserte vedtakFattet")
     }

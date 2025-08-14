@@ -13,7 +13,15 @@ internal class AvsluttetMedVedtakMediator(
 ) {
     internal fun avsluttetMedVedtak(avsluttetMedVedtak: AvsluttetMedVedtakDto) {
         val avsluttetMedVedtakJson = objectMapper.writeValueAsString(avsluttetMedVedtak)
-        producer.send(ProducerRecord("tbd.vedtak-v2", null, avsluttetMedVedtak.fødselsnummer, avsluttetMedVedtakJson, listOf(Meldingstype.AvsluttetMedVedtak.header())))
+        producer.send(
+            ProducerRecord(
+                "tbd.vedtak-v2",
+                null,
+                avsluttetMedVedtak.fødselsnummer,
+                avsluttetMedVedtakJson,
+                listOf(VedtakType.Vedtaksdata.header())
+            )
+        )
         sikkerLogg.info("Publiserer avsluttetMedVedtak {}", avsluttetMedVedtakJson)
     }
 }
