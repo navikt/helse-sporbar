@@ -1,0 +1,35 @@
+---
+apiVersion: kafka.nais.io/v1
+kind: Topic
+metadata:
+    name: vedtak-v2
+    namespace: tbd
+    labels:
+        team: tbd
+    annotations:
+        dcat.data.nav.no/title: "Sykepengevedtak"
+        dcat.data.nav.no/description: "Vedtak fattet om sykepenger"
+        dcat.data.nav.no/theme: "helse"
+        dcat.data.nav.no/keyword: "helse, sykepenger, vedtak"
+spec:
+    pool: nav-prod
+    config:  # optional; all fields are optional too; defaults shown
+        cleanupPolicy: delete  # delete, compact
+        minimumInSyncReplicas: 1
+        partitions: 3
+        replication: 2  # see min/max requirements
+        retentionBytes: -1  # -1 means unlimited
+        retentionHours: 8760  # -1 means unlimited
+    acl:
+        - team: tbd
+          application: sporbar
+          access: readwrite
+        - team: flex
+          application: spinnsyn-backend
+          access: read
+        - team: teamnks
+          application: sf-sykmelding
+          access: read
+        - team: disykefravar
+          application: dvh-sykefravar-airflow-kafka
+          access: read

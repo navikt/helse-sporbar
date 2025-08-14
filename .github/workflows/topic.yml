@@ -23,7 +23,7 @@ jobs:
       - uses: nais/deploy/actions/deploy@v2
         env:
           CLUSTER: dev-gcp
-          RESOURCE: deploy/aiven-dev-utbetaling.yml,deploy/aiven-dev-vedtak.yml,deploy/aiven-dev-sis.yml
+          RESOURCE: deploy/aiven-dev-utbetaling.yml,deploy/aiven-dev-vedtak.yml,deploy/aiven-dev-sis.yml, deploy/aiven-dev-vedtak-v2.yml
 
   deployProd:
     name: apply prod-gcp
@@ -35,5 +35,5 @@ jobs:
       - uses: nais/deploy/actions/deploy@v2
         env:
           CLUSTER: prod-gcp
-          RESOURCE: deploy/aiven-prod-utbetaling.yml,deploy/aiven-prod-vedtak.yml,deploy/aiven-prod-sis.yml
+          RESOURCE: deploy/aiven-prod-utbetaling.yml,deploy/aiven-prod-vedtak.yml,deploy/aiven-prod-sis.yml, deploy/aiven-prod-vedtak-v2.yml
 
