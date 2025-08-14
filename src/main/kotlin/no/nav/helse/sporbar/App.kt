@@ -51,6 +51,9 @@ fun launchApplication(env: Map<String, String>) {
         )
         val utbetalingMediator = UtbetalingMediator(aivenProducer)
 
+        val AvsluttetMedVedtakMediator = AvsluttetMedVedtakMediator(aivenProducer)
+
+        AvsluttetMedVedtakRiver(this, AvsluttetMedVedtakMediator)
         VedtakFattetRiver(this, vedtakFattetMediator, speedClient)
         VedtakFattetSelvstendigNæringsdrivendeRiver(this, vedtakFattetMediator, speedClient)
         VedtaksperiodeAnnullertRiver(this, aivenProducer, speedClient)
