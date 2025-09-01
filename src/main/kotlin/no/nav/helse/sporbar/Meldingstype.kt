@@ -3,7 +3,7 @@ package no.nav.helse.sporbar
 import org.apache.kafka.common.header.internals.RecordHeader
 
 enum class VedtakType{
-    VedtakFattet, VedtakFattetSelvstendigNæringsdrivende, VedtakAnnullert, Vedtaksdata
+    VedtakFattet, VedtakAnnullert, Vedtaksdata
 }
 
 enum class UtbetalingType {
