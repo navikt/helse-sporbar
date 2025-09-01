@@ -93,13 +93,15 @@ internal class VedtakFattetRiver(
         } ?: emptyList()
         val tags = packet["tags"].takeUnless(JsonNode::isMissingOrNull)?.map { it.asText() }?.filter { tag -> tag in TAGS_TIL_DELING_UTAD }?.toSet() ?: emptySet<String>()
         val utbetalingId = UUID.fromString(packet["utbetalingId"].asText())
-        val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].asSykepengegrunnlagsfakta(packet["yrkesaktivitetstype"].asText())
+        val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asText()
+        val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].asSykepengegrunnlagsfakta(yrkesaktivitetstype)
 
         vedtakFattetMediator.vedtakFattet(
             VedtakFattet(
                 fødselsnummer = identer.fødselsnummer,
                 aktørId = identer.aktørId,
                 organisasjonsnummer = organisasjonsnummer,
+                yrkesaktivitetstype = yrkesaktivitetstype,
                 fom = fom,
                 tom = tom,
                 skjæringstidspunkt = skjæringstidspunkt,
@@ -201,6 +203,7 @@ internal data class VedtakFattet(
     val fødselsnummer: String,
     val aktørId: String,
     val organisasjonsnummer: String,
+    val yrkesaktivitetstype: String,
     val fom: LocalDate,
     val tom: LocalDate,
     val skjæringstidspunkt: LocalDate,
