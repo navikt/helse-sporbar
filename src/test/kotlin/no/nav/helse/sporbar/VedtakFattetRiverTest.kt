@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar
 
+import com.github.navikt.tbd_libs.rapids_and_rivers.asInstant
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
@@ -13,6 +14,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -40,6 +42,7 @@ internal class VedtakFattetRiverTest {
         val INNTEKT = 388260.0
         val AKTØRID = "123"
         val VEDTAK_FATTET_TIDSPUNKT = LocalDateTime.now()
+        val VEDTAK_FATTET_TIDSPUNKT_INSTANT = Instant.now()
     }
 
     @Test
@@ -147,20 +150,19 @@ internal class VedtakFattetRiverTest {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
-        sykmeldingSendt(idSett)
-        søknadSendt(idSett)
-
         val sykepengegrunnlag = BigDecimal("777777.7")
         val beregningsgrunnlag = BigDecimal("777777.7")
+        val pensjonsgivendeInntekter = listOf(2023 to BigDecimal("750000.0"), 2024 to BigDecimal("815000.0"))
         val erBegrensetTil6G = false
-        val seksG = BigDecimal("815000.0")
+        val `6G` = BigDecimal("815000.0")
         testRapid.sendTestMessage(
             vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
                 idSett = idSett,
                 sykepengegrunnlag = sykepengegrunnlag,
                 beregningsgrunnlag = beregningsgrunnlag,
+                pensjonsgivendeInntekter = pensjonsgivendeInntekter,
                 erBegrensetTil6G = erBegrensetTil6G,
-                seksG = seksG
+                `6G` = `6G`
             )
         )
 
@@ -175,15 +177,16 @@ internal class VedtakFattetRiverTest {
         assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
         assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
         assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
-        assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
-
-        assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
-            .contains(idSett.søknadDokumentId))
+        assertEquals(VEDTAK_FATTET_TIDSPUNKT_INSTANT, vedtakFattetJson["vedtakFattetTidspunkt"].asInstant())
 
         assertEquals(sykepengegrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlag"].asText()))
-        assertEquals(beregningsgrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["selvstendig"]["beregningsgrunnlag"].asText()))
-        assertEquals(emptyList<String>(), vedtakFattetJson["sykepengegrunnlagsfakta"]["tags"].map { it.asText() })
-        assertEquals(seksG, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["6G"].asText()))
+        assertEquals(beregningsgrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["beregningsgrunnlag"].asText()))
+        assertEquals(
+            pensjonsgivendeInntekter.sortedBy { it.first },
+            vedtakFattetJson["sykepengegrunnlagsfakta"]["pensjonsgivendeInntekter"].map { it["år"].asInt() to BigDecimal(it["inntekt"].asText()) }.sortedBy { it.first }
+        )
+        assertEquals(erBegrensetTil6G, vedtakFattetJson["sykepengegrunnlagsfakta"]["erBegrensetTil6G"].asBoolean())
+        assertEquals(`6G`, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["6G"].asText()))
     }
 
     private data class E2ETestContext(val testRapid: TestRapid) {
@@ -204,6 +207,7 @@ internal class VedtakFattetRiverTest {
 
         init {
             VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)
+            VedtakFattetSelvstendigNæringsdrivendeRiver(testRapid, vedtakFattetMediator, speedClient)
             UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
 
             every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
@@ -335,7 +339,6 @@ internal class VedtakFattetRiverTest {
       "@opprettet": "$TIDSSTEMPEL",
       "fødselsnummer": "$FØDSELSNUMMER",
       "organisasjonsnummer": "$ORGNUMMER",
-      "yrkesaktivitetstype": "ARBEIDSTAKER",
       "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
       "sykepengegrunnlagsfakta": {
         "fastsatt": "EtterHovedregel",
@@ -364,52 +367,43 @@ internal class VedtakFattetRiverTest {
         idSett: IdSett,
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
         utbetalingId: UUID = idSett.utbetalingId,
-        hendelser: List<UUID> = listOf(
-            idSett.nySøknadHendelseId,
-            idSett.sendtSøknadHendelseId,
-            idSett.inntektsmeldingHendelseId
-        ),
         sykepengegrunnlag: BigDecimal,
         beregningsgrunnlag: BigDecimal,
+        pensjonsgivendeInntekter: List<Pair<Int, BigDecimal>>,
         erBegrensetTil6G: Boolean,
-        seksG: BigDecimal,
+        `6G`: BigDecimal,
         begrunnelser: List<Begrunnelse> = emptyList(),
-        tags: Set<String> = emptySet(),
     ): String {
         val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
         return """{
-      "vedtaksperiodeId": "$vedtaksperiodeId",
-      "fom": "$FOM",
-      "tom": "$TOM",
-      "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
-      "hendelser": ${hendelser.map { "\"${it}\"" }},
-      "sykepengegrunnlag": "$sykepengegrunnlag",
-      "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
-      "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
-      "begrensning": "$BEGRENSNING",
-      "inntekt": "$INNTEKT",
-      "utbetalingId": "$utbetalingId",
-      "@event_name": "vedtak_fattet",
-      "@id": "${UUID.randomUUID()}",
-      "@opprettet": "$TIDSSTEMPEL",
-      "fødselsnummer": "$FØDSELSNUMMER",
-      "organisasjonsnummer": "SELVSTENDIG",
-      "yrkesaktivitetstype": "SELVSTENDIG",
-      "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
-      "sykepengegrunnlagsfakta": {
-        "fastsatt": "EtterHovedregel",
-        "6G": $seksG,
-        "omregnetÅrsinntekt": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG,
-        "innrapportertÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 5000},
-        "avviksprosent": 12.52,
-        "tags": [ ${if (erBegrensetTil6G) {"\"6GBegrenset\""} else ""} ],
-        "selvstendig": { 
-          "beregningsgrunnlag": $beregningsgrunnlag
+          "@id": "${UUID.randomUUID()}",
+          "@event_name": "vedtak_fattet",
+          "@opprettet": "$TIDSSTEMPEL",
+          "yrkesaktivitetstype": "SELVSTENDIG", 
+          "vedtaksperiodeId": "$vedtaksperiodeId",
+          "fom": "$FOM",
+          "tom": "$TOM",
+          "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
+          "sykepengegrunnlag": $sykepengegrunnlag,
+          "utbetalingId": "$utbetalingId",
+          "fødselsnummer": "$FØDSELSNUMMER",
+          "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT_INSTANT",
+          "sykepengegrunnlagsfakta": {
+            "beregningsgrunnlag": $beregningsgrunnlag,
+            "pensjonsgivendeInntekter": [${
+            pensjonsgivendeInntekter.joinToString(separator = ",") { (år, inntekt) ->
+                    """{
+                            "år": $år,
+                            "inntekt": $inntekt
+                        }
+                    """.trimIndent()
+                }
+            }],
+            "erBegrensetTil6G": $erBegrensetTil6G,
+            "6G": $`6G`
+          },
+          "begrunnelser": $begrunnelserJson
         }
-      },
-      "begrunnelser": $begrunnelserJson,
-      "tags": ${tags.map { "\"$it\"" }}
-    }
         """
     }
 

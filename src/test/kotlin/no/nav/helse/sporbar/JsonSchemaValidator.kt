@@ -18,7 +18,8 @@ internal object JsonSchemaValidator {
         .getInstance(SpecVersion.VersionFlag.V7)
         .getSchema(JsonSchemaValidator::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
 
-    private val vedtakFattetSchema by lazy { "vedtak__fattet".getSchema() }
+    private val vedtakFattetSchema by lazy { "vedtak__fattet_arbeidstaker".getSchema() }
+    private val vedtakFattetSelvstendigNæringsdrivendeSchema by lazy { "vedtak__fattet_selvstendig_næringsdrivende".getSchema() }
     private val vedtakAnnullertSchema by lazy { "vedtak__annullert".getSchema() }
     private val utbetalingSchema by lazy { "utbetaling".getSchema() }
     private val annulleringSchema by lazy { "utbetaling__annullering".getSchema() }
@@ -30,6 +31,7 @@ internal object JsonSchemaValidator {
 
     private fun Melding.hentSchema(): Pair<String, JsonSchema> = when (meldingstype) {
         "VedtakFattet" -> "fødselsnummer" to vedtakFattetSchema
+        "VedtakFattetSelvstendigNæringsdrivende" -> "fødselsnummer" to vedtakFattetSelvstendigNæringsdrivendeSchema
         "VedtakAnnullert" -> "fødselsnummer" to vedtakAnnullertSchema
         "Annullering" -> "fødselsnummer" to annulleringSchema
         "Utbetaling" -> "fødselsnummer" to utbetalingSchema

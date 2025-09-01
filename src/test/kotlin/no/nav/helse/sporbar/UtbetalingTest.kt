@@ -298,7 +298,6 @@ internal class UtbetalingTest {
     "@opprettet": "$TIDSSTEMPEL",
     "fødselsnummer": "$FØDSELSNUMMER",
     "organisasjonsnummer": "$ORGNUMMER",
-    "yrkesaktivitetstype": "ARBEIDSTAKER",
     "tags": [],
     "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
     "sykepengegrunnlagsfakta": {

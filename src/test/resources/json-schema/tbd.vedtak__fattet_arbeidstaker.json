@@ -243,39 +243,6 @@
               }
             }
           }
-        },
-        {
-          "type": "object",
-          "required": ["fastsatt", "6G", "tags", "selvstendig"],
-          "properties": {
-            "fastsatt": {
-              "type": "string",
-              "enum": ["EtterHovedregel"]
-            },
-            "6G": {
-              "type": "number",
-              "examples": [711720],
-              "description": "Seks ganger grunnbeløpet som gjaldt ved skjæringstidspunktet."
-            },
-            "tags": {
-              "type": "array",
-              "description": "Liste med tags som gjelder faktaen som er lagt grunn for sykepengegrunnlaget",
-              "items": {
-                "type": "string",
-                "enum": ["6GBegrenset"]
-              }
-            },
-            "selvstendig": {
-              "type": "object",
-              "required": ["beregningsgrunnlag"],
-              "properties": {
-                "beregningsgrunnlag": {
-                  "type": "number",
-                  "examples": [750000.0]
-                }
-              }
-            }
-          }
         }
       ]
     },
