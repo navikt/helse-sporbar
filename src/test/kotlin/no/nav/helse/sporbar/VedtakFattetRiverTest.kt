@@ -404,7 +404,21 @@ internal class VedtakFattetRiverTest {
         "avviksprosent": 12.52,
         "tags": [ ${if (erBegrensetTil6G) {"\"6GBegrenset\""} else ""} ],
         "selvstendig": { 
-          "beregningsgrunnlag": $beregningsgrunnlag
+          "beregningsgrunnlag": $beregningsgrunnlag,
+          "pensjonsgivendeInntekter": [
+            {
+              "årstall": 2024,
+              "beløp": 600000.0
+            },
+            {
+              "årstall": 2023,
+              "beløp": 600000.1
+            },
+            {
+              "årstall": 2022,
+              "beløp": 600000.2
+            }
+          ]
         }
       },
       "begrunnelser": $begrunnelserJson,

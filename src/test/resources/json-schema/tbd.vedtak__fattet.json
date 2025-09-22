@@ -275,13 +275,31 @@
             },
             "selvstendig": {
               "type": "object",
-              "required": ["beregningsgrunnlag"],
+              "required": ["beregningsgrunnlag", "pensjonsgivendeInntekter"],
               "properties": {
                 "beregningsgrunnlag": {
                   "type": "number",
                   "examples": [750000.0]
+                },
+                "pensjonsgivendeInntekter": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["årstall", "beløp"],
+                    "properties": {
+                      "årstall": {
+                        "type": "number",
+                        "examples": [2021, 2022, 2024]
+                      },
+                      "beløp": {
+                        "type": "number",
+                        "examples": [600000.0, 700000.0]
+                      }
+                    }
+                  }
                 }
-              }
+              },
+              "additionalProperties": false
             }
           }
         }

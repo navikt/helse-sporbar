@@ -136,6 +136,12 @@ data class SykepengegrunnlagsfaktaSelvstendigDto(
     val selvstendig: Selvstendig,
 ) : SykepengegrunnlagsfaktaForEksternDto() {
     data class Selvstendig(
-        val beregningsgrunnlag: BigDecimal
-    )
+        val beregningsgrunnlag: BigDecimal,
+        val pensjonsgivendeInntekter: List<PensjonsgivendeInntekt>
+    ) {
+        data class PensjonsgivendeInntekt (
+            val årstall: Int,
+            val beløp: BigDecimal,
+        )
+    }
 }

@@ -109,6 +109,12 @@ internal class VedtakFattetMediator(
                 tags = sykepengegrunnlagsfakta.tags,
                 selvstendig = SykepengegrunnlagsfaktaSelvstendigDto.Selvstendig(
                     beregningsgrunnlag = sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag,
+                    pensjonsgivendeInntekter = sykepengegrunnlagsfakta.selvstendig.pensjonsgivendeInntekter.map {
+                        SykepengegrunnlagsfaktaSelvstendigDto.Selvstendig.PensjonsgivendeInntekt(
+                            årstall = it.årstall,
+                            beløp = it.beløp
+                        )
+                    },
                 ),
             )
         }

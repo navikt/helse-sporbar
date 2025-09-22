@@ -126,7 +126,13 @@ internal class VedtakFattetRiver(
                         `6G` = this["6G"].asBigDecimal(),
                         tags = get("tags").map { it.asText() }.toSet(),
                         selvstendig = SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig(
-                            beregningsgrunnlag = this["selvstendig"]["beregningsgrunnlag"].asBigDecimal()
+                            beregningsgrunnlag = this["selvstendig"]["beregningsgrunnlag"].asBigDecimal(),
+                            pensjonsgivendeInntekter = this["selvstendig"]["pensjonsgivendeInntekter"].map {
+                                SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig.PensjonsgivendeInntekt(
+                                    årstall = it["årstall"].asInt(),
+                                    beløp = it["beløp"].asBigDecimal()
+                                )
+                            }
                         ),
                     )
                 }
@@ -252,5 +258,11 @@ data class SykepengegrunnlagsfaktaSelvstendigNæringsdrivende(
 ) : Sykepengegrunnlagsfakta("EtterHovedregel") {
     data class Selvstendig(
         val beregningsgrunnlag: BigDecimal,
-    )
+        val pensjonsgivendeInntekter: List<PensjonsgivendeInntekt>
+    ) {
+        data class PensjonsgivendeInntekt(
+            val årstall: Int,
+            val beløp: BigDecimal
+        )
+    }
 }
