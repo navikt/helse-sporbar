@@ -1,12 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Vedtak som blir fattet i Spleis",
-  "description": "Alle vedtak om sykepenger som blir fattet i Spleis\n\nTopic: tbd.vedtak\n\nKey: Fødselsnummer",
+  "title": "Vedtak som blir fattet i Speil for arbeidstaker",
+  "description": "Alle vedtak om sykepenger som blir fattet i Speil for arbeidstakere\n\nTopic: tbd.vedtak\n\nKey: Fødselsnummer",
   "required": [
     "versjon",
     "fødselsnummer",
     "aktørId",
     "organisasjonsnummer",
+    "yrkesaktivitetstype",
     "skjæringstidspunkt",
     "dokumenter",
     "inntekt",
@@ -41,6 +42,13 @@
     "organisasjonsnummer": {
       "type": "string",
       "examples": ["999263550"]
+    },
+    "yrkesaktivitetstype": {
+      "type": "string",
+      "enum": [
+        "ARBEIDSTAKER",
+        "SELVSTENDIG"
+      ]
     },
     "fom": {
       "type": "string",
@@ -241,6 +249,57 @@
                   }
                 }
               }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["fastsatt", "6G", "tags", "selvstendig"],
+          "properties": {
+            "fastsatt": {
+              "type": "string",
+              "enum": ["EtterHovedregel"]
+            },
+            "6G": {
+              "type": "number",
+              "examples": [711720],
+              "description": "Seks ganger grunnbeløpet som gjaldt ved skjæringstidspunktet."
+            },
+            "tags": {
+              "type": "array",
+              "description": "Liste med tags som gjelder faktaen som er lagt grunn for sykepengegrunnlaget",
+              "items": {
+                "type": "string",
+                "enum": ["6GBegrenset"]
+              }
+            },
+            "selvstendig": {
+              "type": "object",
+              "required": ["beregningsgrunnlag", "pensjonsgivendeInntekter"],
+              "properties": {
+                "beregningsgrunnlag": {
+                  "type": "number",
+                  "examples": [750000.0]
+                },
+                "pensjonsgivendeInntekter": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["årstall", "beløp"],
+                    "properties": {
+                      "årstall": {
+                        "type": "number",
+                        "examples": [2021, 2022, 2024]
+                      },
+                      "beløp": {
+                        "type": "number",
+                        "examples": [600000.0, 700000.0]
+                      }
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
             }
           }
         }

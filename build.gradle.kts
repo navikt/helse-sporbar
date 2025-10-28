@@ -1,15 +1,15 @@
 val mainClass = "no.nav.helse.sporbar.AppKt"
 
-val rapidsAndRiversVersion = "2025033014191743337188.2f9d6b08d096"
-val tbdLibsVersion = "2025.03.30-14.11-a91ce546"
-val ktorVersion = "3.1.2"
+val rapidsAndRiversVersion = "2025092210081758528498.1d4b108f2c61"
+val tbdLibsVersion = "2025.09.19-15.24-1a9c113f"
+val ktorVersion = "3.2.3"
 val junitJupiterVersion = "5.12.1"
 val mockkVersion = "1.13.17"
 val jsonSchemaValidatorVersion = "1.0.73"
 val jsonassertVersion = "1.5.1"
 
 plugins {
-    kotlin("jvm") version "2.1.20"
+    kotlin("jvm") version "2.2.10"
 }
 
 dependencies {

@@ -76,7 +76,7 @@ class AnnulleringRiver(
             personFagsystemId = packet["personFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText()
         )
         val annulleringJson = objectMapper.writeValueAsString(annulleringDto)
-        aivenProducer.send(ProducerRecord("tbd.utbetaling", null, identer.fødselsnummer, annulleringJson, listOf(Meldingstype.Annullering.header())))
+        aivenProducer.send(ProducerRecord("tbd.utbetaling", null, identer.fødselsnummer, annulleringJson, listOf(UtbetalingType.Annullering.header())))
         log.info("Publiserte annullering")
         sikkerLog.info("Publiserte annullering $annulleringJson")
     }

@@ -12,6 +12,10 @@ import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
 import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -19,9 +23,6 @@ import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.*
 
 internal class VedtakFattetRiverTest {
 
@@ -51,7 +52,7 @@ internal class VedtakFattetRiverTest {
         inntektsmeldingSendt(idSett)
         vedtakFattetUtenUtbetalingSendt(idSett)
 
-        verify(exactly = 0) { producerMock.send( capture(captureSlot) ) }
+        verify(exactly = 0) { producerMock.send(capture(captureSlot)) }
         assertTrue(captureSlot.isEmpty())
     }
 
@@ -65,7 +66,7 @@ internal class VedtakFattetRiverTest {
         inntektsmeldingSendt(idSett)
         vedtakFattetMedUtbetalingSendt(idSett)
 
-        verify { producerMock.send( capture(captureSlot) ) }
+        verify { producerMock.send(capture(captureSlot)) }
 
         val vedtakFattet = captureSlot.last()
         assertEquals(FØDSELSNUMMER, vedtakFattet.key())
@@ -75,7 +76,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
         assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
         assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
-        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())})
+        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
@@ -95,13 +96,13 @@ internal class VedtakFattetRiverTest {
             begrunnelser = listOf(
                 Begrunnelse(
                     "SkjønnsfastsattSykepengegrunnlagFritekst", "En begrunnelse", perioder = listOf(
-                        Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
-                    )
+                    Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
+                )
                 ),
                 Begrunnelse(
                     "DelvisInnvilgelse", "Du har fått delvis innvilgelse", perioder = listOf(
-                        Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
-                    )
+                    Periode(LocalDate.of(2018, 1, 1), LocalDate.of(2018, 1, 31))
+                )
                 )
             )
         )
@@ -122,7 +123,7 @@ internal class VedtakFattetRiverTest {
         inntektsmeldingSendt(idSett)
         vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode", "Personutbetaling", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"))
 
-        verify { producerMock.send( capture(captureSlot) ) }
+        verify { producerMock.send(capture(captureSlot)) }
 
         val vedtakFattet = captureSlot.last()
         assertEquals(FØDSELSNUMMER, vedtakFattet.key())
@@ -132,7 +133,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
         assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
         assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
-        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText())})
+        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
@@ -141,9 +142,53 @@ internal class VedtakFattetRiverTest {
         assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"), vedtakFattetJson["tags"].map { it.asText() })
     }
 
+    @Test
+    fun `vedtakFattet med utbetaling for selvstendig næringsdrivende`() = e2e {
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+        val idSett = IdSett()
+
+        sykmeldingSendt(idSett)
+        søknadSendt(idSett)
+
+        val sykepengegrunnlag = BigDecimal("777777.7")
+        val beregningsgrunnlag = BigDecimal("777777.7")
+        val erBegrensetTil6G = false
+        val seksG = BigDecimal("815000.0")
+        testRapid.sendTestMessage(
+            vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
+                idSett = idSett,
+                sykepengegrunnlag = sykepengegrunnlag,
+                beregningsgrunnlag = beregningsgrunnlag,
+                erBegrensetTil6G = erBegrensetTil6G,
+                seksG = seksG
+            )
+        )
+
+        verify { producerMock.send(capture(captureSlot)) }
+
+        val vedtakFattet = captureSlot.last()
+        assertEquals(FØDSELSNUMMER, vedtakFattet.key())
+
+        val vedtakFattetJson = vedtakFattet.validertJson()
+        assertEquals(FØDSELSNUMMER, vedtakFattetJson["fødselsnummer"].textValue())
+        assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
+        assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
+        assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
+        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
+        assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
+
+        assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+            .contains(idSett.søknadDokumentId))
+
+        assertEquals(sykepengegrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlag"].asText()))
+        assertEquals(beregningsgrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["selvstendig"]["beregningsgrunnlag"].asText()))
+        assertEquals(emptyList<String>(), vedtakFattetJson["sykepengegrunnlagsfakta"]["tags"].map { it.asText() })
+        assertEquals(seksG, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["6G"].asText()))
+    }
+
     private data class E2ETestContext(val testRapid: TestRapid) {
         val meldinger = mutableListOf<HentMeldingResponse>()
-        val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
+        val producerMock = mockk<KafkaProducer<String, String>>(relaxed = true)
         val spedisjonClient = mockk<SpedisjonClient> {
             every { hentMeldinger(any(), any()) } returns HentMeldingerResponse(meldinger).ok()
         }
@@ -169,45 +214,52 @@ internal class VedtakFattetRiverTest {
             ).ok()
         }
     }
+
     private fun e2e(testblokk: E2ETestContext.() -> Unit) {
         val testRapid = TestRapid()
         testblokk(E2ETestContext(testRapid))
     }
 
     private fun E2ETestContext.sykmeldingSendt(idSett: IdSett) {
-        meldinger.add(HentMeldingResponse(
-            type = "ny_søknad",
-            fnr = "",
-            internDokumentId = idSett.nySøknadHendelseId,
-            eksternDokumentId = idSett.sykmeldingDokumentId,
-            rapportertDato = LocalDateTime.now(),
-            duplikatkontroll = "",
-            jsonBody = "{}"
-        ))
+        meldinger.add(
+            HentMeldingResponse(
+                type = "ny_søknad",
+                fnr = "",
+                internDokumentId = idSett.nySøknadHendelseId,
+                eksternDokumentId = idSett.sykmeldingDokumentId,
+                rapportertDato = LocalDateTime.now(),
+                duplikatkontroll = "",
+                jsonBody = "{}"
+            )
+        )
     }
 
     private fun E2ETestContext.søknadSendt(idSett: IdSett) {
-        meldinger.add(HentMeldingResponse(
-            type = "sendt_søknad_nav",
-            fnr = "",
-            internDokumentId = idSett.sendtSøknadHendelseId,
-            eksternDokumentId = idSett.søknadDokumentId,
-            rapportertDato = LocalDateTime.now(),
-            duplikatkontroll = "",
-            jsonBody = "{}"
-        ))
+        meldinger.add(
+            HentMeldingResponse(
+                type = "sendt_søknad_nav",
+                fnr = "",
+                internDokumentId = idSett.sendtSøknadHendelseId,
+                eksternDokumentId = idSett.søknadDokumentId,
+                rapportertDato = LocalDateTime.now(),
+                duplikatkontroll = "",
+                jsonBody = "{}"
+            )
+        )
     }
 
     private fun E2ETestContext.inntektsmeldingSendt(idSett: IdSett) {
-        meldinger.add(HentMeldingResponse(
-            type = "inntektsmelding",
-            fnr = "",
-            internDokumentId = idSett.inntektsmeldingHendelseId,
-            eksternDokumentId = idSett.inntektsmeldingDokumentId,
-            rapportertDato = LocalDateTime.now(),
-            duplikatkontroll = "",
-            jsonBody = "{}"
-        ))
+        meldinger.add(
+            HentMeldingResponse(
+                type = "inntektsmelding",
+                fnr = "",
+                internDokumentId = idSett.inntektsmeldingHendelseId,
+                eksternDokumentId = idSett.inntektsmeldingDokumentId,
+                rapportertDato = LocalDateTime.now(),
+                duplikatkontroll = "",
+                jsonBody = "{}"
+            )
+        )
     }
 
     private fun E2ETestContext.vedtakFattetMedUtbetalingSendt(
@@ -229,7 +281,8 @@ internal class VedtakFattetRiverTest {
             idSett.nySøknadHendelseId,
             idSett.sendtSøknadHendelseId,
             idSett.inntektsmeldingHendelseId
-    )) = """{
+        )
+    ) = """{
   "vedtaksperiodeId": "$idSett.vedtaksperiodeId",
   "fom": "$FOM",
   "tom": "$TOM",
@@ -282,6 +335,7 @@ internal class VedtakFattetRiverTest {
       "@opprettet": "$TIDSSTEMPEL",
       "fødselsnummer": "$FØDSELSNUMMER",
       "organisasjonsnummer": "$ORGNUMMER",
+      "yrkesaktivitetstype": "ARBEIDSTAKER",
       "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
       "sykepengegrunnlagsfakta": {
         "fastsatt": "EtterHovedregel",
@@ -298,6 +352,74 @@ internal class VedtakFattetRiverTest {
             "omregnetÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG}
           }
         ]
+      },
+      "begrunnelser": $begrunnelserJson,
+      "tags": ${tags.map { "\"$it\"" }}
+    }
+        """
+    }
+
+    @Language("json")
+    private fun E2ETestContext.vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
+        idSett: IdSett,
+        vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
+        utbetalingId: UUID = idSett.utbetalingId,
+        hendelser: List<UUID> = listOf(
+            idSett.nySøknadHendelseId,
+            idSett.sendtSøknadHendelseId,
+            idSett.inntektsmeldingHendelseId
+        ),
+        sykepengegrunnlag: BigDecimal,
+        beregningsgrunnlag: BigDecimal,
+        erBegrensetTil6G: Boolean,
+        seksG: BigDecimal,
+        begrunnelser: List<Begrunnelse> = emptyList(),
+        tags: Set<String> = emptySet(),
+    ): String {
+        val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
+        return """{
+      "vedtaksperiodeId": "$vedtaksperiodeId",
+      "fom": "$FOM",
+      "tom": "$TOM",
+      "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
+      "hendelser": ${hendelser.map { "\"${it}\"" }},
+      "sykepengegrunnlag": "$sykepengegrunnlag",
+      "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
+      "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
+      "begrensning": "$BEGRENSNING",
+      "inntekt": "$INNTEKT",
+      "utbetalingId": "$utbetalingId",
+      "@event_name": "vedtak_fattet",
+      "@id": "${UUID.randomUUID()}",
+      "@opprettet": "$TIDSSTEMPEL",
+      "fødselsnummer": "$FØDSELSNUMMER",
+      "organisasjonsnummer": "SELVSTENDIG",
+      "yrkesaktivitetstype": "SELVSTENDIG",
+      "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
+      "sykepengegrunnlagsfakta": {
+        "fastsatt": "EtterHovedregel",
+        "6G": $seksG,
+        "omregnetÅrsinntekt": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG,
+        "innrapportertÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 5000},
+        "avviksprosent": 12.52,
+        "tags": [ ${if (erBegrensetTil6G) {"\"6GBegrenset\""} else ""} ],
+        "selvstendig": { 
+          "beregningsgrunnlag": $beregningsgrunnlag,
+          "pensjonsgivendeInntekter": [
+            {
+              "årstall": 2024,
+              "beløp": 600000.0
+            },
+            {
+              "årstall": 2023,
+              "beløp": 600000.1
+            },
+            {
+              "årstall": 2022,
+              "beløp": 600000.2
+            }
+          ]
+        }
       },
       "begrunnelser": $begrunnelserJson,
       "tags": ${tags.map { "\"$it\"" }}
@@ -378,16 +500,15 @@ internal class VedtakFattetRiverTest {
 }
 """
 
-
-private data class IdSett(
-    val sykmeldingDokumentId: UUID = UUID.randomUUID(),
-    val søknadDokumentId: UUID = UUID.randomUUID(),
-    val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
-    val nySøknadHendelseId: UUID = UUID.randomUUID(),
-    val sendtSøknadHendelseId: UUID = UUID.randomUUID(),
-    val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
-    val vedtaksperiodeId: UUID = UUID.randomUUID(),
-    val utbetalingId: UUID = UUID.randomUUID()
-)
+    private data class IdSett(
+        val sykmeldingDokumentId: UUID = UUID.randomUUID(),
+        val søknadDokumentId: UUID = UUID.randomUUID(),
+        val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
+        val nySøknadHendelseId: UUID = UUID.randomUUID(),
+        val sendtSøknadHendelseId: UUID = UUID.randomUUID(),
+        val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
+        val vedtaksperiodeId: UUID = UUID.randomUUID(),
+        val utbetalingId: UUID = UUID.randomUUID()
+    )
 }
 

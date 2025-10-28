@@ -69,7 +69,7 @@ internal class VedtaksperiodeAnnullertRiver(
             tom = packet["tom"].asLocalDate()
         )
         val vedtakAnnullertJson = objectMapper.writeValueAsString(vedtakAnnullertDto)
-        aivenProducer.send(ProducerRecord("tbd.vedtak", null, identer.fødselsnummer, vedtakAnnullertJson, listOf(Meldingstype.VedtakAnnullert.header())))
+        aivenProducer.send(ProducerRecord("tbd.vedtak", null, identer.fødselsnummer, vedtakAnnullertJson, listOf(VedtakType.VedtakAnnullert.header())))
 
         log.info("Sender vedtakAnnullert: $callId")
         sikkerLog.info("Sender vedtakAnnullert: $vedtakAnnullertJson")

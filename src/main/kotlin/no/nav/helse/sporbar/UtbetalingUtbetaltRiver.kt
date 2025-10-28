@@ -181,7 +181,8 @@ private val KjenteDagtyper = setOf(
     "Permisjonsdag",
     "Feriedag",
     "ArbeidIkkeGjenopptattDag",
-    "AndreYtelser"
+    "AndreYtelser",
+    "Ventetidsdag"
 )
 
 internal val JsonNode.dagtype get(): String {

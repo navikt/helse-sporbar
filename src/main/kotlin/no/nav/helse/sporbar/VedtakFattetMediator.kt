@@ -3,13 +3,20 @@ package no.nav.helse.sporbar
 import com.github.navikt.tbd_libs.result_object.getOrThrow
 import com.github.navikt.tbd_libs.retry.retryBlocking
 import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
+import java.util.UUID
 import net.logstash.logback.argument.StructuredArguments.kv
-import no.nav.helse.sporbar.dto.*
+import no.nav.helse.sporbar.dto.BegrunnelseForEksternDto
+import no.nav.helse.sporbar.dto.DokumentForEkstern
+import no.nav.helse.sporbar.dto.FastsattEtterHovedregelForEksternDto
+import no.nav.helse.sporbar.dto.FastsattEtterSkjønnForEksternDto
+import no.nav.helse.sporbar.dto.FastsattIInfotrygdForEksternDto
+import no.nav.helse.sporbar.dto.PeriodeForEksternDto
+import no.nav.helse.sporbar.dto.SykepengegrunnlagsfaktaSelvstendigDto
+import no.nav.helse.sporbar.dto.VedtakFattetForEksternDto
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
@@ -28,7 +35,7 @@ internal class VedtakFattetMediator(
         }
         val eksternDto = oversett(vedtakFattet, dokumenter)
         val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
-        producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(Meldingstype.VedtakFattet.header())))
+        producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(VedtakType.VedtakFattet.header())))
         sikkerLogg.info("Publiserer vedtakFattet {}", meldingForEkstern)
         log.info("Publiserte vedtakFattet for {}", dokumenter.map { it.dokumentId })
     }
@@ -38,16 +45,19 @@ internal class VedtakFattetMediator(
             fødselsnummer = vedtakFattet.fødselsnummer,
             aktørId = vedtakFattet.aktørId,
             organisasjonsnummer = vedtakFattet.organisasjonsnummer,
+            yrkesaktivitetstype = vedtakFattet.yrkesaktivitetstype,
             fom = vedtakFattet.fom,
             tom = vedtakFattet.tom,
             skjæringstidspunkt = vedtakFattet.skjæringstidspunkt,
             sykepengegrunnlag = vedtakFattet.sykepengegrunnlag,
             dokumenter = dokumenter.map {
-                DokumentForEkstern(it.dokumentId, when (it.type) {
+                DokumentForEkstern(
+                    it.dokumentId, when (it.type) {
                     Dokument.Type.Sykmelding -> DokumentForEkstern.Type.Sykmelding
                     Dokument.Type.Søknad -> DokumentForEkstern.Type.Søknad
                     Dokument.Type.Inntektsmelding -> DokumentForEkstern.Type.Inntektsmelding
-                })
+                }
+                )
             },
             utbetalingId = vedtakFattet.utbetalingId,
             vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt,
@@ -65,31 +75,48 @@ internal class VedtakFattetMediator(
         )
     }
 
-    private fun oversett(sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta) = when (sykepengegrunnlagsfakta) {
-        is FastsattEtterHovedregel -> FastsattEtterHovedregelForEksternDto(
-            fastsatt = sykepengegrunnlagsfakta.fastsatt,
-            omregnetÅrsinntekt = sykepengegrunnlagsfakta.omregnetÅrsinntekt,
-            innrapportertÅrsinntekt = sykepengegrunnlagsfakta.innrapportertÅrsinntekt,
-            avviksprosent = sykepengegrunnlagsfakta.avviksprosent,
-            `6G`= sykepengegrunnlagsfakta.`6G`,
-            tags = sykepengegrunnlagsfakta.tags,
-            arbeidsgivere = sykepengegrunnlagsfakta.arbeidsgivere.map { FastsattEtterHovedregelForEksternDto.Arbeidsgiver(it.arbeidsgiver, it.omregnetÅrsinntekt) }
-        )
-        is FastsattEtterSkjønn -> FastsattEtterSkjønnForEksternDto(
-            fastsatt = sykepengegrunnlagsfakta.fastsatt,
-            omregnetÅrsinntekt = sykepengegrunnlagsfakta.omregnetÅrsinntekt,
-            innrapportertÅrsinntekt = sykepengegrunnlagsfakta.innrapportertÅrsinntekt,
-            skjønnsfastsatt = sykepengegrunnlagsfakta.skjønnsfastsatt,
-            avviksprosent = sykepengegrunnlagsfakta.avviksprosent,
-            `6G`= sykepengegrunnlagsfakta.`6G`,
-            tags = sykepengegrunnlagsfakta.tags,
-            arbeidsgivere = sykepengegrunnlagsfakta.arbeidsgivere.map { FastsattEtterSkjønnForEksternDto.Arbeidsgiver(it.arbeidsgiver, it.omregnetÅrsinntekt, it.skjønnsfastsatt) }
-        )
-        is FastsattIInfotrygd -> FastsattIInfotrygdForEksternDto(
-            fastsatt = sykepengegrunnlagsfakta.fastsatt,
-            omregnetÅrsinntekt = sykepengegrunnlagsfakta.omregnetÅrsinntekt
-        )
-    }
-}
+    private fun oversett(sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta) =
+        when (sykepengegrunnlagsfakta) {
+            is FastsattEtterHovedregel -> FastsattEtterHovedregelForEksternDto(
+                fastsatt = sykepengegrunnlagsfakta.fastsatt,
+                omregnetÅrsinntekt = sykepengegrunnlagsfakta.omregnetÅrsinntekt,
+                innrapportertÅrsinntekt = sykepengegrunnlagsfakta.innrapportertÅrsinntekt,
+                avviksprosent = sykepengegrunnlagsfakta.avviksprosent,
+                `6G` = sykepengegrunnlagsfakta.`6G`,
+                tags = sykepengegrunnlagsfakta.tags,
+                arbeidsgivere = sykepengegrunnlagsfakta.arbeidsgivere.map { FastsattEtterHovedregelForEksternDto.Arbeidsgiver(it.arbeidsgiver, it.omregnetÅrsinntekt) }
+            )
 
+            is FastsattEtterSkjønn -> FastsattEtterSkjønnForEksternDto(
+                fastsatt = sykepengegrunnlagsfakta.fastsatt,
+                omregnetÅrsinntekt = sykepengegrunnlagsfakta.omregnetÅrsinntekt,
+                innrapportertÅrsinntekt = sykepengegrunnlagsfakta.innrapportertÅrsinntekt,
+                skjønnsfastsatt = sykepengegrunnlagsfakta.skjønnsfastsatt,
+                avviksprosent = sykepengegrunnlagsfakta.avviksprosent,
+                `6G` = sykepengegrunnlagsfakta.`6G`,
+                tags = sykepengegrunnlagsfakta.tags,
+                arbeidsgivere = sykepengegrunnlagsfakta.arbeidsgivere.map { FastsattEtterSkjønnForEksternDto.Arbeidsgiver(it.arbeidsgiver, it.omregnetÅrsinntekt, it.skjønnsfastsatt) }
+            )
+
+            is FastsattIInfotrygd -> FastsattIInfotrygdForEksternDto(
+                fastsatt = sykepengegrunnlagsfakta.fastsatt,
+                omregnetÅrsinntekt = sykepengegrunnlagsfakta.omregnetÅrsinntekt
+            )
+
+            is SykepengegrunnlagsfaktaSelvstendigNæringsdrivende -> SykepengegrunnlagsfaktaSelvstendigDto(
+                fastsatt = sykepengegrunnlagsfakta.fastsatt,
+                `6G` = sykepengegrunnlagsfakta.`6G`,
+                tags = sykepengegrunnlagsfakta.tags,
+                selvstendig = SykepengegrunnlagsfaktaSelvstendigDto.Selvstendig(
+                    beregningsgrunnlag = sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag,
+                    pensjonsgivendeInntekter = sykepengegrunnlagsfakta.selvstendig.pensjonsgivendeInntekter.map {
+                        SykepengegrunnlagsfaktaSelvstendigDto.Selvstendig.PensjonsgivendeInntekt(
+                            årstall = it.årstall,
+                            beløp = it.beløp
+                        )
+                    },
+                ),
+            )
+        }
+}
 

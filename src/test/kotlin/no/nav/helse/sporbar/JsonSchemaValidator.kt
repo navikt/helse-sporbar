@@ -18,7 +18,6 @@ internal object JsonSchemaValidator {
         .getInstance(SpecVersion.VersionFlag.V7)
         .getSchema(JsonSchemaValidator::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
 
-    private val inntektsmeldingstatusSchema by lazy { "inntektsmeldingstatus".getSchema() }
     private val vedtakFattetSchema by lazy { "vedtak__fattet".getSchema() }
     private val vedtakAnnullertSchema by lazy { "vedtak__annullert".getSchema() }
     private val utbetalingSchema by lazy { "utbetaling".getSchema() }
@@ -29,42 +28,37 @@ internal object JsonSchemaValidator {
         assertEquals(emptySet<ValidationMessage>(), valideringsfeil) { "${json.toPrettyString()}\n" }
     }
 
-    private fun Melding.hentSchema(): Triple<String, Meldingstype, JsonSchema> = when (topic) {
-        "tbd.inntektsmeldingstatus" -> Triple("sykmeldt", Meldingstype.Inntektsmeldingstatus, inntektsmeldingstatusSchema)
-        "tbd.vedtak" -> when (json.path("event").asText()) {
-            "vedtak_annullert" -> Triple("fødselsnummer", Meldingstype.VedtakAnnullert, vedtakAnnullertSchema)
-            else -> Triple("fødselsnummer", Meldingstype.VedtakFattet, vedtakFattetSchema)
-        }
-        "aapen-helse-sporbar" -> Triple("fødselsnummer", Meldingstype.Annullering, annulleringSchema)
-        "tbd.utbetaling" -> when (json.path("event").asText()) {
-            "utbetaling_annullert" -> Triple("fødselsnummer", Meldingstype.Annullering, annulleringSchema)
-            "utbetaling_uten_utbetaling" -> Triple("fødselsnummer", Meldingstype.UtenUtbetaling, utbetalingSchema)
-            else -> Triple("fødselsnummer", Meldingstype.Utbetaling, utbetalingSchema)
-        }
-        else -> throw IllegalStateException("Mangler schema for topic $topic")
-    }.let { Triple(json.path(it.first).asText(), it.second, it.third) }
+    private fun Melding.hentSchema(): Pair<String, JsonSchema> = when (meldingstype) {
+        "VedtakFattet" -> "fødselsnummer" to vedtakFattetSchema
+        "VedtakAnnullert" -> "fødselsnummer" to vedtakAnnullertSchema
+        "Annullering" -> "fødselsnummer" to annulleringSchema
+        "Utbetaling" -> "fødselsnummer" to utbetalingSchema
+        "UtenUtbetaling" -> "fødselsnummer" to utbetalingSchema
+        else -> error("Mangler schema for meldingstype $meldingstype")
+    }.let { json.path(it.first).asText() to it.second }
 
-    private fun Melding.udokumentertMelding() = (topic == "aapen-helse-sporbar" && meldingstype != Meldingstype.Annullering).also { if (it) {
-        println("⚠️ Melding $meldingstype på $topic er ikke dokumentert, og blir ikke validert.")
-    }}
+    private fun Melding.udokumentertMelding() = (topic == "aapen-helse-sporbar" && meldingstype != "Annullering").also {
+        if (it) {
+            println("⚠️ Melding $meldingstype på $topic er ikke dokumentert, og blir ikke validert.")
+        }
+    }
 
     internal fun Melding.validertJson(): JsonNode {
         if (udokumentertMelding()) return json
-        val (forventetFødselsnummer, forventetMeldingstype, schema) = hentSchema()
+        val (forventetFødselsnummer, schema) = hentSchema()
         assertEquals(forventetFødselsnummer, key) { "Meldinger skal publiseres med fødselsnummer som key. Key=$key, Fødselsnummer=$forventetFødselsnummer" }
-        assertEquals(forventetMeldingstype, meldingstype)
         schema.assertSchema(json)
         return json
     }
 
     private fun Headers.meldingstypeOrNull() =
         map { it.key() to String(it.value()) }
-        .singleOrNull { it.first == "type" }
-        ?.let { Meldingstype.valueOf(it.second) }
+            .singleOrNull { it.first == "type" }
+            ?.second
 
     internal fun ProducerRecord<String, String>.validertJson() = Melding(
         topic = topic(),
-        meldingstype = headers().meldingstypeOrNull() ?: Meldingstype.VedtakFattet.also { require(topic() == "tbd.vedtak") },
+        meldingstype = headers().meldingstypeOrNull() ?: "VedtakFattet".also { require(topic() == "tbd.vedtak") },
         key = key(),
         json = mapper.readTree(value())
     ).validertJson()
@@ -72,7 +66,7 @@ internal object JsonSchemaValidator {
 
 class Melding(
     internal val topic: String,
-    internal val meldingstype: Meldingstype,
+    internal val meldingstype: String,
     internal val key: String,
     internal val json: JsonNode
 )

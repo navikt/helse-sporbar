@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar.dto
 
+import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -9,6 +10,7 @@ data class VedtakFattetForEksternDto(
     val fødselsnummer: String,
     val aktørId: String,
     val organisasjonsnummer: String,
+    val yrkesaktivitetstype: String,
     val fom: LocalDate,
     val tom: LocalDate,
     val skjæringstidspunkt: LocalDate,
@@ -28,11 +30,18 @@ data class VedtakFattetForEksternDto(
             "ER_6G_BEGRENSET"
         else
             "ER_IKKE_6G_BEGRENSET"
+
         is FastsattEtterHovedregelForEksternDto -> if (sykepengegrunnlagsfakta.omregnetÅrsinntekt > sykepengegrunnlagsfakta.`6G`)
             "ER_6G_BEGRENSET"
         else
             "ER_IKKE_6G_BEGRENSET"
+
         is FastsattIInfotrygdForEksternDto -> "VURDERT_I_INFOTRYGD"
+
+        is SykepengegrunnlagsfaktaSelvstendigDto -> if (sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag > sykepengegrunnlagsfakta.`6G`)
+            "ER_6G_BEGRENSET"
+        else
+            "ER_IKKE_6G_BEGRENSET"
     }
 
     @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
@@ -40,6 +49,7 @@ data class VedtakFattetForEksternDto(
         is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta.skjønnsfastsatt
         is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
         is FastsattIInfotrygdForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+        is SykepengegrunnlagsfaktaSelvstendigDto -> sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag.toDouble()
     } / 12.0
 
     @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
@@ -47,6 +57,7 @@ data class VedtakFattetForEksternDto(
         is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta.skjønnsfastsatt
         is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
         is FastsattIInfotrygdForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+        is SykepengegrunnlagsfaktaSelvstendigDto -> sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag.toDouble()
     }
 
     @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
@@ -54,10 +65,16 @@ data class VedtakFattetForEksternDto(
         is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta
             .arbeidsgivere
             .associate { it.arbeidsgiver to it.skjønnsfastsatt.toDesimaler }
+
         is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta
             .arbeidsgivere
             .associate { it.arbeidsgiver to it.omregnetÅrsinntekt.toDesimaler }
+
         is FastsattIInfotrygdForEksternDto -> emptyMap()
+
+        is SykepengegrunnlagsfaktaSelvstendigDto -> mapOf(
+            organisasjonsnummer to sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag.toDouble()
+        )
     }
 }
 
@@ -90,7 +107,7 @@ data class FastsattEtterHovedregelForEksternDto(
     val `6G`: Double,
     val tags: Set<String>,
     val arbeidsgivere: List<Arbeidsgiver>
-): SykepengegrunnlagsfaktaForEksternDto() {
+) : SykepengegrunnlagsfaktaForEksternDto() {
     data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double)
 }
 
@@ -103,7 +120,7 @@ data class FastsattEtterSkjønnForEksternDto(
     val `6G`: Double,
     val tags: Set<String>,
     val arbeidsgivere: List<Arbeidsgiver>
-): SykepengegrunnlagsfaktaForEksternDto() {
+) : SykepengegrunnlagsfaktaForEksternDto() {
     data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double, val skjønnsfastsatt: Double)
 }
 
@@ -112,4 +129,19 @@ data class FastsattIInfotrygdForEksternDto(
     val omregnetÅrsinntekt: Double,
 ) : SykepengegrunnlagsfaktaForEksternDto()
 
-
+data class SykepengegrunnlagsfaktaSelvstendigDto(
+    val fastsatt: String,
+    val `6G`: BigDecimal,
+    val tags: Set<String>,
+    val selvstendig: Selvstendig,
+) : SykepengegrunnlagsfaktaForEksternDto() {
+    data class Selvstendig(
+        val beregningsgrunnlag: BigDecimal,
+        val pensjonsgivendeInntekter: List<PensjonsgivendeInntekt>
+    ) {
+        data class PensjonsgivendeInntekt (
+            val årstall: Int,
+            val beløp: BigDecimal,
+        )
+    }
+}

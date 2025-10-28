@@ -24,6 +24,9 @@ spec:
     - team: tbd
       application: sporbar
       access: readwrite
+    - team: tbd
+      application: spesialist
+      access: read
     - team: flex
       application: flex-inntektsmelding-status
       access: read
