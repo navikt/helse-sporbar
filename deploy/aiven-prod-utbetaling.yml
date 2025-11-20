@@ -27,9 +27,6 @@ spec:
         - team: flex
           application: spinnsyn-backend
           access: read
-        - team: teamnks
-          application: sf-sykmelding
-          access: read
         - team: teamsykmelding
           application: sparenaproxy
           access: read
