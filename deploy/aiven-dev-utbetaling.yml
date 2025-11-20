@@ -37,9 +37,6 @@ spec:
           application: dvh-sykefravar-airflow-kafka
           access: read
         - team: team-esyfo
-          application: esyfovarsel
-          access: read
-        - team: team-esyfo
           application: sykepengedager-informasjon
           access: read
         - team: tbd
