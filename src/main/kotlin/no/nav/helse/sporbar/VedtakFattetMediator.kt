@@ -55,7 +55,6 @@ internal class VedtakFattetMediator(
                     it.dokumentId, when (it.type) {
                     Dokument.Type.Sykmelding -> DokumentForEkstern.Type.Sykmelding
                     Dokument.Type.Søknad -> DokumentForEkstern.Type.Søknad
-                    Dokument.Type.Inntektsmelding -> DokumentForEkstern.Type.Inntektsmelding
                 }
                 )
             },

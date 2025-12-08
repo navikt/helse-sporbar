@@ -7,7 +7,7 @@ import java.util.UUID
 
 data class Dokument(val dokumentId: UUID, val type: Type) {
     enum class Type {
-        Sykmelding, Søknad, Inntektsmelding
+        Sykmelding, Søknad
     }
 }
 
@@ -40,13 +40,10 @@ private fun HentMeldingResponse.tilDokument(): List<Dokument> {
             listOfNotNull(dokumentet, sykmelding)
         }
         Dokument.Type.Sykmelding -> listOf(dokumentet)
-        Dokument.Type.Inntektsmelding -> listOf(dokumentet)
     }
 }
 
 private fun String.tilDokumenttypeOrNull() = when (this) {
-    "inntektsmelding" -> Dokument.Type.Inntektsmelding
-
     "ny_søknad",
     "ny_søknad_frilans",
     "ny_søknad_selvstendig",

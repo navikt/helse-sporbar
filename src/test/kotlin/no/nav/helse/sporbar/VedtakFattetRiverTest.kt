@@ -49,7 +49,6 @@ internal class VedtakFattetRiverTest {
 
         sykmeldingSendt(idSett)
         søknadSendt(idSett)
-        inntektsmeldingSendt(idSett)
         vedtakFattetUtenUtbetalingSendt(idSett)
 
         verify(exactly = 0) { producerMock.send(capture(captureSlot)) }
@@ -63,7 +62,6 @@ internal class VedtakFattetRiverTest {
 
         sykmeldingSendt(idSett)
         søknadSendt(idSett)
-        inntektsmeldingSendt(idSett)
         vedtakFattetMedUtbetalingSendt(idSett)
 
         verify { producerMock.send(capture(captureSlot)) }
@@ -90,7 +88,6 @@ internal class VedtakFattetRiverTest {
 
         sykmeldingSendt(idSett)
         søknadSendt(idSett)
-        inntektsmeldingSendt(idSett)
         vedtakFattetMedUtbetalingSendt(
             idSett,
             begrunnelser = listOf(
@@ -120,7 +117,6 @@ internal class VedtakFattetRiverTest {
 
         sykmeldingSendt(idSett)
         søknadSendt(idSett)
-        inntektsmeldingSendt(idSett)
         vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode", "Personutbetaling", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"))
 
         verify { producerMock.send(capture(captureSlot)) }
@@ -248,20 +244,6 @@ internal class VedtakFattetRiverTest {
         )
     }
 
-    private fun E2ETestContext.inntektsmeldingSendt(idSett: IdSett) {
-        meldinger.add(
-            HentMeldingResponse(
-                type = "inntektsmelding",
-                fnr = "",
-                internDokumentId = idSett.inntektsmeldingHendelseId,
-                eksternDokumentId = idSett.inntektsmeldingDokumentId,
-                rapportertDato = LocalDateTime.now(),
-                duplikatkontroll = "",
-                jsonBody = "{}"
-            )
-        )
-    }
-
     private fun E2ETestContext.vedtakFattetMedUtbetalingSendt(
         idSett: IdSett,
         begrunnelser: List<Begrunnelse> = emptyList(),
@@ -275,12 +257,11 @@ internal class VedtakFattetRiverTest {
     }
 
     @Language("json")
-    private fun E2ETestContext.vedtakFattetUtenUtbetaling(
+    private fun vedtakFattetUtenUtbetaling(
         idSett: IdSett,
         hendelser: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
             idSett.sendtSøknadHendelseId,
-            idSett.inntektsmeldingHendelseId
         )
     ) = """{
   "vedtaksperiodeId": "$idSett.vedtaksperiodeId",
@@ -305,12 +286,11 @@ internal class VedtakFattetRiverTest {
     """
 
     @Language("json")
-    private fun E2ETestContext.vedtakFattetMedUtbetaling(
+    private fun vedtakFattetMedUtbetaling(
         idSett: IdSett,
         hendelser: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
             idSett.sendtSøknadHendelseId,
-            idSett.inntektsmeldingHendelseId
         ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
         utbetalingId: UUID = idSett.utbetalingId,
@@ -360,14 +340,13 @@ internal class VedtakFattetRiverTest {
     }
 
     @Language("json")
-    private fun E2ETestContext.vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
+    private fun vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
         idSett: IdSett,
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
         utbetalingId: UUID = idSett.utbetalingId,
         hendelser: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
             idSett.sendtSøknadHendelseId,
-            idSett.inntektsmeldingHendelseId
         ),
         sykepengegrunnlag: BigDecimal,
         beregningsgrunnlag: BigDecimal,
@@ -428,7 +407,7 @@ internal class VedtakFattetRiverTest {
     }
 
     @Language("JSON")
-    private fun E2ETestContext.nySøknadMessage(
+    private fun nySøknadMessage(
         nySøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
         søknadDokumentId: UUID
@@ -442,7 +421,7 @@ internal class VedtakFattetRiverTest {
         }"""
 
     @Language("JSON")
-    private fun E2ETestContext.sendtSøknadMessage(
+    private fun sendtSøknadMessage(
         sendtSøknadHendelseId: UUID,
         sykmeldingDokumentId: UUID,
         søknadDokumentId: UUID
@@ -456,7 +435,7 @@ internal class VedtakFattetRiverTest {
         }"""
 
     @Language("JSON")
-    private fun E2ETestContext.inntektsmeldingMessage(
+    private fun inntektsmeldingMessage(
         inntektsmeldingHendelseId: UUID,
         inntektsmeldingDokumentId: UUID
     ) =
@@ -468,7 +447,7 @@ internal class VedtakFattetRiverTest {
         }"""
 
     @Language("JSON")
-    private fun E2ETestContext.vedtaksperiodeEndret(
+    private fun vedtaksperiodeEndret(
         forrige: String,
         gjeldendeTilstand: String,
         vedtaksperiodeId: UUID,
@@ -503,10 +482,8 @@ internal class VedtakFattetRiverTest {
     private data class IdSett(
         val sykmeldingDokumentId: UUID = UUID.randomUUID(),
         val søknadDokumentId: UUID = UUID.randomUUID(),
-        val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
         val nySøknadHendelseId: UUID = UUID.randomUUID(),
         val sendtSøknadHendelseId: UUID = UUID.randomUUID(),
-        val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
         val vedtaksperiodeId: UUID = UUID.randomUUID(),
         val utbetalingId: UUID = UUID.randomUUID()
     )

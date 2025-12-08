@@ -82,7 +82,7 @@ private val Double.toDesimaler get() = toBigDecimal().setScale(2, RoundingMode.H
 
 class DokumentForEkstern(val dokumentId: UUID, val type: Type) {
     enum class Type {
-        Sykmelding, Søknad, Inntektsmelding
+        Sykmelding, Søknad
     }
 }
 
