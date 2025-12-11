@@ -21,34 +21,22 @@ fun HentMeldingerResponse.tilSøknader() = this.meldinger
 fun HentMeldingerResponse.tilDokumenter() = this.meldinger.flatMap { it.tilDokument() }.distinctBy { it  }
 
 private fun HentMeldingResponse.tilDokument(): List<Dokument> {
-    val type = this.type.tilDokumenttypeOrNull() ?: return emptyList()
-    val dokumentet = Dokument(
-        dokumentId = this.eksternDokumentId,
-        type = type
-    )
-    return when (type) {
-        Dokument.Type.Søknad -> {
-            val sykmelding = try {
-                val sykmeldingId = objectMapper.readTree(this.jsonBody).path("sykmeldingId").asText().toUUID()
-                Dokument(
-                    dokumentId = sykmeldingId,
-                    type = Dokument.Type.Sykmelding
-                )
-            } catch (_: Exception) {
-                null
-            }
-            listOfNotNull(dokumentet, sykmelding)
-        }
-        Dokument.Type.Sykmelding -> listOf(dokumentet)
-    }
+    val type = this.type.tilDokumenttypeOrNull()
+    if (type != Dokument.Type.Søknad) return emptyList()
+
+    val søknad = Dokument(dokumentId = this.eksternDokumentId, type = type)
+
+    val sykmelding = runCatching {
+        val sykmeldingId = objectMapper.readTree(this.jsonBody).path("sykmeldingId").asText().toUUID()
+        Dokument(
+            dokumentId = sykmeldingId,
+            type = Dokument.Type.Sykmelding
+        )
+    }.getOrNull()
+    return listOfNotNull(søknad, sykmelding)
 }
 
 private fun String.tilDokumenttypeOrNull() = when (this) {
-    "ny_søknad",
-    "ny_søknad_frilans",
-    "ny_søknad_selvstendig",
-    "ny_søknad_arbeidsledig" -> Dokument.Type.Sykmelding
-
     "sendt_søknad_arbeidsgiver",
     "sendt_søknad_nav",
     "sendt_søknad_frilans",

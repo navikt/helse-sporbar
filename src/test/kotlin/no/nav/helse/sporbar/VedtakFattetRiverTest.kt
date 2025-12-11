@@ -47,7 +47,6 @@ internal class VedtakFattetRiverTest {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
-        sykmeldingSendt(idSett)
         søknadSendt(idSett)
         vedtakFattetUtenUtbetalingSendt(idSett)
 
@@ -60,7 +59,6 @@ internal class VedtakFattetRiverTest {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
-        sykmeldingSendt(idSett)
         søknadSendt(idSett)
         vedtakFattetMedUtbetalingSendt(idSett)
 
@@ -78,7 +76,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
-            .contains(idSett.søknadDokumentId))
+            .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)))
     }
 
     @Test
@@ -86,7 +84,6 @@ internal class VedtakFattetRiverTest {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
-        sykmeldingSendt(idSett)
         søknadSendt(idSett)
         vedtakFattetMedUtbetalingSendt(
             idSett,
@@ -115,7 +112,6 @@ internal class VedtakFattetRiverTest {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
-        sykmeldingSendt(idSett)
         søknadSendt(idSett)
         vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("IngenNyArbeidsgiverperiode", "Personutbetaling", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"))
 
@@ -133,7 +129,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
-            .contains(idSett.søknadDokumentId))
+            .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)))
 
         assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"), vedtakFattetJson["tags"].map { it.asText() })
     }
@@ -143,7 +139,6 @@ internal class VedtakFattetRiverTest {
         val captureSlot = mutableListOf<ProducerRecord<String, String>>()
         val idSett = IdSett()
 
-        sykmeldingSendt(idSett)
         søknadSendt(idSett)
 
         val sykepengegrunnlag = BigDecimal("777777.7")
@@ -174,7 +169,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
-            .contains(idSett.søknadDokumentId))
+            .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)))
 
         assertEquals(sykepengegrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlag"].asText()))
         assertEquals(beregningsgrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["selvstendig"]["beregningsgrunnlag"].asText()))
@@ -216,20 +211,6 @@ internal class VedtakFattetRiverTest {
         testblokk(E2ETestContext(testRapid))
     }
 
-    private fun E2ETestContext.sykmeldingSendt(idSett: IdSett) {
-        meldinger.add(
-            HentMeldingResponse(
-                type = "ny_søknad",
-                fnr = "",
-                internDokumentId = idSett.nySøknadHendelseId,
-                eksternDokumentId = idSett.sykmeldingDokumentId,
-                rapportertDato = LocalDateTime.now(),
-                duplikatkontroll = "",
-                jsonBody = "{}"
-            )
-        )
-    }
-
     private fun E2ETestContext.søknadSendt(idSett: IdSett) {
         meldinger.add(
             HentMeldingResponse(
@@ -239,7 +220,9 @@ internal class VedtakFattetRiverTest {
                 eksternDokumentId = idSett.søknadDokumentId,
                 rapportertDato = LocalDateTime.now(),
                 duplikatkontroll = "",
-                jsonBody = "{}"
+                jsonBody = """{
+                        "sykmeldingId": "${idSett.sykmeldingDokumentId}"
+                    }"""
             )
         )
     }
