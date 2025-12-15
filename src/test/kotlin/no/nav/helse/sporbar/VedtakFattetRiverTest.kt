@@ -2,6 +2,7 @@ package no.nav.helse.sporbar
 
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
+import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
 import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
 import com.github.navikt.tbd_libs.result_object.ok
 import com.github.navikt.tbd_libs.spedisjon.HentMeldingResponse
@@ -24,6 +25,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+private data class NavnOgIdent(
+    val navn: String,
+    val ident: String
+)
+
 internal class VedtakFattetRiverTest {
 
     companion object {
@@ -40,6 +46,8 @@ internal class VedtakFattetRiverTest {
         val INNTEKT = 388260.0
         val AKTØRID = "123"
         val VEDTAK_FATTET_TIDSPUNKT = LocalDateTime.now()
+        private val saksbehandler = NavnOgIdent("Ole Saksbehandler", "Z123456")
+        private val beslutter = NavnOgIdent("Kari Beslutter", "X654321")
     }
 
     @Test
@@ -74,6 +82,37 @@ internal class VedtakFattetRiverTest {
         assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
         assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
+        assertEquals(saksbehandler.navn, vedtakFattetJson["saksbehandler"]["navn"].asText())
+        assertEquals(saksbehandler.ident, vedtakFattetJson["saksbehandler"]["ident"].asText())
+        assertEquals(beslutter.navn, vedtakFattetJson["beslutter"]["navn"].asText())
+        assertEquals(beslutter.ident, vedtakFattetJson["beslutter"]["ident"].asText())
+
+        assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
+            .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)))
+    }
+
+    @Test
+    fun `automatisert vedtak med utbetaling`() = e2e {
+        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+        val idSett = IdSett()
+
+        søknadSendt(idSett)
+        automatisertVedtakMedUtbetalingSendt(idSett)
+
+        verify { producerMock.send(capture(captureSlot)) }
+
+        val vedtakFattet = captureSlot.last()
+        assertEquals(FØDSELSNUMMER, vedtakFattet.key())
+
+        val vedtakFattetJson = vedtakFattet.validertJson()
+        assertEquals(FØDSELSNUMMER, vedtakFattetJson["fødselsnummer"].textValue())
+        assertEquals(FOM, vedtakFattetJson["fom"].asLocalDate())
+        assertEquals(TOM, vedtakFattetJson["tom"].asLocalDate())
+        assertEquals(SKJÆRINGSTIDSPUNKT, vedtakFattetJson["skjæringstidspunkt"].asLocalDate())
+        assertEquals(idSett.utbetalingId, vedtakFattetJson["utbetalingId"].let { UUID.fromString(it.asText()) })
+        assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
+        assertEquals(null, vedtakFattetJson["saksbehandler"].takeUnless { it.isMissingOrNull() })
+        assertEquals(null, vedtakFattetJson["beslutter"].takeUnless { it.isMissingOrNull() })
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)))
@@ -235,6 +274,12 @@ internal class VedtakFattetRiverTest {
         testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, begrunnelser = begrunnelser, tags = tags))
     }
 
+    private fun E2ETestContext.automatisertVedtakMedUtbetalingSendt(
+        idSett: IdSett,
+    ) {
+        testRapid.sendTestMessage(automatisertVedtakMedUtbetaling(idSett))
+    }
+
     private fun E2ETestContext.vedtakFattetUtenUtbetalingSendt(idSett: IdSett) {
         testRapid.sendTestMessage(vedtakFattetUtenUtbetaling(idSett))
     }
@@ -316,8 +361,69 @@ internal class VedtakFattetRiverTest {
           }
         ]
       },
+      "saksbehandler": {
+        "navn": "${saksbehandler.navn}",
+        "ident": "${saksbehandler.ident}"
+      },
+      "beslutter": {
+        "navn": "${beslutter.navn}",
+        "ident": "${beslutter.ident}"
+      },
       "begrunnelser": $begrunnelserJson,
       "tags": ${tags.map { "\"$it\"" }}
+    }
+        """
+    }
+
+    @Language("json")
+    private fun automatisertVedtakMedUtbetaling(
+        idSett: IdSett,
+        hendelser: List<UUID> = listOf(
+            idSett.nySøknadHendelseId,
+            idSett.sendtSøknadHendelseId,
+        ),
+        vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
+        utbetalingId: UUID = idSett.utbetalingId,
+    ): String {
+        return """{
+      "vedtaksperiodeId": "$vedtaksperiodeId",
+      "fom": "$FOM",
+      "tom": "$TOM",
+      "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
+      "hendelser": ${hendelser.map { "\"${it}\"" }},
+      "sykepengegrunnlag": "$SYKEPENGEGRUNNLAG",
+      "grunnlagForSykepengegrunnlag": "$GRUNNLAG_FOR_SYKEPENGEGRUNNLAG",
+      "grunnlagForSykepengegrunnlagPerArbeidsgiver": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG_PER_ARBEIDSGIVER,
+      "begrensning": "$BEGRENSNING",
+      "inntekt": "$INNTEKT",
+      "utbetalingId": "$utbetalingId",
+      "@event_name": "vedtak_fattet",
+      "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec04",
+      "@opprettet": "$TIDSSTEMPEL",
+      "fødselsnummer": "$FØDSELSNUMMER",
+      "organisasjonsnummer": "$ORGNUMMER",
+      "yrkesaktivitetstype": "ARBEIDSTAKER",
+      "vedtakFattetTidspunkt": "$VEDTAK_FATTET_TIDSPUNKT",
+      "sykepengegrunnlagsfakta": {
+        "fastsatt": "EtterHovedregel",
+        "omregnetÅrsinntekt": $GRUNNLAG_FOR_SYKEPENGEGRUNNLAG,
+        "innrapportertÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 5000},
+        "avviksprosent": 12.52,
+        "tags": [
+          "6GBegrenset"
+        ],
+        "6G": 620000.0,
+        "arbeidsgivere": [
+          {
+            "arbeidsgiver": "$ORGNUMMER",
+            "omregnetÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG}
+          }
+        ]
+      },
+      "saksbehandler": null,
+      "beslutter": null,
+      "begrunnelser": [],
+      "tags": []
     }
         """
     }
@@ -382,6 +488,14 @@ internal class VedtakFattetRiverTest {
             }
           ]
         }
+      },
+      "saksbehandler": {
+        "navn": "${saksbehandler.navn}",
+        "ident": "${saksbehandler.ident}"
+      },
+      "beslutter": {
+        "navn": "${beslutter.navn}",
+        "ident": "${beslutter.ident}"
       },
       "begrunnelser": $begrunnelserJson,
       "tags": ${tags.map { "\"$it\"" }}

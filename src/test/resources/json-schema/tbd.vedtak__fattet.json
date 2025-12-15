@@ -30,7 +30,7 @@
       "type": "string",
       "description": "schema-versjon for denne meldingen.",
       "enum": [
-        "1.2.1"
+        "1.2.2"
       ]
     },
     "fødselsnummer": {
@@ -351,9 +351,30 @@
         "description": "Type tag",
         "enum": ["IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"]
       }
+    },
+    "saksbehandler": {
+      "allOf": [{"$ref": "#/definitions/saksbehandler"}]
+    },
+    "beslutter": {
+      "allOf": [{"$ref": "#/definitions/saksbehandler"}]
     }
   },
   "definitions": {
+    "saksbehandler": {
+      "type": ["object", "null"],
+      "required": ["navn", "ident"],
+      "additionalProperties": false,
+      "properties": {
+        "navn": {
+          "type": "string",
+          "description": "Beslutter som fattet vedtaket sitt navn"
+        },
+        "ident": {
+          "type": "string",
+          "description": "Beslutter som fattet vedtaket sin NAV-ident"
+        }
+      }
+    },
     "spleisSykepengegrunnlag": {
       "type": "object",
       "required": ["omregnetÅrsinntekt", "innrapportertÅrsinntekt", "avviksprosent", "6G", "tags"],

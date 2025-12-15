@@ -55,6 +55,8 @@ internal class VedtakFattetRiver(
                 it.require("@opprettet", JsonNode::asLocalDateTime)
                 it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
                 it.interestedIn("begrunnelser")
+                it.interestedIn("saksbehandler", "saksbehandler.navn", "saksbehandler.ident")
+                it.interestedIn("beslutter", "beslutter.navn", "beslutter.ident")
             }
         }.register(this)
     }
@@ -95,6 +97,18 @@ internal class VedtakFattetRiver(
         val utbetalingId = UUID.fromString(packet["utbetalingId"].asText())
         val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asText()
         val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].asSykepengegrunnlagsfakta(yrkesaktivitetstype)
+        val saksbehandlerNavnOgIdent = packet["saksbehandler"].takeUnless { it.isMissingOrNull() }?.let {
+            NavnOgIdent(
+                it["navn"].asText(),
+                it["ident"].asText(),
+            )
+        }
+        val beslutterNavnOgIdent = packet["beslutter"].takeUnless { it.isMissingOrNull() }?.let {
+            NavnOgIdent(
+                it["navn"].asText(),
+                it["ident"].asText(),
+            )
+        }
 
         vedtakFattetMediator.vedtakFattet(
             VedtakFattet(
@@ -111,7 +125,9 @@ internal class VedtakFattetRiver(
                 vedtakFattetTidspunkt = vedtakFattetTidspunkt,
                 sykepengegrunnlagsfakta = sykepengegrunnlagsfakta,
                 begrunnelser = begrunnelser,
-                tags = tags
+                tags = tags,
+                saksbehandlerNavnOgIdent,
+                beslutterNavnOgIdent
             )
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
@@ -219,7 +235,9 @@ internal data class VedtakFattet(
     val vedtakFattetTidspunkt: LocalDateTime,
     val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta,
     val begrunnelser: List<Begrunnelse>,
-    val tags: Set<String>
+    val tags: Set<String>,
+    val saksbehandlerNavnOgIdent: NavnOgIdent?,
+    val beslutterNavnOgIdent: NavnOgIdent?
 )
 
 sealed class Sykepengegrunnlagsfakta(internal val fastsatt: String)

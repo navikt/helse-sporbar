@@ -10,6 +10,7 @@ import no.nav.helse.sporbar.dto.DokumentForEkstern
 import no.nav.helse.sporbar.dto.FastsattEtterHovedregelForEksternDto
 import no.nav.helse.sporbar.dto.FastsattEtterSkjønnForEksternDto
 import no.nav.helse.sporbar.dto.FastsattIInfotrygdForEksternDto
+import no.nav.helse.sporbar.dto.NavnOgIdentForEksternDto
 import no.nav.helse.sporbar.dto.PeriodeForEksternDto
 import no.nav.helse.sporbar.dto.SykepengegrunnlagsfaktaSelvstendigDto
 import no.nav.helse.sporbar.dto.VedtakFattetForEksternDto
@@ -70,7 +71,19 @@ internal class VedtakFattetMediator(
                     }
                 )
             },
-            tags = vedtakFattet.tags
+            tags = vedtakFattet.tags,
+            saksbehandler = vedtakFattet.saksbehandlerNavnOgIdent?.let {
+                NavnOgIdentForEksternDto(
+                    navn = it.navn,
+                    ident = it.ident
+                )
+            },
+            beslutter = vedtakFattet.beslutterNavnOgIdent?.let {
+                NavnOgIdentForEksternDto(
+                    navn = it.navn,
+                    ident = it.ident
+                )
+            }
         )
     }
 

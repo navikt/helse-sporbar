@@ -20,9 +20,11 @@ data class VedtakFattetForEksternDto(
     val vedtakFattetTidspunkt: LocalDateTime,
     val sykepengegrunnlagsfakta: SykepengegrunnlagsfaktaForEksternDto,
     val begrunnelser: List<BegrunnelseForEksternDto>,
-    val tags: Set<String>
+    val tags: Set<String>,
+    val saksbehandler: NavnOgIdentForEksternDto?,
+    val beslutter: NavnOgIdentForEksternDto?,
 ) {
-    val versjon: String = "1.2.1"
+    val versjon: String = "1.2.2"
 
     @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
     val begrensning: String = when (sykepengegrunnlagsfakta) {
@@ -85,6 +87,11 @@ class DokumentForEkstern(val dokumentId: UUID, val type: Type) {
         Sykmelding, Søknad
     }
 }
+
+data class NavnOgIdentForEksternDto(
+    val navn: String,
+    val ident: String,
+)
 
 data class BegrunnelseForEksternDto(
     val type: String,
