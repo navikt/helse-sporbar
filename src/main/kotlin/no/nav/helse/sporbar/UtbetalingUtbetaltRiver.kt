@@ -48,7 +48,6 @@ internal class UtbetalingUtbetaltRiver(
                     "automatiskBehandling",
                     "arbeidsgiverOppdrag",
                     "personOppdrag",
-                    "utbetalingsdager",
                     "type",
                 )
                 it.require("fom", JsonNode::asLocalDate)
@@ -75,6 +74,11 @@ internal class UtbetalingUtbetaltRiver(
                     require("fom", JsonNode::asLocalDate)
                     require("tom", JsonNode::asLocalDate)
                     requireKey("sats", "totalbeløp", "grad", "stønadsdager")
+                }
+                it.requireArray("utbetalingsdager") {
+                    require("dato", JsonNode::asLocalDate)
+                    requireKey("type")
+                    interestedIn("begrunnelser")
                 }
             }
         }.register(this)
@@ -107,15 +111,7 @@ internal class UtbetalingUtbetaltRiver(
         val stønadsdager = packet["stønadsdager"].asInt()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
         val type = packet["type"].asText()
-        val utbetalingsdager = packet["utbetalingsdager"].toList().map { dag ->
-            UtbetalingdagDto(
-                dato = dag["dato"].asLocalDate(),
-                type = dag["type"].dagtype,
-                begrunnelser = dag.path("begrunnelser").takeUnless(JsonNode::isMissingOrNull)
-                    ?.let { mapBegrunnelser(it.toList())} ?: emptyList()
-            )
-        }
-
+        val utbetalingsdager = mapUtbetaligsdager(packet["utbetalingsdager"])
         val arbeidsgiverOppdrag = parseOppdrag(packet["arbeidsgiverOppdrag"])
         val personOppdrag = parseOppdrag(packet["personOppdrag"])
 
@@ -145,27 +141,15 @@ internal class UtbetalingUtbetaltRiver(
     }
 }
 
-internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<BegrunnelseDto> = begrunnelser.map {
-    when (it.asText()) {
-        "SykepengedagerOppbrukt" -> BegrunnelseDto.SykepengedagerOppbrukt
-        "SykepengedagerOppbruktOver67" -> BegrunnelseDto.SykepengedagerOppbruktOver67
-        "MinimumInntekt" -> BegrunnelseDto.MinimumInntekt
-        "MinimumInntektOver67" -> BegrunnelseDto.MinimumInntektOver67
-        "EgenmeldingUtenforArbeidsgiverperiode" -> BegrunnelseDto.EgenmeldingUtenforArbeidsgiverperiode
-        "AndreYtelserAap" -> BegrunnelseDto.AndreYtelserAap
-        "AndreYtelserDagpenger" -> BegrunnelseDto.AndreYtelserDagpenger
-        "AndreYtelserForeldrepenger" -> BegrunnelseDto.AndreYtelserForeldrepenger
-        "AndreYtelserOmsorgspenger" -> BegrunnelseDto.AndreYtelserOmsorgspenger
-        "AndreYtelserOpplaringspenger" -> BegrunnelseDto.AndreYtelserOpplaringspenger
-        "AndreYtelserPleiepenger" -> BegrunnelseDto.AndreYtelserPleiepenger
-        "AndreYtelserSvangerskapspenger" -> BegrunnelseDto.AndreYtelserSvangerskapspenger
-        "MinimumSykdomsgrad" -> BegrunnelseDto.MinimumSykdomsgrad
-        "ManglerOpptjening" -> BegrunnelseDto.ManglerOpptjening
-        "ManglerMedlemskap" -> BegrunnelseDto.ManglerMedlemskap
-        "EtterDødsdato" -> BegrunnelseDto.EtterDødsdato
-        "Over70" -> BegrunnelseDto.Over70
-        else -> error("Ukjent begrunnelse $it")
-    }
+internal fun mapUtbetaligsdager(utbetalingsdager: JsonNode) = utbetalingsdager.map { utbetalingsdag ->
+    UtbetalingdagDto(
+        dato = utbetalingsdag["dato"].asLocalDate(),
+        type = utbetalingsdag["type"].dagtype,
+        begrunnelser = utbetalingsdag.path("begrunnelser")
+            .takeUnless(JsonNode::isMissingOrNull)
+            ?.map { it.begrunnelse }
+            ?: emptyList()
+    )
 }
 
 private val KjenteDagtyper = setOf(
@@ -184,8 +168,29 @@ private val KjenteDagtyper = setOf(
     "Ventetidsdag"
 )
 
-internal val JsonNode.dagtype get(): String {
+private val JsonNode.dagtype get(): String {
     val fraSpleis = asText()
     if (fraSpleis in KjenteDagtyper) return fraSpleis
     throw IllegalStateException("Ny dagtype fra Spleis: $fraSpleis. Vurder om denne skal eksponeres videre ut på tbd.utbetaling")
+}
+
+private val JsonNode.begrunnelse get() = when (val tekstverdi = asText()) {
+    "SykepengedagerOppbrukt" -> BegrunnelseDto.SykepengedagerOppbrukt
+    "SykepengedagerOppbruktOver67" -> BegrunnelseDto.SykepengedagerOppbruktOver67
+    "MinimumInntekt" -> BegrunnelseDto.MinimumInntekt
+    "MinimumInntektOver67" -> BegrunnelseDto.MinimumInntektOver67
+    "EgenmeldingUtenforArbeidsgiverperiode" -> BegrunnelseDto.EgenmeldingUtenforArbeidsgiverperiode
+    "AndreYtelserAap" -> BegrunnelseDto.AndreYtelserAap
+    "AndreYtelserDagpenger" -> BegrunnelseDto.AndreYtelserDagpenger
+    "AndreYtelserForeldrepenger" -> BegrunnelseDto.AndreYtelserForeldrepenger
+    "AndreYtelserOmsorgspenger" -> BegrunnelseDto.AndreYtelserOmsorgspenger
+    "AndreYtelserOpplaringspenger" -> BegrunnelseDto.AndreYtelserOpplaringspenger
+    "AndreYtelserPleiepenger" -> BegrunnelseDto.AndreYtelserPleiepenger
+    "AndreYtelserSvangerskapspenger" -> BegrunnelseDto.AndreYtelserSvangerskapspenger
+    "MinimumSykdomsgrad" -> BegrunnelseDto.MinimumSykdomsgrad
+    "ManglerOpptjening" -> BegrunnelseDto.ManglerOpptjening
+    "ManglerMedlemskap" -> BegrunnelseDto.ManglerMedlemskap
+    "EtterDødsdato" -> BegrunnelseDto.EtterDødsdato
+    "Over70" -> BegrunnelseDto.Over70
+    else -> error("Ukjent begrunnelse $tekstverdi")
 }

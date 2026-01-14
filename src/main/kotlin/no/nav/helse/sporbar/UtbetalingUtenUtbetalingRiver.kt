@@ -5,7 +5,6 @@ import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
-import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
 import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
@@ -20,7 +19,6 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 import no.nav.helse.sporbar.dto.OppdragDto.Companion.parseOppdrag
 import no.nav.helse.sporbar.dto.UtbetalingUtenUtbetalingDto
-import no.nav.helse.sporbar.dto.UtbetalingdagDto
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
@@ -45,7 +43,6 @@ internal class UtbetalingUtenUtbetalingRiver(
                     "automatiskBehandling",
                     "arbeidsgiverOppdrag",
                     "personOppdrag",
-                    "utbetalingsdager",
                     "type"
                 )
                 it.require("fom", JsonNode::asLocalDate)
@@ -72,6 +69,11 @@ internal class UtbetalingUtenUtbetalingRiver(
                     require("fom", JsonNode::asLocalDate)
                     require("tom", JsonNode::asLocalDate)
                     requireKey("sats", "totalbeløp", "grad", "stønadsdager")
+                }
+                it.requireArray("utbetalingsdager") {
+                    require("dato", JsonNode::asLocalDate)
+                    requireKey("type")
+                    interestedIn("begrunnelser")
                 }
             }
         }.register(this)
@@ -104,15 +106,7 @@ internal class UtbetalingUtenUtbetalingRiver(
         val stønadsdager = packet["stønadsdager"].asInt()
         val type = packet["type"].asText()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
-        val utbetalingsdager = packet["utbetalingsdager"].toList().map { dag ->
-            UtbetalingdagDto(
-                dato = dag["dato"].asLocalDate(),
-                type = dag["type"].dagtype,
-                begrunnelser = dag.path("begrunnelser").takeUnless(JsonNode::isMissingOrNull)
-                    ?.let { mapBegrunnelser(it.toList())} ?: emptyList()
-            )
-        }
-
+        val utbetalingsdager = mapUtbetaligsdager(packet["utbetalingsdager"])
         val arbeidsgiverOppdrag = parseOppdrag(packet["arbeidsgiverOppdrag"])
         val personOppdrag = parseOppdrag(packet["personOppdrag"])
 
