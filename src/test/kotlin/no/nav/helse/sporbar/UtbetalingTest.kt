@@ -485,39 +485,67 @@ internal class UtbetalingTest {
   "utbetalingsdager": [
         {
           "dato": "2021-05-06",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
+          
         },
         {
           "dato": "2021-05-07",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-05-08",
-          "type": "NavHelgDag"
+          "type": "NavHelgDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-05-09",
-          "type": "NavHelgDag"
+          "type": "NavHelgDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-05-10",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-05-11",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-05-12",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-05-13",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-05-14",
           "type": "AvvistDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100,
           "begrunnelser": [
               "EtterDødsdato", 
               "MinimumInntekt", 
@@ -744,89 +772,15 @@ internal class UtbetalingTest {
 }
     """
 
-    @Language("JSON")
-    private fun E2ETestContext.nySøknadMessage(
-        nySøknadHendelseId: UUID,
-        sykmeldingDokumentId: UUID,
-        søknadDokumentId: UUID
-    ) =
-        """{
-            "@event_name": "ny_søknad",
-            "@id": "$nySøknadHendelseId",
-            "id": "$søknadDokumentId",
-            "sykmeldingId": "$sykmeldingDokumentId",
-            "@opprettet": "2020-06-10T10:46:46.007854"
-        }"""
-
-    @Language("JSON")
-    private fun E2ETestContext.sendtSøknadMessage(
-        sendtSøknadHendelseId: UUID,
-        sykmeldingDokumentId: UUID,
-        søknadDokumentId: UUID
-    ) =
-        """{
-            "@event_name": "sendt_søknad_nav",
-            "@id": "$sendtSøknadHendelseId",
-            "id": "$søknadDokumentId",
-            "sykmeldingId": "$sykmeldingDokumentId",
-            "@opprettet": "2020-06-11T10:46:46.007854"
-        }"""
-
-    @Language("JSON")
-    private fun E2ETestContext.inntektsmeldingMessage(
-        inntektsmeldingHendelseId: UUID,
-        inntektsmeldingDokumentId: UUID
-    ) =
-        """{
-            "@event_name": "inntektsmelding",
-            "@id": "$inntektsmeldingHendelseId",
-            "inntektsmeldingId": "$inntektsmeldingDokumentId",
-            "@opprettet": "2020-06-11T10:46:46.007854"
-        }"""
-
-    @Language("JSON")
-    private fun E2ETestContext.vedtaksperiodeEndret(
-        forrige: String,
-        gjeldendeTilstand: String,
-        vedtaksperiodeId: UUID,
-        hendelser: List<UUID>
-    ) = """{
-    "vedtaksperiodeId": "$vedtaksperiodeId",
-    "organisasjonsnummer": "$ORGNUMMER",
-    "gjeldendeTilstand": "$gjeldendeTilstand",
-    "forrigeTilstand": "$forrige",
-    "aktivitetslogg": {
-        "aktiviteter": []
-    },
-    "vedtaksperiode_aktivitetslogg": {
-        "aktiviteter": [],
-        "kontekster": []
-    },
-    "hendelser": ${hendelser.map { "\"${it}\"" }},
-    "makstid": "2020-07-12T09:20:32.262525",
-    "system_read_count": 0,
-    "@event_name": "vedtaksperiode_endret",
-    "@id": "9154ce4d-cb8a-4dc4-96e1-379c91f76d02",
-    "@opprettet": "2020-06-12T09:20:56.552561",
-    "@forårsaket_av": {
-        "event_name": "ny_søknad",
-        "id": "75be4efa-fa13-44a9-afc2-6583dd87d626",
-        "opprettet": "2020-06-12T09:20:31.985479"
-    },
-    "fødselsnummer": "$FØDSELSNUMMER"
-}
-"""
-
-
-private data class IdSett(
-    val sykmeldingDokumentId: UUID = UUID.randomUUID(),
-    val søknadDokumentId: UUID = UUID.randomUUID(),
-    val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
-    val nySøknadHendelseId: UUID = UUID.randomUUID(),
-    val sendtSøknadHendelseId: UUID = UUID.randomUUID(),
-    val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
-    val vedtaksperiodeId: UUID = UUID.randomUUID(),
-    val utbetalingId: UUID = UUID.randomUUID(),
-    val korrelasjonsId: UUID = UUID.randomUUID()
-)
+    private data class IdSett(
+        val sykmeldingDokumentId: UUID = UUID.randomUUID(),
+        val søknadDokumentId: UUID = UUID.randomUUID(),
+        val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
+        val nySøknadHendelseId: UUID = UUID.randomUUID(),
+        val sendtSøknadHendelseId: UUID = UUID.randomUUID(),
+        val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
+        val vedtaksperiodeId: UUID = UUID.randomUUID(),
+        val utbetalingId: UUID = UUID.randomUUID(),
+        val korrelasjonsId: UUID = UUID.randomUUID()
+    )
 }
