@@ -28,8 +28,6 @@ spec:
     path: /metrics
   kafka:
     pool: nav-dev
-  secureLogs:
-    enabled: true
   accessPolicy:
     outbound:
       rules:
