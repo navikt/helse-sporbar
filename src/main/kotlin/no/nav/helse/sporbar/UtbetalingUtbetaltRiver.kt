@@ -164,7 +164,6 @@ internal fun mapBegrunnelser(begrunnelser: List<JsonNode>): List<BegrunnelseDto>
         "ManglerMedlemskap" -> BegrunnelseDto.ManglerMedlemskap
         "EtterDødsdato" -> BegrunnelseDto.EtterDødsdato
         "Over70" -> BegrunnelseDto.Over70
-        "NyVilkårsprøvingNødvendig" -> BegrunnelseDto.NyVilkårsprøvingNødvendig
         else -> error("Ukjent begrunnelse $it")
     }
 }

@@ -74,8 +74,7 @@ enum class BegrunnelseDto {
     EtterDødsdato,
     Over70,
     MinimumInntektOver67,
-    NyVilkårsprøvingNødvendig,
-    UKJENT
+    //NyVilkårsprøvingNødvendig <- Denne mappes til SykepengedagerOppbrukt i Spleis PGA lang kjedelig historie
 }
 
 data class OppdragDto(
