@@ -133,7 +133,6 @@ internal class UtbetalingUtbetaltRiver(
                 personOppdrag = personOppdrag,
                 type = type,
                 utbetalingsdager = utbetalingsdager,
-                antallVedtak = 1,
                 foreløpigBeregnetSluttPåSykepenger = maksdato
             )
         )

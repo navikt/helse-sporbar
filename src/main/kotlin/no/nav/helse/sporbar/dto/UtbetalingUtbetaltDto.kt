@@ -26,11 +26,11 @@ data class UtbetalingUtbetaltDto(
     val personOppdrag: OppdragDto?,
     val type: String,
     val utbetalingsdager: List<UtbetalingdagDto>,
-    val antallVedtak: Int?,
     val foreløpigBeregnetSluttPåSykepenger: LocalDate
 ) {
     val event = "utbetaling_utbetalt"
     val versjon = gjeldendeVersjon
+    val antallVedtak = 1
 }
 
 data class UtbetalingUtenUtbetalingDto(
@@ -49,11 +49,11 @@ data class UtbetalingUtenUtbetalingDto(
     val personOppdrag: OppdragDto?,
     val type: String,
     val utbetalingsdager: List<UtbetalingdagDto>,
-    val antallVedtak: Int?,
     val foreløpigBeregnetSluttPåSykepenger: LocalDate
 ) {
     val event = "utbetaling_uten_utbetaling"
     val versjon = gjeldendeVersjon
+    val antallVedtak = 1
 }
 
 enum class BegrunnelseDto {
