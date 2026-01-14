@@ -3,6 +3,7 @@
   "title": "Utbetalinger som blir gjort i Spleis",
   "description": "Utbetalinger som er gjort i Spleis\n\nTopic: tbd.utbetaling\n\nKey: Fødselsnummer\n\nHeader[type]: Utbetaling/UtenUtbetaling",
   "required": [
+    "versjon",
     "event",
     "utbetalingId",
     "korrelasjonsId",
@@ -22,6 +23,13 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "versjon": {
+      "type": "string",
+      "description": "schema-versjon for denne meldingen.",
+      "enum": [
+        "1.0.0"
+      ]
+    },
     "event": {
       "type": "string",
       "enum": [

@@ -8,6 +8,8 @@ import no.nav.helse.sporbar.NULLE_UT_TOMME_OPPDRAG
 import no.nav.helse.sporbar.dto.OppdragDto.UtbetalingslinjeDto.Companion.parseLinje
 import kotlin.collections.map
 
+private const val gjeldendeVersjon = "1.0.0"
+
 data class UtbetalingUtbetaltDto(
     val utbetalingId: UUID,
     val korrelasjonsId: UUID,
@@ -28,6 +30,7 @@ data class UtbetalingUtbetaltDto(
     val foreløpigBeregnetSluttPåSykepenger: LocalDate
 ) {
     val event = "utbetaling_utbetalt"
+    val versjon = gjeldendeVersjon
 }
 
 data class UtbetalingUtenUtbetalingDto(
@@ -50,6 +53,7 @@ data class UtbetalingUtenUtbetalingDto(
     val foreløpigBeregnetSluttPåSykepenger: LocalDate
 ) {
     val event = "utbetaling_uten_utbetaling"
+    val versjon = gjeldendeVersjon
 }
 
 enum class BegrunnelseDto {
