@@ -74,6 +74,7 @@ internal class UtbetalingUtenUtbetalingRiver(
                     require("dato", JsonNode::asLocalDate)
                     requireKey("type")
                     interestedIn("begrunnelser")
+                    interestedIn("beløpTilArbeidsgiver", "beløpTilBruker", "sykdomsgrad")
                 }
             }
         }.register(this)
