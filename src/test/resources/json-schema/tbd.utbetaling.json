@@ -27,7 +27,7 @@
       "type": "string",
       "description": "schema-versjon for denne meldingen.",
       "enum": [
-        "1.0.0"
+        "1.2.0"
       ]
     },
     "event": {
@@ -113,7 +113,10 @@
         "required": [
           "dato",
           "type",
-          "begrunnelser"
+          "begrunnelser",
+          "beløpTilArbeidsgiver",
+          "beløpTilSykmeldt",
+          "sykdomsgrad"
         ],
         "properties": {
           "dato": {
@@ -164,6 +167,22 @@
               "AndreYtelser",
               "Ventetidsdag"
             ]
+          },
+          "beløpTilArbeidsgiver": {
+            "type": "number",
+            "description": "Beløpet som utbetales til arbeidsgiver.",
+            "minimum": 0
+          },
+          "beløpTilSykmeldt": {
+            "type": "number",
+            "description": "Beløpet som utbetales til sykmeldt.",
+            "minimum": 0
+          },
+          "sykdomsgrad": {
+            "type": "number",
+            "description": "Sykdomsgraden.",
+            "minimum": 0,
+            "maximum": 100
           }
         }
       }
@@ -220,7 +239,8 @@
             "$ref": "#/definitions/utbetalingslinje"
           }
         }
-      }
+      },
+      "deprecationMessage": "Bruk heller informasjon fra utbetalingsdager utenom oppdrag."
     },
     "personOppdrag": {
       "type": ["object", "null"],
@@ -273,7 +293,8 @@
             "$ref": "#/definitions/utbetalingslinje"
           }
         }
-      }
+      },
+      "deprecationMessage": "Bruk heller informasjon fra utbetalingsdager utenom oppdrag."
     }
   },
   "definitions": {

@@ -380,36 +380,60 @@ internal class UtbetalingTest {
   "utbetalingsdager": [
         {
           "dato": "2021-01-01",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-01-02",
-          "type": "NavHelgDag"
+          "type": "NavHelgDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-01-03",
-          "type": "NavHelgDag"
+          "type": "NavHelgDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-01-04",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-01-05",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-01-06",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-01-07",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 1431,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-01-08",
           "type": "AvvistDag", 
-          "begrunnelser": ["AndreYtelserForeldrepenger"]
+          "begrunnelser": ["AndreYtelserForeldrepenger"],
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 0
         }
   ],
   "@id": "1826ead5-4e9e-4670-892d-ea4ec2ffec01",
@@ -622,19 +646,31 @@ internal class UtbetalingTest {
   "utbetalingsdager": [
         {
           "dato": "2021-05-06",
-          "type": "ArbeidIkkeGjenopptattDag"
+          "type": "ArbeidIkkeGjenopptattDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-05-07",
-          "type": "Feriedag"
+          "type": "Feriedag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 0
         },
         {
           "dato": "2021-05-08",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2021-05-09",
-          "type": "NavHelgDag"
+          "type": "NavHelgDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 0
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",
@@ -686,19 +722,31 @@ internal class UtbetalingTest {
   "utbetalingsdager": [
         {
           "dato": "2022-05-06",
-          "type": "ArbeidIkkeGjenopptattDag"
+          "type": "ArbeidIkkeGjenopptattDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 0
         },
         {
           "dato": "2022-05-07",
-          "type": "Feriedag"
+          "type": "Feriedag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 0
         },
         {
           "dato": "2022-05-08",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 1431,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 50
         },
         {
           "dato": "2022-05-09",
-          "type": "NavHelgDag"
+          "type": "NavHelgDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 50
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",
@@ -752,19 +800,31 @@ internal class UtbetalingTest {
         {
           "dato": "2022-05-06",
           "type": "AndreYtelser",
-          "begrunnelser": ["AndreYtelserForeldrepenger"]
+          "begrunnelser": ["AndreYtelserForeldrepenger"],
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2022-05-07",
-          "type": "Feriedag"
+          "type": "Feriedag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 0
         },
         {
           "dato": "2022-05-08",
-          "type": "NavDag"
+          "type": "NavDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100
         },
         {
           "dato": "2022-05-09",
-          "type": "NavHelgDag"
+          "type": "NavHelgDag",
+          "beløpTilArbeidsgiver": 0,
+          "beløpTilBruker": 0,
+          "sykdomsgrad": 100
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",

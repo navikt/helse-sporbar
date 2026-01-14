@@ -8,7 +8,7 @@ import no.nav.helse.sporbar.NULLE_UT_TOMME_OPPDRAG
 import no.nav.helse.sporbar.dto.OppdragDto.UtbetalingslinjeDto.Companion.parseLinje
 import kotlin.collections.map
 
-private const val gjeldendeVersjon = "1.0.0"
+private const val gjeldendeVersjon = "1.2.0"
 
 data class UtbetalingUtbetaltDto(
     val utbetalingId: UUID,
@@ -125,5 +125,8 @@ data class OppdragDto(
 data class UtbetalingdagDto(
     val dato: LocalDate,
     val type: String,
-    val begrunnelser: List<BegrunnelseDto>
+    val begrunnelser: List<BegrunnelseDto>,
+    val beløpTilArbeidsgiver: Int,
+    val beløpTilSykmeldt: Int,
+    val sykdomsgrad: Int
 )

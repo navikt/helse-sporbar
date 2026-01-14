@@ -77,9 +77,8 @@ internal class UtbetalingUtbetaltRiver(
                 }
                 it.requireArray("utbetalingsdager") {
                     require("dato", JsonNode::asLocalDate)
-                    requireKey("type")
+                    requireKey("type", "beløpTilArbeidsgiver", "beløpTilBruker", "sykdomsgrad")
                     interestedIn("begrunnelser")
-                    interestedIn("beløpTilArbeidsgiver", "beløpTilBruker", "sykdomsgrad")
                 }
             }
         }.register(this)
@@ -142,13 +141,12 @@ internal class UtbetalingUtbetaltRiver(
 }
 
 internal fun mapUtbetaligsdager(utbetalingsdager: JsonNode) = utbetalingsdager.map { utbetalingsdag ->
-    if (!utbetalingsdag.hasNonNull("beløpTilArbeidsgiver")) sikkerLog.warn("Mangler beløpTilArbeidsgiver")
-    if (!utbetalingsdag.hasNonNull("beløpTilBruker")) sikkerLog.warn("Mangler beløpTilBruker")
-    if (!utbetalingsdag.hasNonNull("sykdomsgrad")) sikkerLog.warn("Mangler sykdomsgrad")
-
     UtbetalingdagDto(
         dato = utbetalingsdag["dato"].asLocalDate(),
         type = utbetalingsdag["type"].dagtype,
+        beløpTilArbeidsgiver = utbetalingsdag["beløpTilArbeidsgiver"].asInt(),
+        beløpTilSykmeldt = utbetalingsdag["beløpTilBruker"].asInt(),
+        sykdomsgrad = utbetalingsdag["sykdomsgrad"].asInt(),
         begrunnelser = utbetalingsdag.path("begrunnelser")
             .takeUnless(JsonNode::isMissingOrNull)
             ?.map { it.begrunnelse }
