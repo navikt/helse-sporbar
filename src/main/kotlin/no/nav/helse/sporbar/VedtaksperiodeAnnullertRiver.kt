@@ -36,9 +36,10 @@ internal class VedtaksperiodeAnnullertRiver(
                 it.requireKey(
                     "fødselsnummer",
                     "@id",
-                    "organisasjonsnummer",
+                    "yrkesaktivitetstype",
                     "vedtaksperiodeId"
                 )
+                it.interestedIn("organisasjonsnummer")
                 it.require("fom", JsonNode::asLocalDate)
                 it.require("tom", JsonNode::asLocalDate)
             }
@@ -63,7 +64,10 @@ internal class VedtaksperiodeAnnullertRiver(
         val vedtakAnnullertDto = VedtakAnnullertDto(
             fødselsnummer = identer.fødselsnummer,
             aktørId = identer.aktørId,
-            organisasjonsnummer = packet["organisasjonsnummer"].asText(),
+            organisasjonsnummer = when (val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asText()) {
+                "ARBEIDSTAKER" -> packet["organisasjonsnummer"].asText()
+                else -> yrkesaktivitetstype
+            },
             vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText()),
             fom = packet["fom"].asLocalDate(),
             tom = packet["tom"].asLocalDate()

@@ -44,8 +44,8 @@ class VedtaksperiodeAnnullertRiverTest {
     }
 
     @Test
-    fun `gyldig vedtaksperiode_annullert`() {
-        testRapid.sendTestMessage(vedtaksperiodeAnnullert())
+    fun `gyldig vedtaksperiode_annullert for arbeidstaker`() {
+        testRapid.sendTestMessage(vedtaksperiodeAnnullertArbeidstaker())
 
         val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
         verify { aivenProducerMock.send( capture(captureSlot) ) }
@@ -60,12 +60,47 @@ class VedtaksperiodeAnnullertRiverTest {
         assertEquals(tom, vedtakAnnullertJson["tom"].asLocalDate())
         assertEquals("vedtak_annullert", vedtakAnnullertJson["event"].asText())
     }
+
+    @Test
+    fun `gyldig vedtaksperiode_annullert for selvstendig`() {
+        testRapid.sendTestMessage(vedtaksperiodeAnnullertSelvstendig())
+
+        val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
+        verify { aivenProducerMock.send( capture(captureSlot) ) }
+
+        val vedtakAnnullert = captureSlot.captured
+        assertEquals(fødselsnummer, vedtakAnnullert.key())
+
+        val vedtakAnnullertJson = vedtakAnnullert.validertJson()
+        assertEquals(fødselsnummer, vedtakAnnullertJson["fødselsnummer"].textValue())
+        assertEquals("SELVSTENDIG", vedtakAnnullertJson["organisasjonsnummer"].textValue())
+        assertEquals(fom, vedtakAnnullertJson["fom"].asLocalDate())
+        assertEquals(tom, vedtakAnnullertJson["tom"].asLocalDate())
+        assertEquals("vedtak_annullert", vedtakAnnullertJson["event"].asText())
+    }
+
     @Language("JSON")
-    private fun vedtaksperiodeAnnullert(
+    private fun vedtaksperiodeAnnullertArbeidstaker(
     ) = """
     {
         "fødselsnummer": "$fødselsnummer",
+        "yrkesaktivitetstype": "ARBEIDSTAKER",
         "organisasjonsnummer": "$organisasjonsnummer",
+        "vedtaksperiodeId": "${UUID.randomUUID()}",
+        "fom": "$fom",
+        "tom": "$tom",
+        "@event_name": "vedtaksperiode_annullert",
+        "@id": "${UUID.randomUUID()}",
+        "@opprettet": "2020-10-30T11:12:05.5835"
+    }
+    """
+
+    @Language("JSON")
+    private fun vedtaksperiodeAnnullertSelvstendig(
+    ) = """
+    {
+        "fødselsnummer": "$fødselsnummer",
+        "yrkesaktivitetstype": "SELVSTENDIG",
         "vedtaksperiodeId": "${UUID.randomUUID()}",
         "fom": "$fom",
         "tom": "$tom",
