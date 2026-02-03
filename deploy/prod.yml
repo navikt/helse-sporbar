@@ -1,3 +1,4 @@
+# nonk8s
 apiVersion: nais.io/v1alpha1
 kind: Application
 metadata:
@@ -50,6 +51,9 @@ spec:
     - name: KAFKA_RESET_POLICY
       value: none
   observability:
+    autoInstrumentation:
+      enabled: true
+      runtime: java
     logging:
       destinations:
         - id: elastic
