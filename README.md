@@ -13,7 +13,7 @@ Data om sykepenger kan konsumeres ved å lese inn en eller begge disse topic-ene
 
 ### Tilgang
 
-For å få tilgang til å lese fra topic-ene kan man henvende seg til team bømlo, for eksemepl via #team-bømlo-værsågod på
+For å få tilgang til å lese fra topic-ene kan man henvende seg til team bømlo, for eksemepl via #team-sas-værsågod på
 Slack. Vi trenger et applikasjonsnavn og et teamnavn i Azure AD, sammen med en begrunnelse om hvorfor dere trenger
 tilgangen.
 
@@ -48,4 +48,4 @@ Spørsmål knyttet til koden eller prosjektet kan stilles som issues her på Git
 
 ## For NAV-ansatte
 
-Interne henvendelser kan sendes via Slack i kanalen #team-bømlo-værsågod
+Interne henvendelser kan sendes via Slack i kanalen #team-sas-værsågod
