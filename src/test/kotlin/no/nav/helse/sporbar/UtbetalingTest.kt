@@ -234,7 +234,6 @@ internal class UtbetalingTest {
             fnr = "",
             internDokumentId = idSett.nySøknadHendelseId,
             eksternDokumentId = idSett.sykmeldingDokumentId,
-            rapportertDato = LocalDateTime.now(),
             duplikatkontroll = "",
             jsonBody = "{}"
         ))
@@ -246,7 +245,6 @@ internal class UtbetalingTest {
             fnr = "",
             internDokumentId = idSett.sendtSøknadHendelseId,
             eksternDokumentId = idSett.søknadDokumentId,
-            rapportertDato = LocalDateTime.now(),
             duplikatkontroll = "",
             jsonBody = "{}"
         ))
@@ -258,7 +256,6 @@ internal class UtbetalingTest {
             fnr = "",
             internDokumentId = idSett.inntektsmeldingHendelseId,
             eksternDokumentId = idSett.inntektsmeldingDokumentId,
-            rapportertDato = LocalDateTime.now(),
             duplikatkontroll = "",
             jsonBody = "{}"
         ))
@@ -273,7 +270,7 @@ internal class UtbetalingTest {
     }
 
     @Language("json")
-    private fun E2ETestContext.vedtakFattetMedUtbetaling(
+    private fun vedtakFattetMedUtbetaling(
         idSett: IdSett,
         hendelser: List<UUID> = listOf(
             idSett.nySøknadHendelseId,
@@ -281,7 +278,8 @@ internal class UtbetalingTest {
             idSett.inntektsmeldingHendelseId
         ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
-        utbetalingId: UUID = idSett.utbetalingId) = """{
+        utbetalingId: UUID = idSett.utbetalingId
+    ) = """{
     "vedtaksperiodeId": "$vedtaksperiodeId",
     "fom": "$FOM",
     "tom": "$TOM",
@@ -320,7 +318,7 @@ internal class UtbetalingTest {
 
 
     @Language("json")
-    private fun E2ETestContext.utbetalingUtbetalt(idSett: IdSett, event: String, utbetalingId: UUID = idSett.utbetalingId) = """{
+    private fun utbetalingUtbetalt(idSett: IdSett, event: String, utbetalingId: UUID = idSett.utbetalingId) = """{
   "utbetalingId": "$utbetalingId",
   "korrelasjonsId": "${idSett.korrelasjonsId}",
   "fom": "$FOM",
@@ -444,7 +442,7 @@ internal class UtbetalingTest {
     """
 
     @Language("json")
-    private fun E2ETestContext.utbetalingUtbetaltEnAvvistDag(
+    private fun utbetalingUtbetaltEnAvvistDag(
         id: UUID = UUID.randomUUID(),
         utbetalingId: UUID = UUID.randomUUID()
     ) = """{
@@ -593,7 +591,7 @@ internal class UtbetalingTest {
 
 
     @Language("json")
-    private fun E2ETestContext.utbetalingUtbetaltMedArbeidIkkeGjenopptattDag() = """{
+    private fun utbetalingUtbetaltMedArbeidIkkeGjenopptattDag() = """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
   "utbetalingId": "${UUID.randomUUID()}",
@@ -678,7 +676,7 @@ internal class UtbetalingTest {
 }
     """
     @Language("json")
-    private fun E2ETestContext.utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag() = """{
+    private fun utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag() = """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
   "utbetalingId": "${UUID.randomUUID()}",
@@ -755,7 +753,7 @@ internal class UtbetalingTest {
     """
 
     @Language("json")
-    private fun E2ETestContext.utbetalingUtbetaltMedAndreYtelserDag() = """{
+    private fun utbetalingUtbetaltMedAndreYtelserDag() = """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
   "utbetalingId": "${UUID.randomUUID()}",

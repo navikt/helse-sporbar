@@ -257,7 +257,6 @@ internal class VedtakFattetRiverTest {
                 fnr = "",
                 internDokumentId = idSett.sendtSøknadHendelseId,
                 eksternDokumentId = idSett.søknadDokumentId,
-                rapportertDato = LocalDateTime.now(),
                 duplikatkontroll = "",
                 jsonBody = """{
                         "sykmeldingId": "${idSett.sykmeldingDokumentId}"

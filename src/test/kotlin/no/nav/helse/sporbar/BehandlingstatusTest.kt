@@ -152,7 +152,6 @@ class BehandlingstatusTest {
                 fnr = "",
                 internDokumentId = søknadId,
                 eksternDokumentId = eksternSøknadId,
-                rapportertDato = LocalDateTime.now(),
                 duplikatkontroll = "",
                 jsonBody = "{}"
             )
