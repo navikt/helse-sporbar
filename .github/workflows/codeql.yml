@@ -20,25 +20,26 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
           languages: ${{ matrix.language }}
 
-      - name: Setup Java 
-        uses: actions/setup-java@v4
+      - name: Set up Java
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '21.x'
+          java-version: '21'
 
-      - name: Gradle build
-        uses: gradle/gradle-build-action@v2.4.2
-        with:
-          arguments: build
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Bygg med Gradle
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew build
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
