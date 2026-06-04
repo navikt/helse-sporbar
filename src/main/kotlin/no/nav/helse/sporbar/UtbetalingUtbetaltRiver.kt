@@ -193,6 +193,8 @@ private val JsonNode.begrunnelse get() = when (val tekstverdi = asText()) {
     "ManglerOpptjening" -> BegrunnelseDto.ManglerOpptjening
     "ManglerMedlemskap" -> BegrunnelseDto.ManglerMedlemskap
     "EtterDødsdato" -> BegrunnelseDto.EtterDødsdato
+    "AvslattMeldingTilNavDag" -> BegrunnelseDto.AvslattMeldingTilNavDag
+    "MeldingTilNavDagUtenforVentetid" -> BegrunnelseDto.MeldingTilNavDagUtenforVentetid
     "Over70" -> BegrunnelseDto.Over70
     else -> error("Ukjent begrunnelse $tekstverdi")
 }
