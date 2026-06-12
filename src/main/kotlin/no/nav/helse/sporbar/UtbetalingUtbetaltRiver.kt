@@ -15,13 +15,13 @@ import com.github.navikt.tbd_libs.result_object.getOrThrow
 import com.github.navikt.tbd_libs.retry.retryBlocking
 import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.micrometer.core.instrument.MeterRegistry
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import no.nav.helse.sporbar.dto.BegrunnelseDto
 import no.nav.helse.sporbar.dto.OppdragDto.Companion.parseOppdrag
 import no.nav.helse.sporbar.dto.UtbetalingUtbetaltDto
 import no.nav.helse.sporbar.dto.UtbetalingdagDto
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
@@ -193,7 +193,7 @@ private val JsonNode.begrunnelse get() = when (val tekstverdi = asText()) {
     "ManglerOpptjening" -> BegrunnelseDto.ManglerOpptjening
     "ManglerMedlemskap" -> BegrunnelseDto.ManglerMedlemskap
     "EtterDødsdato" -> BegrunnelseDto.EtterDødsdato
-    "AvslattMeldingTilNavDag" -> BegrunnelseDto.AvslattMeldingTilNavDag
+    "AvslåttMeldingTilNavDag" -> BegrunnelseDto.AvslattMeldingTilNavDag
     "MeldingTilNavDagUtenforVentetid" -> BegrunnelseDto.MeldingTilNavDagUtenforVentetid
     "Over70" -> BegrunnelseDto.Over70
     else -> error("Ukjent begrunnelse $tekstverdi")
