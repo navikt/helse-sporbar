@@ -23,6 +23,7 @@ data class VedtakFattetForEksternDto(
     val tags: Set<String>,
     val saksbehandler: NavnOgIdentForEksternDto?,
     val beslutter: NavnOgIdentForEksternDto?,
+    val forsikringsvurderingId: UUID?,
 ) {
     val versjon: String = "1.2.2"
 

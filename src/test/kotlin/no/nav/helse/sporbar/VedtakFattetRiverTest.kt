@@ -86,6 +86,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(saksbehandler.ident, vedtakFattetJson["saksbehandler"]["ident"].asText())
         assertEquals(beslutter.navn, vedtakFattetJson["beslutter"]["navn"].asText())
         assertEquals(beslutter.ident, vedtakFattetJson["beslutter"]["ident"].asText())
+        assertEquals(null, vedtakFattetJson["forsikringsvurderingId"].takeUnless { it.isMissingOrNull() })
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)))
@@ -113,6 +114,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
         assertEquals(null, vedtakFattetJson["saksbehandler"].takeUnless { it.isMissingOrNull() })
         assertEquals(null, vedtakFattetJson["beslutter"].takeUnless { it.isMissingOrNull() })
+        assertEquals(null, vedtakFattetJson["forsikringsvurderingId"].takeUnless { it.isMissingOrNull() })
 
         assertTrue(vedtakFattetJson["dokumenter"].map { UUID.fromString(it["dokumentId"].asText()) }
             .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)))
@@ -184,13 +186,15 @@ internal class VedtakFattetRiverTest {
         val beregningsgrunnlag = BigDecimal("777777.7")
         val erBegrensetTil6G = false
         val seksG = BigDecimal("815000.0")
+        val forsikringsvurderingId = UUID.randomUUID()
         testRapid.sendTestMessage(
             vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
                 idSett = idSett,
                 sykepengegrunnlag = sykepengegrunnlag,
                 beregningsgrunnlag = beregningsgrunnlag,
                 erBegrensetTil6G = erBegrensetTil6G,
-                seksG = seksG
+                seksG = seksG,
+                forsikringsvurderingId = forsikringsvurderingId,
             )
         )
 
@@ -214,6 +218,7 @@ internal class VedtakFattetRiverTest {
         assertEquals(beregningsgrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["selvstendig"]["beregningsgrunnlag"].asText()))
         assertEquals(emptyList<String>(), vedtakFattetJson["sykepengegrunnlagsfakta"]["tags"].map { it.asText() })
         assertEquals(seksG, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["6G"].asText()))
+        assertEquals(forsikringsvurderingId, vedtakFattetJson["forsikringsvurderingId"].asText().let { UUID.fromString(it) })
     }
 
     private data class E2ETestContext(val testRapid: TestRapid) {
@@ -442,6 +447,7 @@ internal class VedtakFattetRiverTest {
         seksG: BigDecimal,
         begrunnelser: List<Begrunnelse> = emptyList(),
         tags: Set<String> = emptySet(),
+        forsikringsvurderingId: UUID,
     ): String {
         val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
         return """{
@@ -497,7 +503,8 @@ internal class VedtakFattetRiverTest {
         "ident": "${beslutter.ident}"
       },
       "begrunnelser": $begrunnelserJson,
-      "tags": ${tags.map { "\"$it\"" }}
+      "tags": ${tags.map { "\"$it\"" }},
+      "forsikringsvurderingId": "$forsikringsvurderingId"
     }
         """
     }

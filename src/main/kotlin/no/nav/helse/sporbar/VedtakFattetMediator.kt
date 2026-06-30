@@ -83,7 +83,8 @@ internal class VedtakFattetMediator(
                     navn = it.navn,
                     ident = it.ident
                 )
-            }
+            },
+            forsikringsvurderingId = vedtakFattet.forsikringsvurderingId,
         )
     }
 

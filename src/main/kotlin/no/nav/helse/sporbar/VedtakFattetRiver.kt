@@ -57,6 +57,7 @@ internal class VedtakFattetRiver(
                 it.interestedIn("begrunnelser")
                 it.interestedIn("saksbehandler", "saksbehandler.navn", "saksbehandler.ident")
                 it.interestedIn("beslutter", "beslutter.navn", "beslutter.ident")
+                it.interestedIn("forsikringsvurderingId")
             }
         }.register(this)
     }
@@ -126,8 +127,9 @@ internal class VedtakFattetRiver(
                 sykepengegrunnlagsfakta = sykepengegrunnlagsfakta,
                 begrunnelser = begrunnelser,
                 tags = tags,
-                saksbehandlerNavnOgIdent,
-                beslutterNavnOgIdent
+                saksbehandlerNavnOgIdent = saksbehandlerNavnOgIdent,
+                beslutterNavnOgIdent = beslutterNavnOgIdent,
+                forsikringsvurderingId = packet["forsikringsvurderingId"].takeUnless { it.isMissingOrNull() }?.let { UUID.fromString(it.asText()) }
             )
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
@@ -237,7 +239,8 @@ internal data class VedtakFattet(
     val begrunnelser: List<Begrunnelse>,
     val tags: Set<String>,
     val saksbehandlerNavnOgIdent: NavnOgIdent?,
-    val beslutterNavnOgIdent: NavnOgIdent?
+    val beslutterNavnOgIdent: NavnOgIdent?,
+    val forsikringsvurderingId: UUID?,
 )
 
 sealed class Sykepengegrunnlagsfakta(internal val fastsatt: String)
