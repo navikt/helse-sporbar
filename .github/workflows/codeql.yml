@@ -11,6 +11,7 @@ jobs:
     permissions:
       actions: read
       contents: read
+      id-token: write
       security-events: write
 
     strategy:
@@ -38,7 +39,7 @@ jobs:
 
       - name: Bygg med Gradle
         env:
-          ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew build
 
       - name: Perform CodeQL Analysis
