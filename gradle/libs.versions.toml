@@ -19,7 +19,7 @@ tbdLibs-speedClient = { module = "com.github.navikt.tbd-libs:speed-client", vers
 tbdLibs-spedisjonClient = { module = "com.github.navikt.tbd-libs:spedisjon-client", version.ref = "tbdLibs" }
 
 jsonSchemaValidator = "com.networknt:json-schema-validator:1.0.73"
-jsonassert = "org.skyscreamer:jsonassert:1.5.1"
+jsonassert = "org.skyscreamer:jsonassert:1.5.3"
 mockk = "io.mockk:mockk:1.14.11"
 
 [plugins]
