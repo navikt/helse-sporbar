@@ -1,77 +1,28 @@
-val mainClass = "no.nav.helse.sporbar.AppKt"
-
-val rapidsAndRiversVersion = "2026011411051768385145.e8ebad1177b4"
-val tbdLibsVersion = "20260423.1246"
-val ktorVersion = "3.2.3"
-val junitJupiterVersion = "5.12.1"
-val mockkVersion = "1.13.17"
-val jsonSchemaValidatorVersion = "1.0.73"
-val jsonassertVersion = "1.5.1"
-
 plugins {
-    kotlin("jvm") version "2.3.0"
+    alias(libs.plugins.sas.deployable)
+}
+
+sasDeployable {
+    mainClass = "no.nav.helse.sporbar.AppKt"
 }
 
 dependencies {
-    implementation("com.github.navikt:rapids-and-rivers:$rapidsAndRiversVersion")
-    implementation("com.github.navikt.tbd-libs:azure-token-client-default:$tbdLibsVersion")
-    implementation("com.github.navikt.tbd-libs:retry:$tbdLibsVersion")
-    implementation("com.github.navikt.tbd-libs:speed-client:$tbdLibsVersion")
-    implementation("com.github.navikt.tbd-libs:spedisjon-client:$tbdLibsVersion")
+    implementation(libs.rapidsAndRivers)
+    implementation(libs.tbdLibs.azureTokenClientDefault)
+    implementation(libs.tbdLibs.retry)
+    implementation(libs.tbdLibs.speedClient)
+    implementation(libs.tbdLibs.spedisjonClient)
 
-    implementation("io.ktor:ktor-client-apache:$ktorVersion")
-    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion") {
+    implementation(libs.ktor.client.apache)
+    implementation(libs.ktor.client.contentNegotiation)
+    implementation(libs.ktor.serialization.jackson)
+    implementation(libs.ktor.server.contentNegotiation)
+    implementation(libs.ktor.server.auth.jwt) {
         exclude(group = "junit")
     }
 
-    testImplementation("com.github.navikt.tbd-libs:rapids-and-rivers-test:$tbdLibsVersion")
-    testImplementation("io.mockk:mockk:$mockkVersion")
-    testImplementation("com.networknt:json-schema-validator:$jsonSchemaValidatorVersion")
-    testImplementation("org.skyscreamer:jsonassert:$jsonassertVersion")
-
-    testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-
-kotlin {
-    jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of("21"))
-    }
-}
-
-tasks {
-    withType<Test> {
-        useJUnitPlatform()
-        testLogging {
-            events("skipped", "failed")
-        }
-
-        val parallellDisabled = System.getenv("CI" ) == "true"
-        systemProperty("junit.jupiter.execution.parallel.enabled", parallellDisabled.not().toString())
-        systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
-        systemProperty("junit.jupiter.execution.parallel.config.strategy", "fixed")
-        systemProperty("junit.jupiter.execution.parallel.config.fixed.parallelism", "8")
-    }
-
-    withType<Jar> {
-        archiveBaseName.set("app")
-
-        manifest {
-            attributes["Main-Class"] = mainClass
-            attributes["Class-Path"] = configurations.runtimeClasspath.get().joinToString(separator = " ") {
-                it.name
-            }
-        }
-
-        doLast {
-            configurations.runtimeClasspath.get().forEach {
-                val file = File("${layout.buildDirectory.get()}/libs/${it.name}")
-                if (!file.exists()) it.copyTo(file)
-            }
-        }
-    }
+    testImplementation(libs.tbdLibs.rapidsAndRiversTest)
+    testImplementation(libs.mockk)
+    testImplementation(libs.jsonSchemaValidator)
+    testImplementation(libs.jsonassert)
 }
