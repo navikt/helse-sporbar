@@ -20,7 +20,7 @@ tbdLibs-spedisjonClient = { module = "com.github.navikt.tbd-libs:spedisjon-clien
 
 jsonSchemaValidator = "com.networknt:json-schema-validator:1.0.73"
 jsonassert = "org.skyscreamer:jsonassert:1.5.1"
-mockk = "io.mockk:mockk:1.13.17"
+mockk = "io.mockk:mockk:1.14.11"
 
 [plugins]
 sas-deployable = { id = "no.nav.helse.sas.sas-deployable", version.ref = "sasGradlePlugins" }
