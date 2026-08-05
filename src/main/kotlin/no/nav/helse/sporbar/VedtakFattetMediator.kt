@@ -39,6 +39,7 @@ internal class VedtakFattetMediator(
         producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(VedtakType.VedtakFattet.header())))
         if (System.getenv().getOrElse("NAIS_CLUSTER_NAME", { "false" }  ) == "dev-gcp") {
             producer.send(ProducerRecord("tbd.sis", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(VedtakType.VedtakFattet.header())))
+            sikkerLogg.info("Publiserer vedtakFattet til sistopicet: {}", meldingForEkstern)
         }
         sikkerLogg.info("Publiserer vedtakFattet {}", meldingForEkstern)
         log.info("Publiserte vedtakFattet for {}", dokumenter.map { it.dokumentId })
