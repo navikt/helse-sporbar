@@ -37,7 +37,7 @@ internal class VedtakFattetMediator(
         val eksternDto = oversett(vedtakFattet, dokumenter)
         val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
         producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(VedtakType.VedtakFattet.header())))
-        if (System.getenv().getOrElse("NAIS_CLUSTER_NAME", { "false" }  ) == "dev-gcp") {
+        if ((System.getenv().get("NAIS_CLUSTER_NAME") ?: "false") == "dev-gcp") {
             producer.send(ProducerRecord("tbd.sis", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(VedtakType.VedtakFattet.header())))
             sikkerLogg.info("Publiserer vedtakFattet til sistopicet: {}", meldingForEkstern)
         }
