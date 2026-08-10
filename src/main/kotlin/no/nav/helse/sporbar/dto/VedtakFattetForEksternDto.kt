@@ -28,64 +28,81 @@ data class VedtakFattetForEksternDto(
     val versjon: String = "1.2.2"
 
     @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
-    val begrensning: String = when (sykepengegrunnlagsfakta) {
-        is FastsattEtterSkjønnForEksternDto -> if (sykepengegrunnlagsfakta.skjønnsfastsatt > sykepengegrunnlagsfakta.`6G`)
-            "ER_6G_BEGRENSET"
-        else
-            "ER_IKKE_6G_BEGRENSET"
+    val begrensning: String =
+        when (sykepengegrunnlagsfakta) {
+            is FastsattEtterSkjønnForEksternDto ->
+                if (sykepengegrunnlagsfakta.skjønnsfastsatt > sykepengegrunnlagsfakta.`6G`) {
+                    "ER_6G_BEGRENSET"
+                } else {
+                    "ER_IKKE_6G_BEGRENSET"
+                }
 
-        is FastsattEtterHovedregelForEksternDto -> if (sykepengegrunnlagsfakta.omregnetÅrsinntekt > sykepengegrunnlagsfakta.`6G`)
-            "ER_6G_BEGRENSET"
-        else
-            "ER_IKKE_6G_BEGRENSET"
+            is FastsattEtterHovedregelForEksternDto ->
+                if (sykepengegrunnlagsfakta.omregnetÅrsinntekt > sykepengegrunnlagsfakta.`6G`) {
+                    "ER_6G_BEGRENSET"
+                } else {
+                    "ER_IKKE_6G_BEGRENSET"
+                }
 
-        is FastsattIInfotrygdForEksternDto -> "VURDERT_I_INFOTRYGD"
+            is FastsattIInfotrygdForEksternDto -> "VURDERT_I_INFOTRYGD"
 
-        is SykepengegrunnlagsfaktaSelvstendigDto -> if (sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag > sykepengegrunnlagsfakta.`6G`)
-            "ER_6G_BEGRENSET"
-        else
-            "ER_IKKE_6G_BEGRENSET"
-    }
-
-    @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
-    val inntekt = when (sykepengegrunnlagsfakta) {
-        is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta.skjønnsfastsatt
-        is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
-        is FastsattIInfotrygdForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
-        is SykepengegrunnlagsfaktaSelvstendigDto -> sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag.toDouble()
-    } / 12.0
-
-    @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
-    val grunnlagForSykepengegrunnlag: Double = when (sykepengegrunnlagsfakta) {
-        is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta.skjønnsfastsatt
-        is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
-        is FastsattIInfotrygdForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
-        is SykepengegrunnlagsfaktaSelvstendigDto -> sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag.toDouble()
-    }
+            is SykepengegrunnlagsfaktaSelvstendigDto ->
+                if (sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag > sykepengegrunnlagsfakta.`6G`) {
+                    "ER_6G_BEGRENSET"
+                } else {
+                    "ER_IKKE_6G_BEGRENSET"
+                }
+        }
 
     @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
-    val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double> = when (sykepengegrunnlagsfakta) {
-        is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta
-            .arbeidsgivere
-            .associate { it.arbeidsgiver to it.skjønnsfastsatt.toDesimaler }
+    val inntekt =
+        when (sykepengegrunnlagsfakta) {
+            is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta.skjønnsfastsatt
+            is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+            is FastsattIInfotrygdForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+            is SykepengegrunnlagsfaktaSelvstendigDto -> sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag.toDouble()
+        } / 12.0
 
-        is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta
-            .arbeidsgivere
-            .associate { it.arbeidsgiver to it.omregnetÅrsinntekt.toDesimaler }
+    @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
+    val grunnlagForSykepengegrunnlag: Double =
+        when (sykepengegrunnlagsfakta) {
+            is FastsattEtterSkjønnForEksternDto -> sykepengegrunnlagsfakta.skjønnsfastsatt
+            is FastsattEtterHovedregelForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+            is FastsattIInfotrygdForEksternDto -> sykepengegrunnlagsfakta.omregnetÅrsinntekt
+            is SykepengegrunnlagsfaktaSelvstendigDto -> sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag.toDouble()
+        }
 
-        is FastsattIInfotrygdForEksternDto -> emptyMap()
+    @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
+    val grunnlagForSykepengegrunnlagPerArbeidsgiver: Map<String, Double> =
+        when (sykepengegrunnlagsfakta) {
+            is FastsattEtterSkjønnForEksternDto ->
+                sykepengegrunnlagsfakta
+                    .arbeidsgivere
+                    .associate { it.arbeidsgiver to it.skjønnsfastsatt.toDesimaler }
 
-        is SykepengegrunnlagsfaktaSelvstendigDto -> mapOf(
-            organisasjonsnummer to sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag.toDouble()
-        )
-    }
+            is FastsattEtterHovedregelForEksternDto ->
+                sykepengegrunnlagsfakta
+                    .arbeidsgivere
+                    .associate { it.arbeidsgiver to it.omregnetÅrsinntekt.toDesimaler }
+
+            is FastsattIInfotrygdForEksternDto -> emptyMap()
+
+            is SykepengegrunnlagsfaktaSelvstendigDto ->
+                mapOf(
+                    organisasjonsnummer to sykepengegrunnlagsfakta.selvstendig.beregningsgrunnlag.toDouble(),
+                )
+        }
 }
 
 private val Double.toDesimaler get() = toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
 
-class DokumentForEkstern(val dokumentId: UUID, val type: Type) {
+class DokumentForEkstern(
+    val dokumentId: UUID,
+    val type: Type,
+) {
     enum class Type {
-        Sykmelding, Søknad
+        Sykmelding,
+        Søknad,
     }
 }
 
@@ -97,12 +114,12 @@ data class NavnOgIdentForEksternDto(
 data class BegrunnelseForEksternDto(
     val type: String,
     val begrunnelse: String,
-    val perioder: List<PeriodeForEksternDto>
+    val perioder: List<PeriodeForEksternDto>,
 )
 
 data class PeriodeForEksternDto(
     val fom: LocalDate,
-    val tom: LocalDate
+    val tom: LocalDate,
 )
 
 sealed class SykepengegrunnlagsfaktaForEksternDto
@@ -114,9 +131,12 @@ data class FastsattEtterHovedregelForEksternDto(
     val avviksprosent: Double,
     val `6G`: Double,
     val tags: Set<String>,
-    val arbeidsgivere: List<Arbeidsgiver>
+    val arbeidsgivere: List<Arbeidsgiver>,
 ) : SykepengegrunnlagsfaktaForEksternDto() {
-    data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double)
+    data class Arbeidsgiver(
+        val arbeidsgiver: String,
+        val omregnetÅrsinntekt: Double,
+    )
 }
 
 data class FastsattEtterSkjønnForEksternDto(
@@ -127,9 +147,13 @@ data class FastsattEtterSkjønnForEksternDto(
     val avviksprosent: Double,
     val `6G`: Double,
     val tags: Set<String>,
-    val arbeidsgivere: List<Arbeidsgiver>
+    val arbeidsgivere: List<Arbeidsgiver>,
 ) : SykepengegrunnlagsfaktaForEksternDto() {
-    data class Arbeidsgiver(val arbeidsgiver: String, val omregnetÅrsinntekt: Double, val skjønnsfastsatt: Double)
+    data class Arbeidsgiver(
+        val arbeidsgiver: String,
+        val omregnetÅrsinntekt: Double,
+        val skjønnsfastsatt: Double,
+    )
 }
 
 data class FastsattIInfotrygdForEksternDto(
@@ -145,9 +169,9 @@ data class SykepengegrunnlagsfaktaSelvstendigDto(
 ) : SykepengegrunnlagsfaktaForEksternDto() {
     data class Selvstendig(
         val beregningsgrunnlag: BigDecimal,
-        val pensjonsgivendeInntekter: List<PensjonsgivendeInntekt>
+        val pensjonsgivendeInntekter: List<PensjonsgivendeInntekt>,
     ) {
-        data class PensjonsgivendeInntekt (
+        data class PensjonsgivendeInntekt(
             val årstall: Int,
             val beløp: BigDecimal,
         )

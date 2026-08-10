@@ -14,25 +14,36 @@ import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.BEH
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
 import org.slf4j.LoggerFactory
 
-internal class BehandlingForkastetRiver(rapid: RapidsConnection, private val sisPublisher: SisPublisher) :
-    River.PacketListener {
-
+internal class BehandlingForkastetRiver(
+    rapid: RapidsConnection,
+    private val sisPublisher: SisPublisher,
+) : River.PacketListener {
     init {
-        River(rapid).apply {
-            precondition { it.requireValue("@event_name", "behandling_forkastet") }
-            validate {
-                it.requireKey("vedtaksperiodeId", "behandlingId")
-                it.require("@opprettet", JsonNode::asLocalDateTime)
-            }
-        }.register(this)
+        River(rapid)
+            .apply {
+                precondition { it.requireValue("@event_name", "behandling_forkastet") }
+                validate {
+                    it.requireKey("vedtaksperiodeId", "behandlingId")
+                    it.require("@opprettet", JsonNode::asLocalDateTime)
+                }
+            }.register(this)
     }
 
-    override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
+    override fun onError(
+        problems: MessageProblems,
+        context: MessageContext,
+        metadata: MessageMetadata,
+    ) {
         logg.info("Håndterer ikke behandling_forkastet pga. problem: se sikker logg")
         sikkerlogg.info("Håndterer ikke behandling_forkastet pga. problem: {}", problems.toExtendedReport())
     }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
+    override fun onPacket(
+        packet: JsonMessage,
+        context: MessageContext,
+        metadata: MessageMetadata,
+        meterRegistry: MeterRegistry,
+    ) {
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
         val tidspunkt = packet["@opprettet"].asOffsetDateTime()

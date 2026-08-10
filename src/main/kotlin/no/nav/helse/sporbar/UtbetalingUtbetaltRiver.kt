@@ -15,13 +15,13 @@ import com.github.navikt.tbd_libs.result_object.getOrThrow
 import com.github.navikt.tbd_libs.retry.retryBlocking
 import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.micrometer.core.instrument.MeterRegistry
-import java.util.*
 import no.nav.helse.sporbar.dto.BegrunnelseDto
 import no.nav.helse.sporbar.dto.OppdragDto.Companion.parseOppdrag
 import no.nav.helse.sporbar.dto.UtbetalingUtbetaltDto
 import no.nav.helse.sporbar.dto.UtbetalingdagDto
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
@@ -31,72 +31,94 @@ val NULLE_UT_TOMME_OPPDRAG = System.getenv("NULLE_UT_TOMME_OPPDRAG")?.toBoolean(
 internal class UtbetalingUtbetaltRiver(
     rapidsConnection: RapidsConnection,
     private val utbetalingMediator: UtbetalingMediator,
-    private val speedClient: SpeedClient
+    private val speedClient: SpeedClient,
 ) : River.PacketListener {
-
     init {
-        River(rapidsConnection).apply {
-            precondition { it.requireValue("@event_name", "utbetaling_utbetalt") }
-            validate {
-                it.requireKey(
-                    "fødselsnummer",
-                    "@id",
-                    "organisasjonsnummer",
-                    "forbrukteSykedager",
-                    "gjenståendeSykedager",
-                    "stønadsdager",
-                    "automatiskBehandling",
-                    "arbeidsgiverOppdrag",
-                    "personOppdrag",
-                    "type",
-                )
-                it.require("fom", JsonNode::asLocalDate)
-                it.require("tom", JsonNode::asLocalDate)
-                it.require("maksdato", JsonNode::asLocalDate)
-                it.require("@opprettet", JsonNode::asLocalDateTime)
-                it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
-                it.require("korrelasjonsId") { id -> UUID.fromString(id.asText()) }
+        River(rapidsConnection)
+            .apply {
+                precondition { it.requireValue("@event_name", "utbetaling_utbetalt") }
+                validate {
+                    it.requireKey(
+                        "fødselsnummer",
+                        "@id",
+                        "organisasjonsnummer",
+                        "forbrukteSykedager",
+                        "gjenståendeSykedager",
+                        "stønadsdager",
+                        "automatiskBehandling",
+                        "arbeidsgiverOppdrag",
+                        "personOppdrag",
+                        "type",
+                    )
+                    it.require("fom", JsonNode::asLocalDate)
+                    it.require("tom", JsonNode::asLocalDate)
+                    it.require("maksdato", JsonNode::asLocalDate)
+                    it.require("@opprettet", JsonNode::asLocalDateTime)
+                    it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
+                    it.require("korrelasjonsId") { id -> UUID.fromString(id.asText()) }
 
-                it.requireKey("arbeidsgiverOppdrag.mottaker", "arbeidsgiverOppdrag.fagområde", "arbeidsgiverOppdrag.fagsystemId",
-                    "arbeidsgiverOppdrag.nettoBeløp", "arbeidsgiverOppdrag.stønadsdager")
-                it.require("arbeidsgiverOppdrag.fom", JsonNode::asLocalDate)
-                it.require("arbeidsgiverOppdrag.tom", JsonNode::asLocalDate)
-                it.requireArray("arbeidsgiverOppdrag.linjer") {
-                    require("fom", JsonNode::asLocalDate)
-                    require("tom", JsonNode::asLocalDate)
-                    requireKey("sats", "totalbeløp", "grad", "stønadsdager")
+                    it.requireKey(
+                        "arbeidsgiverOppdrag.mottaker",
+                        "arbeidsgiverOppdrag.fagområde",
+                        "arbeidsgiverOppdrag.fagsystemId",
+                        "arbeidsgiverOppdrag.nettoBeløp",
+                        "arbeidsgiverOppdrag.stønadsdager",
+                    )
+                    it.require("arbeidsgiverOppdrag.fom", JsonNode::asLocalDate)
+                    it.require("arbeidsgiverOppdrag.tom", JsonNode::asLocalDate)
+                    it.requireArray("arbeidsgiverOppdrag.linjer") {
+                        require("fom", JsonNode::asLocalDate)
+                        require("tom", JsonNode::asLocalDate)
+                        requireKey("sats", "totalbeløp", "grad", "stønadsdager")
+                    }
+                    it.requireKey(
+                        "personOppdrag.mottaker",
+                        "personOppdrag.fagområde",
+                        "personOppdrag.fagsystemId",
+                        "personOppdrag.nettoBeløp",
+                        "personOppdrag.stønadsdager",
+                    )
+                    it.require("personOppdrag.fom", JsonNode::asLocalDate)
+                    it.require("personOppdrag.tom", JsonNode::asLocalDate)
+                    it.requireArray("personOppdrag.linjer") {
+                        require("fom", JsonNode::asLocalDate)
+                        require("tom", JsonNode::asLocalDate)
+                        requireKey("sats", "totalbeløp", "grad", "stønadsdager")
+                    }
+                    it.requireArray("utbetalingsdager") {
+                        require("dato", JsonNode::asLocalDate)
+                        requireKey("type", "beløpTilArbeidsgiver", "beløpTilBruker", "sykdomsgrad")
+                        interestedIn("begrunnelser")
+                    }
                 }
-                it.requireKey("personOppdrag.mottaker", "personOppdrag.fagområde", "personOppdrag.fagsystemId",
-                    "personOppdrag.nettoBeløp", "personOppdrag.stønadsdager")
-                it.require("personOppdrag.fom", JsonNode::asLocalDate)
-                it.require("personOppdrag.tom", JsonNode::asLocalDate)
-                it.requireArray("personOppdrag.linjer") {
-                    require("fom", JsonNode::asLocalDate)
-                    require("tom", JsonNode::asLocalDate)
-                    requireKey("sats", "totalbeløp", "grad", "stønadsdager")
-                }
-                it.requireArray("utbetalingsdager") {
-                    require("dato", JsonNode::asLocalDate)
-                    requireKey("type", "beløpTilArbeidsgiver", "beløpTilBruker", "sykdomsgrad")
-                    interestedIn("begrunnelser")
-                }
-            }
-        }.register(this)
+            }.register(this)
     }
 
-    override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
+    override fun onError(
+        problems: MessageProblems,
+        context: MessageContext,
+        metadata: MessageMetadata,
+    ) {
         log.error("forstod ikke utbetaling_utbetalt. (se sikkerlogg for melding)")
         sikkerLog.error("forstod ikke utbetaling_utbetalt:\n${problems.toExtendedReport()}")
     }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
+    override fun onPacket(
+        packet: JsonMessage,
+        context: MessageContext,
+        metadata: MessageMetadata,
+        meterRegistry: MeterRegistry,
+    ) {
         val callId = packet["@id"].asText()
         withMDC("callId" to callId) {
             håndterUtbetalingUtbetalt(packet, callId)
         }
     }
 
-    private fun håndterUtbetalingUtbetalt(packet: JsonMessage, callId: String) {
+    private fun håndterUtbetalingUtbetalt(
+        packet: JsonMessage,
+        callId: String,
+    ) {
         val ident = packet["fødselsnummer"].asText()
         val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
 
@@ -104,8 +126,8 @@ internal class UtbetalingUtbetaltRiver(
         val fom = packet["fom"].asLocalDate()
         val tom = packet["tom"].asLocalDate()
         val maksdato = packet["maksdato"].asLocalDate()
-        val utbetalingId = packet["utbetalingId"].let{ UUID.fromString(it.asText())}
-        val korrelasjonsId = packet["korrelasjonsId"].let{ UUID.fromString(it.asText())}
+        val utbetalingId = packet["utbetalingId"].let { UUID.fromString(it.asText()) }
+        val korrelasjonsId = packet["korrelasjonsId"].let { UUID.fromString(it.asText()) }
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
         val gjenståendeSykedager = packet["gjenståendeSykedager"].asInt()
         val stønadsdager = packet["stønadsdager"].asInt()
@@ -132,43 +154,47 @@ internal class UtbetalingUtbetaltRiver(
                 personOppdrag = personOppdrag,
                 type = type,
                 utbetalingsdager = utbetalingsdager,
-                foreløpigBeregnetSluttPåSykepenger = maksdato
-            )
+                foreløpigBeregnetSluttPåSykepenger = maksdato,
+            ),
         )
         log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
         sikkerLog.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
     }
 }
 
-internal fun mapUtbetaligsdager(utbetalingsdager: JsonNode) = utbetalingsdager.map { utbetalingsdag ->
-    UtbetalingdagDto(
-        dato = utbetalingsdag["dato"].asLocalDate(),
-        type = utbetalingsdag["type"].dagtype,
-        beløpTilArbeidsgiver = utbetalingsdag["beløpTilArbeidsgiver"].asInt(),
-        beløpTilSykmeldt = utbetalingsdag["beløpTilBruker"].asInt(),
-        sykdomsgrad = utbetalingsdag["sykdomsgrad"].asInt(),
-        begrunnelser = utbetalingsdag.path("begrunnelser")
-            .takeUnless(JsonNode::isMissingOrNull)
-            ?.map { it.begrunnelse }
-            ?: emptyList()
-    )
-}
+internal fun mapUtbetaligsdager(utbetalingsdager: JsonNode) =
+    utbetalingsdager.map { utbetalingsdag ->
+        UtbetalingdagDto(
+            dato = utbetalingsdag["dato"].asLocalDate(),
+            type = utbetalingsdag["type"].dagtype,
+            beløpTilArbeidsgiver = utbetalingsdag["beløpTilArbeidsgiver"].asInt(),
+            beløpTilSykmeldt = utbetalingsdag["beløpTilBruker"].asInt(),
+            sykdomsgrad = utbetalingsdag["sykdomsgrad"].asInt(),
+            begrunnelser =
+                utbetalingsdag
+                    .path("begrunnelser")
+                    .takeUnless(JsonNode::isMissingOrNull)
+                    ?.map { it.begrunnelse }
+                    ?: emptyList(),
+        )
+    }
 
-private val KjenteDagtyper = setOf(
-    "ArbeidsgiverperiodeDag",
-    "NavDag",
-    "NavHelgDag",
-    "Arbeidsdag",
-    "Fridag",
-    "AvvistDag",
-    "UkjentDag",
-    "ForeldetDag",
-    "Permisjonsdag",
-    "Feriedag",
-    "ArbeidIkkeGjenopptattDag",
-    "AndreYtelser",
-    "Ventetidsdag"
-)
+private val KjenteDagtyper =
+    setOf(
+        "ArbeidsgiverperiodeDag",
+        "NavDag",
+        "NavHelgDag",
+        "Arbeidsdag",
+        "Fridag",
+        "AvvistDag",
+        "UkjentDag",
+        "ForeldetDag",
+        "Permisjonsdag",
+        "Feriedag",
+        "ArbeidIkkeGjenopptattDag",
+        "AndreYtelser",
+        "Ventetidsdag",
+    )
 
 private val JsonNode.dagtype get(): String {
     val fraSpleis = asText()
@@ -176,25 +202,26 @@ private val JsonNode.dagtype get(): String {
     throw IllegalStateException("Ny dagtype fra Spleis: $fraSpleis. Vurder om denne skal eksponeres videre ut på tbd.utbetaling")
 }
 
-private val JsonNode.begrunnelse get() = when (val tekstverdi = asText()) {
-    "SykepengedagerOppbrukt" -> BegrunnelseDto.SykepengedagerOppbrukt
-    "SykepengedagerOppbruktOver67" -> BegrunnelseDto.SykepengedagerOppbruktOver67
-    "MinimumInntekt" -> BegrunnelseDto.MinimumInntekt
-    "MinimumInntektOver67" -> BegrunnelseDto.MinimumInntektOver67
-    "EgenmeldingUtenforArbeidsgiverperiode" -> BegrunnelseDto.EgenmeldingUtenforArbeidsgiverperiode
-    "AndreYtelserAap" -> BegrunnelseDto.AndreYtelserAap
-    "AndreYtelserDagpenger" -> BegrunnelseDto.AndreYtelserDagpenger
-    "AndreYtelserForeldrepenger" -> BegrunnelseDto.AndreYtelserForeldrepenger
-    "AndreYtelserOmsorgspenger" -> BegrunnelseDto.AndreYtelserOmsorgspenger
-    "AndreYtelserOpplaringspenger" -> BegrunnelseDto.AndreYtelserOpplaringspenger
-    "AndreYtelserPleiepenger" -> BegrunnelseDto.AndreYtelserPleiepenger
-    "AndreYtelserSvangerskapspenger" -> BegrunnelseDto.AndreYtelserSvangerskapspenger
-    "MinimumSykdomsgrad" -> BegrunnelseDto.MinimumSykdomsgrad
-    "ManglerOpptjening" -> BegrunnelseDto.ManglerOpptjening
-    "ManglerMedlemskap" -> BegrunnelseDto.ManglerMedlemskap
-    "EtterDødsdato" -> BegrunnelseDto.EtterDødsdato
-    "AvslåttMeldingTilNavDag" -> BegrunnelseDto.AvslattMeldingTilNavDag
-    "MeldingTilNavDagUtenforVentetid" -> BegrunnelseDto.MeldingTilNavDagUtenforVentetid
-    "Over70" -> BegrunnelseDto.Over70
-    else -> error("Ukjent begrunnelse $tekstverdi")
-}
+private val JsonNode.begrunnelse get() =
+    when (val tekstverdi = asText()) {
+        "SykepengedagerOppbrukt" -> BegrunnelseDto.SykepengedagerOppbrukt
+        "SykepengedagerOppbruktOver67" -> BegrunnelseDto.SykepengedagerOppbruktOver67
+        "MinimumInntekt" -> BegrunnelseDto.MinimumInntekt
+        "MinimumInntektOver67" -> BegrunnelseDto.MinimumInntektOver67
+        "EgenmeldingUtenforArbeidsgiverperiode" -> BegrunnelseDto.EgenmeldingUtenforArbeidsgiverperiode
+        "AndreYtelserAap" -> BegrunnelseDto.AndreYtelserAap
+        "AndreYtelserDagpenger" -> BegrunnelseDto.AndreYtelserDagpenger
+        "AndreYtelserForeldrepenger" -> BegrunnelseDto.AndreYtelserForeldrepenger
+        "AndreYtelserOmsorgspenger" -> BegrunnelseDto.AndreYtelserOmsorgspenger
+        "AndreYtelserOpplaringspenger" -> BegrunnelseDto.AndreYtelserOpplaringspenger
+        "AndreYtelserPleiepenger" -> BegrunnelseDto.AndreYtelserPleiepenger
+        "AndreYtelserSvangerskapspenger" -> BegrunnelseDto.AndreYtelserSvangerskapspenger
+        "MinimumSykdomsgrad" -> BegrunnelseDto.MinimumSykdomsgrad
+        "ManglerOpptjening" -> BegrunnelseDto.ManglerOpptjening
+        "ManglerMedlemskap" -> BegrunnelseDto.ManglerMedlemskap
+        "EtterDødsdato" -> BegrunnelseDto.EtterDødsdato
+        "AvslåttMeldingTilNavDag" -> BegrunnelseDto.AvslattMeldingTilNavDag
+        "MeldingTilNavDagUtenforVentetid" -> BegrunnelseDto.MeldingTilNavDagUtenforVentetid
+        "Over70" -> BegrunnelseDto.Over70
+        else -> error("Ukjent begrunnelse $tekstverdi")
+    }

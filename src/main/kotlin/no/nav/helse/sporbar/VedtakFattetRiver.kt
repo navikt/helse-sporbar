@@ -15,12 +15,12 @@ import com.github.navikt.tbd_libs.result_object.getOrThrow
 import com.github.navikt.tbd_libs.retry.retryBlocking
 import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.micrometer.core.instrument.MeterRegistry
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
@@ -28,53 +28,65 @@ private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
 internal class VedtakFattetRiver(
     rapidsConnection: RapidsConnection,
     private val vedtakFattetMediator: VedtakFattetMediator,
-    private val speedClient: SpeedClient
+    private val speedClient: SpeedClient,
 ) : River.PacketListener {
-
     init {
-        River(rapidsConnection).apply {
-            precondition {
-                it.requireValue("@event_name", "vedtak_fattet")
-            }
-            validate {
-                it.requireKey(
-                    "fødselsnummer",
-                    "@id",
-                    "vedtaksperiodeId",
-                    "organisasjonsnummer",
-                    "yrkesaktivitetstype",
-                    "hendelser",
-                    "sykepengegrunnlag",
-                    "tags",
-                    "sykepengegrunnlagsfakta"
-                )
-                it.require("fom", JsonNode::asLocalDate)
-                it.require("tom", JsonNode::asLocalDate)
-                it.require("skjæringstidspunkt", JsonNode::asLocalDate)
-                it.require("vedtakFattetTidspunkt", JsonNode::asLocalDateTime)
-                it.require("@opprettet", JsonNode::asLocalDateTime)
-                it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
-                it.interestedIn("begrunnelser")
-                it.interestedIn("saksbehandler", "saksbehandler.navn", "saksbehandler.ident")
-                it.interestedIn("beslutter", "beslutter.navn", "beslutter.ident")
-                it.interestedIn("forsikringsvurderingId")
-            }
-        }.register(this)
+        River(rapidsConnection)
+            .apply {
+                precondition {
+                    it.requireValue("@event_name", "vedtak_fattet")
+                }
+                validate {
+                    it.requireKey(
+                        "fødselsnummer",
+                        "@id",
+                        "vedtaksperiodeId",
+                        "organisasjonsnummer",
+                        "yrkesaktivitetstype",
+                        "hendelser",
+                        "sykepengegrunnlag",
+                        "tags",
+                        "sykepengegrunnlagsfakta",
+                    )
+                    it.require("fom", JsonNode::asLocalDate)
+                    it.require("tom", JsonNode::asLocalDate)
+                    it.require("skjæringstidspunkt", JsonNode::asLocalDate)
+                    it.require("vedtakFattetTidspunkt", JsonNode::asLocalDateTime)
+                    it.require("@opprettet", JsonNode::asLocalDateTime)
+                    it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
+                    it.interestedIn("begrunnelser")
+                    it.interestedIn("saksbehandler", "saksbehandler.navn", "saksbehandler.ident")
+                    it.interestedIn("beslutter", "beslutter.navn", "beslutter.ident")
+                    it.interestedIn("forsikringsvurderingId")
+                }
+            }.register(this)
     }
 
-    override fun onError(problems: MessageProblems, context: MessageContext, metadata: MessageMetadata) {
+    override fun onError(
+        problems: MessageProblems,
+        context: MessageContext,
+        metadata: MessageMetadata,
+    ) {
         log.error("forstod ikke vedtak_fattet. (se sikkerlogg for melding)")
         sikkerLog.error("forstod ikke vedtak_fattet:\n${problems.toExtendedReport()}")
     }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext, metadata: MessageMetadata, meterRegistry: MeterRegistry) {
+    override fun onPacket(
+        packet: JsonMessage,
+        context: MessageContext,
+        metadata: MessageMetadata,
+        meterRegistry: MeterRegistry,
+    ) {
         val callId = packet["@id"].asText()
         withMDC("callId" to callId) {
             håndterVedtakFattet(packet, callId)
         }
     }
 
-    private fun håndterVedtakFattet(packet: JsonMessage, callId: String) {
+    private fun håndterVedtakFattet(
+        packet: JsonMessage,
+        callId: String,
+    ) {
         val ident = packet["fødselsnummer"].asText()
         val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
 
@@ -85,31 +97,39 @@ internal class VedtakFattetRiver(
         val hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) }
         val sykepengegrunnlag = packet["sykepengegrunnlag"].asDouble()
         val vedtakFattetTidspunkt = packet["vedtakFattetTidspunkt"].asLocalDateTime()
-        val begrunnelser = packet["begrunnelser"].takeUnless(JsonNode::isMissingOrNull)?.map { begrunnelse ->
-            Begrunnelse(
-                begrunnelse["type"].asText(),
-                begrunnelse["begrunnelse"].asText(),
-                begrunnelse["perioder"].map {
-                    Periode(it["fom"].asLocalDate(), it["tom"].asLocalDate())
-                }
-            )
-        } ?: emptyList()
-        val tags = packet["tags"].takeUnless(JsonNode::isMissingOrNull)?.map { it.asText() }?.filter { tag -> tag in TAGS_TIL_DELING_UTAD }?.toSet() ?: emptySet<String>()
+        val begrunnelser =
+            packet["begrunnelser"].takeUnless(JsonNode::isMissingOrNull)?.map { begrunnelse ->
+                Begrunnelse(
+                    begrunnelse["type"].asText(),
+                    begrunnelse["begrunnelse"].asText(),
+                    begrunnelse["perioder"].map {
+                        Periode(it["fom"].asLocalDate(), it["tom"].asLocalDate())
+                    },
+                )
+            } ?: emptyList()
+        val tags =
+            packet["tags"]
+                .takeUnless(JsonNode::isMissingOrNull)
+                ?.map { it.asText() }
+                ?.filter { tag -> tag in TAGS_TIL_DELING_UTAD }
+                ?.toSet() ?: emptySet<String>()
         val utbetalingId = UUID.fromString(packet["utbetalingId"].asText())
         val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asText()
         val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].asSykepengegrunnlagsfakta(yrkesaktivitetstype)
-        val saksbehandlerNavnOgIdent = packet["saksbehandler"].takeUnless { it.isMissingOrNull() }?.let {
-            NavnOgIdent(
-                it["navn"].asText(),
-                it["ident"].asText(),
-            )
-        }
-        val beslutterNavnOgIdent = packet["beslutter"].takeUnless { it.isMissingOrNull() }?.let {
-            NavnOgIdent(
-                it["navn"].asText(),
-                it["ident"].asText(),
-            )
-        }
+        val saksbehandlerNavnOgIdent =
+            packet["saksbehandler"].takeUnless { it.isMissingOrNull() }?.let {
+                NavnOgIdent(
+                    it["navn"].asText(),
+                    it["ident"].asText(),
+                )
+            }
+        val beslutterNavnOgIdent =
+            packet["beslutter"].takeUnless { it.isMissingOrNull() }?.let {
+                NavnOgIdent(
+                    it["navn"].asText(),
+                    it["ident"].asText(),
+                )
+            }
 
         vedtakFattetMediator.vedtakFattet(
             VedtakFattet(
@@ -129,8 +149,8 @@ internal class VedtakFattetRiver(
                 tags = tags,
                 saksbehandlerNavnOgIdent = saksbehandlerNavnOgIdent,
                 beslutterNavnOgIdent = beslutterNavnOgIdent,
-                forsikringsvurderingId = packet["forsikringsvurderingId"].takeUnless { it.isMissingOrNull() }?.let { UUID.fromString(it.asText()) }
-            )
+                forsikringsvurderingId = packet["forsikringsvurderingId"].takeUnless { it.isMissingOrNull() }?.let { UUID.fromString(it.asText()) },
+            ),
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
         sikkerLog.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
@@ -143,62 +163,68 @@ internal class VedtakFattetRiver(
                     SykepengegrunnlagsfaktaSelvstendigNæringsdrivende(
                         `6G` = this["6G"].asBigDecimal(),
                         tags = get("tags").map { it.asText() }.toSet(),
-                        selvstendig = SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig(
-                            beregningsgrunnlag = this["selvstendig"]["beregningsgrunnlag"].asBigDecimal(),
-                            pensjonsgivendeInntekter = this["selvstendig"]["pensjonsgivendeInntekter"].map {
-                                SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig.PensjonsgivendeInntekt(
-                                    årstall = it["årstall"].asInt(),
-                                    beløp = it["beløp"].asBigDecimal()
-                                )
-                            }
-                        ),
+                        selvstendig =
+                            SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig(
+                                beregningsgrunnlag = this["selvstendig"]["beregningsgrunnlag"].asBigDecimal(),
+                                pensjonsgivendeInntekter =
+                                    this["selvstendig"]["pensjonsgivendeInntekter"].map {
+                                        SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig.PensjonsgivendeInntekt(
+                                            årstall = it["årstall"].asInt(),
+                                            beløp = it["beløp"].asBigDecimal(),
+                                        )
+                                    },
+                            ),
                     )
                 }
 
                 else -> {
                     "Støtter ikke sykepengegrunnlag fastsatt \"$fastsatt\" for yrkesaktivitetstype \"$yrkesaktivitetstype\"".let { feilmelding ->
-                        sikkerLog.error("${feilmelding}\n\n\t${this}")
+                        sikkerLog.error("${feilmelding}\n\n\t$this")
                         error(feilmelding)
                     }
                 }
             }
         } else {
             when (val fastsatt = this["fastsatt"].asText()) {
-                "EtterHovedregel" -> FastsattEtterHovedregel(
-                    omregnetÅrsinntekt = get("omregnetÅrsinntekt").asDouble(),
-                    innrapportertÅrsinntekt = get("innrapportertÅrsinntekt").asDouble(),
-                    avviksprosent = get("avviksprosent").asDouble(),
-                    `6G` = get("6G").asDouble(),
-                    tags = get("tags").map { it.asText() }.toSet(),
-                    arbeidsgivere = get("arbeidsgivere").map {
-                        FastsattEtterHovedregel.Arbeidsgiver(
-                            arbeidsgiver = it.get("arbeidsgiver").asText(),
-                            omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble()
-                        )
-                    }
-                )
+                "EtterHovedregel" ->
+                    FastsattEtterHovedregel(
+                        omregnetÅrsinntekt = get("omregnetÅrsinntekt").asDouble(),
+                        innrapportertÅrsinntekt = get("innrapportertÅrsinntekt").asDouble(),
+                        avviksprosent = get("avviksprosent").asDouble(),
+                        `6G` = get("6G").asDouble(),
+                        tags = get("tags").map { it.asText() }.toSet(),
+                        arbeidsgivere =
+                            get("arbeidsgivere").map {
+                                FastsattEtterHovedregel.Arbeidsgiver(
+                                    arbeidsgiver = it.get("arbeidsgiver").asText(),
+                                    omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble(),
+                                )
+                            },
+                    )
 
-                "EtterSkjønn" -> FastsattEtterSkjønn(
-                    omregnetÅrsinntekt = get("omregnetÅrsinntekt").asDouble(),
-                    innrapportertÅrsinntekt = get("innrapportertÅrsinntekt").asDouble(),
-                    skjønnsfastsatt = get("skjønnsfastsatt").asDouble(),
-                    avviksprosent = get("avviksprosent").asDouble(),
-                    `6G` = get("6G").asDouble(),
-                    tags = get("tags").map { it.asText() }.toSet(),
-                    arbeidsgivere = get("arbeidsgivere").map {
-                        FastsattEtterSkjønn.Arbeidsgiver(
-                            arbeidsgiver = it.get("arbeidsgiver").asText(),
-                            omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble(),
-                            skjønnsfastsatt = it.get("skjønnsfastsatt").asDouble()
-                        )
-                    }
-                )
+                "EtterSkjønn" ->
+                    FastsattEtterSkjønn(
+                        omregnetÅrsinntekt = get("omregnetÅrsinntekt").asDouble(),
+                        innrapportertÅrsinntekt = get("innrapportertÅrsinntekt").asDouble(),
+                        skjønnsfastsatt = get("skjønnsfastsatt").asDouble(),
+                        avviksprosent = get("avviksprosent").asDouble(),
+                        `6G` = get("6G").asDouble(),
+                        tags = get("tags").map { it.asText() }.toSet(),
+                        arbeidsgivere =
+                            get("arbeidsgivere").map {
+                                FastsattEtterSkjønn.Arbeidsgiver(
+                                    arbeidsgiver = it.get("arbeidsgiver").asText(),
+                                    omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble(),
+                                    skjønnsfastsatt = it.get("skjønnsfastsatt").asDouble(),
+                                )
+                            },
+                    )
 
                 "IInfotrygd" -> FastsattIInfotrygd(get("omregnetÅrsinntekt").asDouble())
 
                 else -> {
                     "Støtter ikke sykepengegrunnlag fastsatt \"$fastsatt\" for yrkesaktivitetstype \"$yrkesaktivitetstype\"".let { feilmelding ->
-                        sikkerLog.error("${feilmelding}\n\n\t${this}")
+                        sikkerLog.error("${feilmelding}\n\n\t$this")
                         throw IllegalStateException(feilmelding)
                     }
                 }
@@ -215,12 +241,12 @@ internal class VedtakFattetRiver(
 internal class Begrunnelse(
     val type: String,
     val begrunnelse: String,
-    val perioder: List<Periode>
+    val perioder: List<Periode>,
 )
 
 internal class Periode(
     val fom: LocalDate,
-    val tom: LocalDate
+    val tom: LocalDate,
 )
 
 internal data class VedtakFattet(
@@ -243,7 +269,9 @@ internal data class VedtakFattet(
     val forsikringsvurderingId: UUID?,
 )
 
-sealed class Sykepengegrunnlagsfakta(internal val fastsatt: String)
+sealed class Sykepengegrunnlagsfakta(
+    internal val fastsatt: String,
+)
 
 internal class FastsattEtterHovedregel(
     val omregnetÅrsinntekt: Double,
@@ -251,9 +279,12 @@ internal class FastsattEtterHovedregel(
     internal val avviksprosent: Double,
     internal val `6G`: Double,
     internal val tags: Set<String>,
-    internal val arbeidsgivere: List<Arbeidsgiver>
+    internal val arbeidsgivere: List<Arbeidsgiver>,
 ) : Sykepengegrunnlagsfakta("EtterHovedregel") {
-    internal class Arbeidsgiver(internal val arbeidsgiver: String, internal val omregnetÅrsinntekt: Double)
+    internal class Arbeidsgiver(
+        internal val arbeidsgiver: String,
+        internal val omregnetÅrsinntekt: Double,
+    )
 }
 
 internal class FastsattEtterSkjønn(
@@ -263,9 +294,13 @@ internal class FastsattEtterSkjønn(
     internal val avviksprosent: Double,
     internal val `6G`: Double,
     internal val tags: Set<String>,
-    internal val arbeidsgivere: List<Arbeidsgiver>
+    internal val arbeidsgivere: List<Arbeidsgiver>,
 ) : Sykepengegrunnlagsfakta("EtterSkjønn") {
-    internal class Arbeidsgiver(internal val arbeidsgiver: String, internal val omregnetÅrsinntekt: Double, internal val skjønnsfastsatt: Double)
+    internal class Arbeidsgiver(
+        internal val arbeidsgiver: String,
+        internal val omregnetÅrsinntekt: Double,
+        internal val skjønnsfastsatt: Double,
+    )
 }
 
 internal class FastsattIInfotrygd(
@@ -279,11 +314,11 @@ data class SykepengegrunnlagsfaktaSelvstendigNæringsdrivende(
 ) : Sykepengegrunnlagsfakta("EtterHovedregel") {
     data class Selvstendig(
         val beregningsgrunnlag: BigDecimal,
-        val pensjonsgivendeInntekter: List<PensjonsgivendeInntekt>
+        val pensjonsgivendeInntekter: List<PensjonsgivendeInntekt>,
     ) {
         data class PensjonsgivendeInntekt(
             val årstall: Int,
-            val beløp: BigDecimal
+            val beløp: BigDecimal,
         )
     }
 }

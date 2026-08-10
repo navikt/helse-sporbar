@@ -11,6 +11,7 @@ import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
@@ -20,10 +21,8 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
-import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 
 class AnnulleringRiverTest {
-
     companion object {
         val fødselsnummer = "12345678910"
         val organisasjonsnummer = "123456789"
@@ -37,28 +36,33 @@ class AnnulleringRiverTest {
     }
 
     private val testRapid = TestRapid()
-    private val aivenProducerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
-    private val speedClient = mockk<SpeedClient> {
-        every { hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
-            fødselsnummer = fødselsnummer,
-            aktørId = "aktørId",
-            npid = null,
-            kilde = IdentResponse.KildeResponse.PDL
-        ).ok()
-    }
+    private val aivenProducerMock = mockk<KafkaProducer<String, String>>(relaxed = true)
+    private val speedClient =
+        mockk<SpeedClient> {
+            every { hentFødselsnummerOgAktørId(any(), any()) } returns
+                IdentResponse(
+                    fødselsnummer = fødselsnummer,
+                    aktørId = "aktørId",
+                    npid = null,
+                    kilde = IdentResponse.KildeResponse.PDL,
+                ).ok()
+        }
+
     init {
         AnnulleringRiver(testRapid, aivenProducerMock, speedClient)
     }
 
     @Test
     fun `vanlig annullering`() {
-        testRapid.sendTestMessage(annullering(
-            arbeidsgiverFagsystemId = arbeidsgiverFagsystemId,
-            personFagsystemId = personFagsystemId
-        ))
+        testRapid.sendTestMessage(
+            annullering(
+                arbeidsgiverFagsystemId = arbeidsgiverFagsystemId,
+                personFagsystemId = personFagsystemId,
+            ),
+        )
 
         val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
-        verify { aivenProducerMock.send( capture(captureSlot) ) }
+        verify { aivenProducerMock.send(capture(captureSlot)) }
 
         val annullering = captureSlot.captured
         assertEquals(fødselsnummer, annullering.key())
@@ -77,13 +81,15 @@ class AnnulleringRiverTest {
 
     @Test
     fun `annullering full refusjon`() {
-        testRapid.sendTestMessage(annullering(
-            personFagsystemId = null,
-            arbeidsgiverFagsystemId = arbeidsgiverFagsystemId
-        ))
+        testRapid.sendTestMessage(
+            annullering(
+                personFagsystemId = null,
+                arbeidsgiverFagsystemId = arbeidsgiverFagsystemId,
+            ),
+        )
 
         val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
-        verify { aivenProducerMock.send( capture(captureSlot) ) }
+        verify { aivenProducerMock.send(capture(captureSlot)) }
 
         val annullering = captureSlot.captured
         assertEquals(fødselsnummer, annullering.key())
@@ -102,13 +108,15 @@ class AnnulleringRiverTest {
 
     @Test
     fun `annullering ingen refusjon`() {
-        testRapid.sendTestMessage(annullering(
-            personFagsystemId = personFagsystemId,
-            arbeidsgiverFagsystemId = null
-        ))
+        testRapid.sendTestMessage(
+            annullering(
+                personFagsystemId = personFagsystemId,
+                arbeidsgiverFagsystemId = null,
+            ),
+        )
 
         val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
-        verify { aivenProducerMock.send( capture(captureSlot) ) }
+        verify { aivenProducerMock.send(capture(captureSlot)) }
 
         val annullering = captureSlot.captured
         assertEquals(fødselsnummer, annullering.key())
@@ -128,7 +136,7 @@ class AnnulleringRiverTest {
     @Language("JSON")
     private fun annullering(
         personFagsystemId: String?,
-        arbeidsgiverFagsystemId: String?
+        arbeidsgiverFagsystemId: String?,
     ) = """
     {
         "fødselsnummer": "$fødselsnummer",

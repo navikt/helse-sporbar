@@ -23,7 +23,6 @@ import java.time.LocalDateTime
 import java.util.*
 
 internal class UtbetalingTest {
-
     companion object {
         val FØDSELSNUMMER = "12345678910"
         val UTBETALINGSTYPE = "UTBETALING"
@@ -40,174 +39,200 @@ internal class UtbetalingTest {
         val INNTEKT = 388260.0
         val AKTØRID = "123"
         val FORBRUKTESYKEDAGER = 217
-        val GJENSTÅENDESYKEDAGER =  31
+        val GJENSTÅENDESYKEDAGER = 31
         val AUTOMATISK_BEHANDLING = true
         val NETTOBELØP = 38360
         val VEDTAK_FATTET_TIDSPUNKT = LocalDateTime.now()
     }
 
     @Test
-    fun `vedtakFattet med tilhørende utbetalingUtbetalt`() = e2e {
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        val idSett = IdSett()
+    fun `vedtakFattet med tilhørende utbetalingUtbetalt`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
 
-        sykmeldingSendt(idSett)
-        søknadSendt(idSett)
-        inntektsmeldingSendt(idSett)
-        vedtakFattetMedUtbetalingSendt(idSett)
-        utbetalingUtbetaltSendt(idSett)
+            sykmeldingSendt(idSett)
+            søknadSendt(idSett)
+            inntektsmeldingSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett)
+            utbetalingUtbetaltSendt(idSett)
 
-        verify { producerMock.send( capture(captureSlot) ) }
+            verify { producerMock.send(capture(captureSlot)) }
 
-        val utbetalingUtbetalt = captureSlot.last()
-        val vedtakFattet = captureSlot[captureSlot.size-2]
+            val utbetalingUtbetalt = captureSlot.last()
+            val vedtakFattet = captureSlot[captureSlot.size - 2]
 
-        assertEquals(FØDSELSNUMMER, utbetalingUtbetalt.key())
+            assertEquals(FØDSELSNUMMER, utbetalingUtbetalt.key())
 
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
-        val vedtakFattetJson = vedtakFattet.validertJson()
+            val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
+            val vedtakFattetJson = vedtakFattet.validertJson()
 
-        assertEquals(idSett.utbetalingId, utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText())})
-        assertEquals(idSett.korrelasjonsId, utbetalingUtbetaltJson["korrelasjonsId"].let { UUID.fromString(it.asText())})
-        assertEquals(utbetalingUtbetaltJson["utbetalingId"].asText(), vedtakFattetJson["utbetalingId"].asText())
+            assertEquals(idSett.utbetalingId, utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText()) })
+            assertEquals(idSett.korrelasjonsId, utbetalingUtbetaltJson["korrelasjonsId"].let { UUID.fromString(it.asText()) })
+            assertEquals(utbetalingUtbetaltJson["utbetalingId"].asText(), vedtakFattetJson["utbetalingId"].asText())
 
-        assertEquals("utbetaling_utbetalt", utbetalingUtbetaltJson["event"].textValue())
-        assertEquals(FØDSELSNUMMER, utbetalingUtbetaltJson["fødselsnummer"].textValue())
-        assertEquals(UTBETALINGSTYPE, utbetalingUtbetaltJson["type"].textValue())
-        assertEquals(AKTØRID, utbetalingUtbetaltJson["aktørId"].textValue())
-        assertEquals(FOM, utbetalingUtbetaltJson["fom"].asLocalDate())
-        assertEquals(TOM, utbetalingUtbetaltJson["tom"].asLocalDate())
-        assertEquals(FORBRUKTESYKEDAGER, utbetalingUtbetaltJson["forbrukteSykedager"].asInt())
-        assertEquals(GJENSTÅENDESYKEDAGER, utbetalingUtbetaltJson["gjenståendeSykedager"].asInt())
-        assertEquals(AUTOMATISK_BEHANDLING, utbetalingUtbetaltJson["automatiskBehandling"].asBoolean())
-        assertEquals(NETTOBELØP, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["nettoBeløp"].asInt())
-        assertEquals(FOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["fom"].asLocalDate())
-        assertEquals(TOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate())
-        assertEquals(MAKSDATO, utbetalingUtbetaltJson.path("foreløpigBeregnetSluttPåSykepenger").asLocalDate())
-        assertTrue(utbetalingUtbetaltJson.path("utbetalingsdager").toList().isNotEmpty())
-        assertTrue(utbetalingUtbetaltJson.path("vedtaksperiodeId").isMissingNode)
-    }
-
-    @Test
-    fun `utbetaling - mapper ut begrunnelser på avviste dager `() = e2e {
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltEnAvvistDag())
-        verify { producerMock.send( capture(captureSlot) ) }
-
-        val utbetalingUtbetalt = captureSlot.last()
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
-
-        val avvistDag = utbetalingUtbetaltJson.path("utbetalingsdager").toList().last()
-            .path("begrunnelser").toList().map { it.asText() }
-        assertEquals(
-            listOf(
-                "EtterDødsdato",
-                "MinimumInntekt",
-                "Over70",
-                "MinimumInntektOver67",
-                "SykepengedagerOppbruktOver67",
-                "AndreYtelserAap",
-                "AndreYtelserDagpenger",
-                "AndreYtelserForeldrepenger",
-                "AndreYtelserOmsorgspenger",
-                "AndreYtelserOpplaringspenger",
-                "AndreYtelserPleiepenger",
-                "AndreYtelserSvangerskapspenger",
-            ),
-            avvistDag
-        )
-    }
-
-    @Test
-    fun `utbetaling_utbetalt - mapper AndreYtelserDag hele veien ut`() = e2e {
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltMedAndreYtelserDag())
-        verify { producerMock.send( capture(captureSlot) ) }
-
-        val utbetalingUtbetalt = captureSlot.last()
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
-
-        val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
-        assertEquals(mapOf(
-            LocalDate.parse("2022-05-06") to "AndreYtelser",
-            LocalDate.parse("2022-05-07") to "Feriedag",
-            LocalDate.parse("2022-05-08") to "NavDag",
-            LocalDate.parse("2022-05-09") to "NavHelgDag"
-        ), utbetalingsdager)
-    }
-
-    @Test
-    fun `utbetaling_utbetalt - mapper ArbeidIkkeGjenopptattDag hele veien ut`() = e2e {
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtbetaltMedArbeidIkkeGjenopptattDag())
-        verify { producerMock.send( capture(captureSlot) ) }
-
-        val utbetalingUtbetalt = captureSlot.last()
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
-
-        val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
-        assertEquals(mapOf(
-            LocalDate.parse("2021-05-06") to "ArbeidIkkeGjenopptattDag",
-            LocalDate.parse("2021-05-07") to "Feriedag",
-            LocalDate.parse("2021-05-08") to "NavDag",
-            LocalDate.parse("2021-05-09") to "NavHelgDag"
-        ), utbetalingsdager)
-    }
-
-    @Test
-    fun `utbetaling_uten_utbetaling - mapper ArbeidIkkeGjenopptattDag hele veien ut`() = e2e {
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        testRapid.sendTestMessage(utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag())
-        verify { producerMock.send( capture(captureSlot) ) }
-
-        val utbetalingUtenUtbetaling = captureSlot.last()
-        val utbetalingUtenUtbetalingJson = utbetalingUtenUtbetaling.validertJson()
-
-        val utbetalingsdager = utbetalingUtenUtbetalingJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
-        assertEquals(mapOf(
-            LocalDate.parse("2022-05-06") to "ArbeidIkkeGjenopptattDag",
-            LocalDate.parse("2022-05-07") to "Feriedag",
-            LocalDate.parse("2022-05-08") to "NavDag",
-            LocalDate.parse("2022-05-09") to "NavHelgDag"
-        ), utbetalingsdager)
-    }
-
-    @Test
-    fun `vedtakFattet med tilhørende utbetalingUtenUtbetaling`() = e2e {
-        val captureSlot = mutableListOf<ProducerRecord<String, String>>()
-        val idSett = IdSett()
-
-        sykmeldingSendt(idSett)
-        søknadSendt(idSett)
-        inntektsmeldingSendt(idSett)
-        vedtakFattetMedUtbetalingSendt(idSett)
-        utbetalingUtbetaltSendt(idSett, "utbetaling_uten_utbetaling")
-
-        verify { producerMock.send( capture(captureSlot) ) }
-
-        val utbetalingUtbetalt = captureSlot.last()
-        assertEquals(FØDSELSNUMMER, utbetalingUtbetalt.key())
-        val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
-
-        assertEquals("utbetaling_uten_utbetaling", utbetalingUtbetaltJson["event"].textValue())
-    }
-
-    private data class E2ETestContext(val testRapid: TestRapid) {
-        val meldinger = mutableListOf<HentMeldingResponse>()
-        val producerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
-        val spedisjonClient = mockk<SpedisjonClient> {
-            every {
-                hentMeldinger(any(), any())
-            } returns HentMeldingerResponse(meldinger).ok()
+            assertEquals("utbetaling_utbetalt", utbetalingUtbetaltJson["event"].textValue())
+            assertEquals(FØDSELSNUMMER, utbetalingUtbetaltJson["fødselsnummer"].textValue())
+            assertEquals(UTBETALINGSTYPE, utbetalingUtbetaltJson["type"].textValue())
+            assertEquals(AKTØRID, utbetalingUtbetaltJson["aktørId"].textValue())
+            assertEquals(FOM, utbetalingUtbetaltJson["fom"].asLocalDate())
+            assertEquals(TOM, utbetalingUtbetaltJson["tom"].asLocalDate())
+            assertEquals(FORBRUKTESYKEDAGER, utbetalingUtbetaltJson["forbrukteSykedager"].asInt())
+            assertEquals(GJENSTÅENDESYKEDAGER, utbetalingUtbetaltJson["gjenståendeSykedager"].asInt())
+            assertEquals(AUTOMATISK_BEHANDLING, utbetalingUtbetaltJson["automatiskBehandling"].asBoolean())
+            assertEquals(NETTOBELØP, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["nettoBeløp"].asInt())
+            assertEquals(FOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["fom"].asLocalDate())
+            assertEquals(TOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate())
+            assertEquals(MAKSDATO, utbetalingUtbetaltJson.path("foreløpigBeregnetSluttPåSykepenger").asLocalDate())
+            assertTrue(utbetalingUtbetaltJson.path("utbetalingsdager").toList().isNotEmpty())
+            assertTrue(utbetalingUtbetaltJson.path("vedtaksperiodeId").isMissingNode)
         }
-        val vedtakFattetMediator = VedtakFattetMediator(
-            spedisjonClient = spedisjonClient,
-            producer = producerMock
-        )
 
-        val utbetalingMediator = UtbetalingMediator(
-            producer = producerMock
-        )
+    @Test
+    fun `utbetaling - mapper ut begrunnelser på avviste dager `() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            testRapid.sendTestMessage(utbetalingUtbetaltEnAvvistDag())
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val utbetalingUtbetalt = captureSlot.last()
+            val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
+
+            val avvistDag =
+                utbetalingUtbetaltJson
+                    .path("utbetalingsdager")
+                    .toList()
+                    .last()
+                    .path("begrunnelser")
+                    .toList()
+                    .map { it.asText() }
+            assertEquals(
+                listOf(
+                    "EtterDødsdato",
+                    "MinimumInntekt",
+                    "Over70",
+                    "MinimumInntektOver67",
+                    "SykepengedagerOppbruktOver67",
+                    "AndreYtelserAap",
+                    "AndreYtelserDagpenger",
+                    "AndreYtelserForeldrepenger",
+                    "AndreYtelserOmsorgspenger",
+                    "AndreYtelserOpplaringspenger",
+                    "AndreYtelserPleiepenger",
+                    "AndreYtelserSvangerskapspenger",
+                ),
+                avvistDag,
+            )
+        }
+
+    @Test
+    fun `utbetaling_utbetalt - mapper AndreYtelserDag hele veien ut`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            testRapid.sendTestMessage(utbetalingUtbetaltMedAndreYtelserDag())
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val utbetalingUtbetalt = captureSlot.last()
+            val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
+
+            val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
+            assertEquals(
+                mapOf(
+                    LocalDate.parse("2022-05-06") to "AndreYtelser",
+                    LocalDate.parse("2022-05-07") to "Feriedag",
+                    LocalDate.parse("2022-05-08") to "NavDag",
+                    LocalDate.parse("2022-05-09") to "NavHelgDag",
+                ),
+                utbetalingsdager,
+            )
+        }
+
+    @Test
+    fun `utbetaling_utbetalt - mapper ArbeidIkkeGjenopptattDag hele veien ut`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            testRapid.sendTestMessage(utbetalingUtbetaltMedArbeidIkkeGjenopptattDag())
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val utbetalingUtbetalt = captureSlot.last()
+            val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
+
+            val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
+            assertEquals(
+                mapOf(
+                    LocalDate.parse("2021-05-06") to "ArbeidIkkeGjenopptattDag",
+                    LocalDate.parse("2021-05-07") to "Feriedag",
+                    LocalDate.parse("2021-05-08") to "NavDag",
+                    LocalDate.parse("2021-05-09") to "NavHelgDag",
+                ),
+                utbetalingsdager,
+            )
+        }
+
+    @Test
+    fun `utbetaling_uten_utbetaling - mapper ArbeidIkkeGjenopptattDag hele veien ut`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            testRapid.sendTestMessage(utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag())
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val utbetalingUtenUtbetaling = captureSlot.last()
+            val utbetalingUtenUtbetalingJson = utbetalingUtenUtbetaling.validertJson()
+
+            val utbetalingsdager = utbetalingUtenUtbetalingJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
+            assertEquals(
+                mapOf(
+                    LocalDate.parse("2022-05-06") to "ArbeidIkkeGjenopptattDag",
+                    LocalDate.parse("2022-05-07") to "Feriedag",
+                    LocalDate.parse("2022-05-08") to "NavDag",
+                    LocalDate.parse("2022-05-09") to "NavHelgDag",
+                ),
+                utbetalingsdager,
+            )
+        }
+
+    @Test
+    fun `vedtakFattet med tilhørende utbetalingUtenUtbetaling`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+
+            sykmeldingSendt(idSett)
+            søknadSendt(idSett)
+            inntektsmeldingSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett)
+            utbetalingUtbetaltSendt(idSett, "utbetaling_uten_utbetaling")
+
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val utbetalingUtbetalt = captureSlot.last()
+            assertEquals(FØDSELSNUMMER, utbetalingUtbetalt.key())
+            val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
+
+            assertEquals("utbetaling_uten_utbetaling", utbetalingUtbetaltJson["event"].textValue())
+        }
+
+    private data class E2ETestContext(
+        val testRapid: TestRapid,
+    ) {
+        val meldinger = mutableListOf<HentMeldingResponse>()
+        val producerMock = mockk<KafkaProducer<String, String>>(relaxed = true)
+        val spedisjonClient =
+            mockk<SpedisjonClient> {
+                every {
+                    hentMeldinger(any(), any())
+                } returns HentMeldingerResponse(meldinger).ok()
+            }
+        val vedtakFattetMediator =
+            VedtakFattetMediator(
+                spedisjonClient = spedisjonClient,
+                producer = producerMock,
+            )
+
+        val utbetalingMediator =
+            UtbetalingMediator(
+                producer = producerMock,
+            )
         val speedClient = mockk<SpeedClient>()
 
         init {
@@ -215,70 +240,82 @@ internal class UtbetalingTest {
             UtbetalingUtbetaltRiver(testRapid, utbetalingMediator, speedClient)
             UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator, speedClient)
 
-            every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
-                fødselsnummer = FØDSELSNUMMER,
-                aktørId = AKTØRID,
-                npid = null,
-                kilde = IdentResponse.KildeResponse.PDL
-            ).ok()
+            every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns
+                IdentResponse(
+                    fødselsnummer = FØDSELSNUMMER,
+                    aktørId = AKTØRID,
+                    npid = null,
+                    kilde = IdentResponse.KildeResponse.PDL,
+                ).ok()
         }
     }
+
     private fun e2e(testblokk: E2ETestContext.() -> Unit) {
         val testRapid = TestRapid()
         testblokk(E2ETestContext(testRapid))
     }
 
     private fun E2ETestContext.sykmeldingSendt(idSett: IdSett) {
-        meldinger.add(HentMeldingResponse(
-            type = "ny_søknad",
-            fnr = "",
-            internDokumentId = idSett.nySøknadHendelseId,
-            eksternDokumentId = idSett.sykmeldingDokumentId,
-            duplikatkontroll = "",
-            jsonBody = "{}"
-        ))
+        meldinger.add(
+            HentMeldingResponse(
+                type = "ny_søknad",
+                fnr = "",
+                internDokumentId = idSett.nySøknadHendelseId,
+                eksternDokumentId = idSett.sykmeldingDokumentId,
+                duplikatkontroll = "",
+                jsonBody = "{}",
+            ),
+        )
     }
 
     private fun E2ETestContext.søknadSendt(idSett: IdSett) {
-        meldinger.add(HentMeldingResponse(
-            type = "sendt_søknad_nav",
-            fnr = "",
-            internDokumentId = idSett.sendtSøknadHendelseId,
-            eksternDokumentId = idSett.søknadDokumentId,
-            duplikatkontroll = "",
-            jsonBody = "{}"
-        ))
+        meldinger.add(
+            HentMeldingResponse(
+                type = "sendt_søknad_nav",
+                fnr = "",
+                internDokumentId = idSett.sendtSøknadHendelseId,
+                eksternDokumentId = idSett.søknadDokumentId,
+                duplikatkontroll = "",
+                jsonBody = "{}",
+            ),
+        )
     }
 
     private fun E2ETestContext.inntektsmeldingSendt(idSett: IdSett) {
-        meldinger.add(HentMeldingResponse(
-            type = "inntektsmelding",
-            fnr = "",
-            internDokumentId = idSett.inntektsmeldingHendelseId,
-            eksternDokumentId = idSett.inntektsmeldingDokumentId,
-            duplikatkontroll = "",
-            jsonBody = "{}"
-        ))
+        meldinger.add(
+            HentMeldingResponse(
+                type = "inntektsmelding",
+                fnr = "",
+                internDokumentId = idSett.inntektsmeldingHendelseId,
+                eksternDokumentId = idSett.inntektsmeldingDokumentId,
+                duplikatkontroll = "",
+                jsonBody = "{}",
+            ),
+        )
     }
 
     private fun E2ETestContext.vedtakFattetMedUtbetalingSendt(idSett: IdSett) {
         testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett))
     }
 
-    private fun E2ETestContext.utbetalingUtbetaltSendt(idSett: IdSett, event: String = "utbetaling_utbetalt") {
+    private fun E2ETestContext.utbetalingUtbetaltSendt(
+        idSett: IdSett,
+        event: String = "utbetaling_utbetalt",
+    ) {
         testRapid.sendTestMessage(utbetalingUtbetalt(idSett, event))
     }
 
     @Language("json")
     private fun vedtakFattetMedUtbetaling(
         idSett: IdSett,
-        hendelser: List<UUID> = listOf(
-            idSett.nySøknadHendelseId,
-            idSett.sendtSøknadHendelseId,
-            idSett.inntektsmeldingHendelseId
-        ),
+        hendelser: List<UUID> =
+            listOf(
+                idSett.nySøknadHendelseId,
+                idSett.sendtSøknadHendelseId,
+                idSett.inntektsmeldingHendelseId,
+            ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
-        utbetalingId: UUID = idSett.utbetalingId
+        utbetalingId: UUID = idSett.utbetalingId,
     ) = """{
     "vedtaksperiodeId": "$vedtaksperiodeId",
     "fom": "$FOM",
@@ -308,7 +345,7 @@ internal class UtbetalingTest {
         "6G": 620000.0,
         "tags": [],
         "arbeidsgivere": [{
-            "arbeidsgiver": "${ORGNUMMER}",
+            "arbeidsgiver": "$ORGNUMMER",
             "omregnetÅrsinntekt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG},
             "skjønnsfastsatt": ${GRUNNLAG_FOR_SYKEPENGEGRUNNLAG + 2500}
         }]
@@ -316,9 +353,12 @@ internal class UtbetalingTest {
 }
     """
 
-
     @Language("json")
-    private fun utbetalingUtbetalt(idSett: IdSett, event: String, utbetalingId: UUID = idSett.utbetalingId) = """{
+    private fun utbetalingUtbetalt(
+        idSett: IdSett,
+        event: String,
+        utbetalingId: UUID = idSett.utbetalingId,
+    ) = """{
   "utbetalingId": "$utbetalingId",
   "korrelasjonsId": "${idSett.korrelasjonsId}",
   "fom": "$FOM",
@@ -444,7 +484,7 @@ internal class UtbetalingTest {
     @Language("json")
     private fun utbetalingUtbetaltEnAvvistDag(
         id: UUID = UUID.randomUUID(),
-        utbetalingId: UUID = UUID.randomUUID()
+        utbetalingId: UUID = UUID.randomUUID(),
     ) = """{
   "@id": "$id",
   "fødselsnummer": "12345678910",
@@ -589,9 +629,9 @@ internal class UtbetalingTest {
 }
     """
 
-
     @Language("json")
-    private fun utbetalingUtbetaltMedArbeidIkkeGjenopptattDag() = """{
+    private fun utbetalingUtbetaltMedArbeidIkkeGjenopptattDag() =
+        """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
   "utbetalingId": "${UUID.randomUUID()}",
@@ -675,8 +715,10 @@ internal class UtbetalingTest {
   "organisasjonsnummer": "123456789"
 }
     """
+
     @Language("json")
-    private fun utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag() = """{
+    private fun utbetalingUtenUtbetalingMedArbeidIkkeGjenopptattDag() =
+        """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
   "utbetalingId": "${UUID.randomUUID()}",
@@ -753,7 +795,8 @@ internal class UtbetalingTest {
     """
 
     @Language("json")
-    private fun utbetalingUtbetaltMedAndreYtelserDag() = """{
+    private fun utbetalingUtbetaltMedAndreYtelserDag() =
+        """{
   "@id": "${UUID.randomUUID()}",
   "fødselsnummer": "12345678910",
   "utbetalingId": "${UUID.randomUUID()}",
@@ -839,6 +882,6 @@ internal class UtbetalingTest {
         val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
         val vedtaksperiodeId: UUID = UUID.randomUUID(),
         val utbetalingId: UUID = UUID.randomUUID(),
-        val korrelasjonsId: UUID = UUID.randomUUID()
+        val korrelasjonsId: UUID = UUID.randomUUID(),
     )
 }

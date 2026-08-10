@@ -9,7 +9,7 @@ data class VedtakAnnullertDto(
     val organisasjonsnummer: String,
     val vedtaksperiodeId: UUID,
     val fom: LocalDate,
-    val tom: LocalDate
+    val tom: LocalDate,
 ) {
     val event: String = "vedtak_annullert"
     val versjon: String = "1.0.0"

@@ -13,8 +13,10 @@ data class AnnulleringDto(
     val fom: LocalDate,
     val tom: LocalDate,
     val arbeidsgiverFagsystemId: String?,
-    val personFagsystemId: String?) {
+    val personFagsystemId: String?,
+) {
     val event = "utbetaling_annullert"
+
     @Deprecated("trengs så lenge vi produserer til on-prem")
     val orgnummer: String = organisasjonsnummer
 }

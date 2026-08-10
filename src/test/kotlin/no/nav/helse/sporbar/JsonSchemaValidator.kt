@@ -11,12 +11,12 @@ import org.apache.kafka.common.header.Headers
 import org.junit.jupiter.api.Assertions.assertEquals
 
 internal object JsonSchemaValidator {
-
     private val mapper = jacksonObjectMapper()
 
-    private fun String.getSchema() = JsonSchemaFactory
-        .getInstance(SpecVersion.VersionFlag.V7)
-        .getSchema(JsonSchemaValidator::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
+    private fun String.getSchema() =
+        JsonSchemaFactory
+            .getInstance(SpecVersion.VersionFlag.V7)
+            .getSchema(JsonSchemaValidator::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
 
     private val vedtakFattetSchema by lazy { "vedtak__fattet".getSchema() }
     private val vedtakAnnullertSchema by lazy { "vedtak__annullert".getSchema() }
@@ -28,20 +28,22 @@ internal object JsonSchemaValidator {
         assertEquals(emptySet<ValidationMessage>(), valideringsfeil) { "${json.toPrettyString()}\n" }
     }
 
-    private fun Melding.hentSchema(): Pair<String, JsonSchema> = when (meldingstype) {
-        "VedtakFattet" -> "fødselsnummer" to vedtakFattetSchema
-        "VedtakAnnullert" -> "fødselsnummer" to vedtakAnnullertSchema
-        "Annullering" -> "fødselsnummer" to annulleringSchema
-        "Utbetaling" -> "fødselsnummer" to utbetalingSchema
-        "UtenUtbetaling" -> "fødselsnummer" to utbetalingSchema
-        else -> error("Mangler schema for meldingstype $meldingstype")
-    }.let { json.path(it.first).asText() to it.second }
+    private fun Melding.hentSchema(): Pair<String, JsonSchema> =
+        when (meldingstype) {
+            "VedtakFattet" -> "fødselsnummer" to vedtakFattetSchema
+            "VedtakAnnullert" -> "fødselsnummer" to vedtakAnnullertSchema
+            "Annullering" -> "fødselsnummer" to annulleringSchema
+            "Utbetaling" -> "fødselsnummer" to utbetalingSchema
+            "UtenUtbetaling" -> "fødselsnummer" to utbetalingSchema
+            else -> error("Mangler schema for meldingstype $meldingstype")
+        }.let { json.path(it.first).asText() to it.second }
 
-    private fun Melding.udokumentertMelding() = (topic == "aapen-helse-sporbar" && meldingstype != "Annullering").also {
-        if (it) {
-            println("⚠️ Melding $meldingstype på $topic er ikke dokumentert, og blir ikke validert.")
+    private fun Melding.udokumentertMelding() =
+        (topic == "aapen-helse-sporbar" && meldingstype != "Annullering").also {
+            if (it) {
+                println("⚠️ Melding $meldingstype på $topic er ikke dokumentert, og blir ikke validert.")
+            }
         }
-    }
 
     internal fun Melding.validertJson(): JsonNode {
         if (udokumentertMelding()) return json
@@ -56,17 +58,18 @@ internal object JsonSchemaValidator {
             .singleOrNull { it.first == "type" }
             ?.second
 
-    internal fun ProducerRecord<String, String>.validertJson() = Melding(
-        topic = topic(),
-        meldingstype = headers().meldingstypeOrNull() ?: "VedtakFattet".also { require(topic() == "tbd.vedtak") },
-        key = key(),
-        json = mapper.readTree(value())
-    ).validertJson()
+    internal fun ProducerRecord<String, String>.validertJson() =
+        Melding(
+            topic = topic(),
+            meldingstype = headers().meldingstypeOrNull() ?: "VedtakFattet".also { require(topic() == "tbd.vedtak") },
+            key = key(),
+            json = mapper.readTree(value()),
+        ).validertJson()
 }
 
 class Melding(
     internal val topic: String,
     internal val meldingstype: String,
     internal val key: String,
-    internal val json: JsonNode
+    internal val json: JsonNode,
 )

@@ -2,10 +2,10 @@ package no.nav.helse.sporbar.dto
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
-import java.time.LocalDate
-import java.util.UUID
 import no.nav.helse.sporbar.NULLE_UT_TOMME_OPPDRAG
 import no.nav.helse.sporbar.dto.OppdragDto.UtbetalingslinjeDto.Companion.parseLinje
+import java.time.LocalDate
+import java.util.UUID
 import kotlin.collections.map
 
 private const val gjeldendeVersjon = "1.2.0"
@@ -26,7 +26,7 @@ data class UtbetalingUtbetaltDto(
     val personOppdrag: OppdragDto?,
     val type: String,
     val utbetalingsdager: List<UtbetalingdagDto>,
-    val foreløpigBeregnetSluttPåSykepenger: LocalDate
+    val foreløpigBeregnetSluttPåSykepenger: LocalDate,
 ) {
     val event = "utbetaling_utbetalt"
     val versjon = gjeldendeVersjon
@@ -49,7 +49,7 @@ data class UtbetalingUtenUtbetalingDto(
     val personOppdrag: OppdragDto?,
     val type: String,
     val utbetalingsdager: List<UtbetalingdagDto>,
-    val foreløpigBeregnetSluttPåSykepenger: LocalDate
+    val foreløpigBeregnetSluttPåSykepenger: LocalDate,
 ) {
     val event = "utbetaling_uten_utbetaling"
     val versjon = gjeldendeVersjon
@@ -76,7 +76,7 @@ enum class BegrunnelseDto {
     MinimumInntektOver67,
     AvslattMeldingTilNavDag,
     MeldingTilNavDagUtenforVentetid,
-    //NyVilkårsprøvingNødvendig <- Denne mappes til SykepengedagerOppbrukt i Spleis PGA lang kjedelig historie
+    // NyVilkårsprøvingNødvendig <- Denne mappes til SykepengedagerOppbrukt i Spleis PGA lang kjedelig historie
 }
 
 data class OppdragDto(
@@ -87,7 +87,7 @@ data class OppdragDto(
     val stønadsdager: Int,
     val fom: LocalDate,
     val tom: LocalDate,
-    val utbetalingslinjer: List<UtbetalingslinjeDto>
+    val utbetalingslinjer: List<UtbetalingslinjeDto>,
 ) {
     companion object {
         fun parseOppdrag(oppdrag: JsonNode) =
@@ -99,7 +99,7 @@ data class OppdragDto(
                 stønadsdager = oppdrag["stønadsdager"].asInt(),
                 fom = oppdrag["fom"].asLocalDate(),
                 tom = oppdrag["tom"].asLocalDate(),
-                utbetalingslinjer = oppdrag["linjer"].map { linje -> parseLinje(linje) }
+                utbetalingslinjer = oppdrag["linjer"].map { linje -> parseLinje(linje) },
             ).takeUnless { NULLE_UT_TOMME_OPPDRAG && it.utbetalingslinjer.isEmpty() }
     }
 
@@ -109,7 +109,7 @@ data class OppdragDto(
         val dagsats: Int,
         val totalbeløp: Int,
         val grad: Double,
-        val stønadsdager: Int
+        val stønadsdager: Int,
     ) {
         companion object {
             fun parseLinje(linje: JsonNode) =
@@ -119,16 +119,17 @@ data class OppdragDto(
                     dagsats = linje["sats"].asInt(),
                     totalbeløp = linje["totalbeløp"].asInt(),
                     grad = linje["grad"].asDouble(),
-                    stønadsdager = linje["stønadsdager"].asInt()
+                    stønadsdager = linje["stønadsdager"].asInt(),
                 )
         }
     }
 }
+
 data class UtbetalingdagDto(
     val dato: LocalDate,
     val type: String,
     val begrunnelser: List<BegrunnelseDto>,
     val beløpTilArbeidsgiver: Int,
     val beløpTilSykmeldt: Int,
-    val sykdomsgrad: Int
+    val sykdomsgrad: Int,
 )

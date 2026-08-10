@@ -10,18 +10,19 @@ import org.slf4j.LoggerFactory
 private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 
 internal class UtbetalingMediator(
-    private val producer: KafkaProducer<String, String>
+    private val producer: KafkaProducer<String, String>,
 ) {
-    internal fun utbetalingUtbetalt(utbetalingUtbetalt: UtbetalingUtbetaltDto) =
-        send(utbetalingUtbetalt.fødselsnummer, utbetalingUtbetalt, UtbetalingType.Utbetaling)
+    internal fun utbetalingUtbetalt(utbetalingUtbetalt: UtbetalingUtbetaltDto) = send(utbetalingUtbetalt.fødselsnummer, utbetalingUtbetalt, UtbetalingType.Utbetaling)
 
-    internal fun utbetalingUtenUtbetaling(utbetalingUtbetalt: UtbetalingUtenUtbetalingDto) =
-        send(utbetalingUtbetalt.fødselsnummer, utbetalingUtbetalt, UtbetalingType.UtenUtbetaling)
+    internal fun utbetalingUtenUtbetaling(utbetalingUtbetalt: UtbetalingUtenUtbetalingDto) = send(utbetalingUtbetalt.fødselsnummer, utbetalingUtbetalt, UtbetalingType.UtenUtbetaling)
 
-    private fun <T> send(key: String, utbetalingUtbetalt: T, meldingstype: UtbetalingType) {
+    private fun <T> send(
+        key: String,
+        utbetalingUtbetalt: T,
+        meldingstype: UtbetalingType,
+    ) {
         val utbetalingJson = objectMapper.writeValueAsString(utbetalingUtbetalt)
         producer.send(ProducerRecord("tbd.utbetaling", null, key, utbetalingJson, listOf(meldingstype.header())))
-        sikkerLogg.info("Publiserer ${meldingstype}: {}", utbetalingJson)
+        sikkerLogg.info("Publiserer $meldingstype: {}", utbetalingJson)
     }
 }
-

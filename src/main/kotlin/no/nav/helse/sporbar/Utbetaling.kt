@@ -14,14 +14,14 @@ data class Utbetaling(
     val hendelseIder: List<UUID>,
     val oppdrag: List<Oppdrag>,
     val sykepengegrunnlag: Double,
-    val månedsinntekt: Double
+    val månedsinntekt: Double,
 ) {
     data class Oppdrag(
         val mottaker: String,
         val fagområde: String,
         val fagsystemId: String,
         val totalbeløp: Int,
-        val utbetalingslinjer: List<Utbetalingslinje>
+        val utbetalingslinjer: List<Utbetalingslinje>,
     ) {
         data class Utbetalingslinje(
             val fom: LocalDate,
@@ -29,7 +29,7 @@ data class Utbetaling(
             val dagsats: Int,
             val beløp: Int,
             val grad: Double,
-            val sykedager: Int
+            val sykedager: Int,
         )
     }
 }

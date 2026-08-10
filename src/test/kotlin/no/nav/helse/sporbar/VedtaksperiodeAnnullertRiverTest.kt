@@ -9,6 +9,7 @@ import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
@@ -16,10 +17,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.UUID
-import no.nav.helse.sporbar.JsonSchemaValidator.validertJson
 
 class VedtaksperiodeAnnullertRiverTest {
-
     companion object {
         const val fødselsnummer = "12345678910"
         const val aktørId = "0000123456789"
@@ -29,15 +28,17 @@ class VedtaksperiodeAnnullertRiverTest {
     }
 
     private val testRapid = TestRapid()
-    private val aivenProducerMock = mockk<KafkaProducer<String,String>>(relaxed = true)
-    private val speedClient = mockk<SpeedClient> {
-        every { hentFødselsnummerOgAktørId(any(), any()) } returns IdentResponse(
-            fødselsnummer = fødselsnummer,
-            aktørId = aktørId,
-            npid = null,
-            kilde = IdentResponse.KildeResponse.PDL
-        ).ok()
-    }
+    private val aivenProducerMock = mockk<KafkaProducer<String, String>>(relaxed = true)
+    private val speedClient =
+        mockk<SpeedClient> {
+            every { hentFødselsnummerOgAktørId(any(), any()) } returns
+                IdentResponse(
+                    fødselsnummer = fødselsnummer,
+                    aktørId = aktørId,
+                    npid = null,
+                    kilde = IdentResponse.KildeResponse.PDL,
+                ).ok()
+        }
 
     init {
         VedtaksperiodeAnnullertRiver(testRapid, aivenProducerMock, speedClient)
@@ -48,7 +49,7 @@ class VedtaksperiodeAnnullertRiverTest {
         testRapid.sendTestMessage(vedtaksperiodeAnnullertArbeidstaker())
 
         val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
-        verify { aivenProducerMock.send( capture(captureSlot) ) }
+        verify { aivenProducerMock.send(capture(captureSlot)) }
 
         val vedtakAnnullert = captureSlot.captured
         assertEquals(fødselsnummer, vedtakAnnullert.key())
@@ -66,7 +67,7 @@ class VedtaksperiodeAnnullertRiverTest {
         testRapid.sendTestMessage(vedtaksperiodeAnnullertSelvstendig())
 
         val captureSlot = CapturingSlot<ProducerRecord<String, String>>()
-        verify { aivenProducerMock.send( capture(captureSlot) ) }
+        verify { aivenProducerMock.send(capture(captureSlot)) }
 
         val vedtakAnnullert = captureSlot.captured
         assertEquals(fødselsnummer, vedtakAnnullert.key())
@@ -80,8 +81,8 @@ class VedtaksperiodeAnnullertRiverTest {
     }
 
     @Language("JSON")
-    private fun vedtaksperiodeAnnullertArbeidstaker(
-    ) = """
+    private fun vedtaksperiodeAnnullertArbeidstaker() =
+        """
     {
         "fødselsnummer": "$fødselsnummer",
         "yrkesaktivitetstype": "ARBEIDSTAKER",
@@ -96,8 +97,8 @@ class VedtaksperiodeAnnullertRiverTest {
     """
 
     @Language("JSON")
-    private fun vedtaksperiodeAnnullertSelvstendig(
-    ) = """
+    private fun vedtaksperiodeAnnullertSelvstendig() =
+        """
     {
         "fødselsnummer": "$fødselsnummer",
         "yrkesaktivitetstype": "SELVSTENDIG",
