@@ -14,7 +14,7 @@ data class VedtakFattetForEksternDto(
     val fom: LocalDate,
     val tom: LocalDate,
     val skjæringstidspunkt: LocalDate,
-    val dokumenter: List<DokumentForEkstern>,
+    val dokumenter: List<DokumentForEksternDto>,
     val sykepengegrunnlag: Double,
     val utbetalingId: UUID,
     val vedtakFattetTidspunkt: LocalDateTime,
@@ -95,16 +95,6 @@ data class VedtakFattetForEksternDto(
 }
 
 private val Double.toDesimaler get() = toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
-
-class DokumentForEkstern(
-    val dokumentId: UUID,
-    val type: Type,
-) {
-    enum class Type {
-        Sykmelding,
-        Søknad,
-    }
-}
 
 data class NavnOgIdentForEksternDto(
     val navn: String,

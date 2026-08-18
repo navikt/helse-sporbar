@@ -2,22 +2,15 @@ package no.nav.helse.sporbar
 
 import com.github.navikt.tbd_libs.result_object.getOrThrow
 import com.github.navikt.tbd_libs.retry.retryBlocking
+import com.github.navikt.tbd_libs.spedisjon.HentMeldingerResponse
 import com.github.navikt.tbd_libs.spedisjon.SpedisjonClient
 import net.logstash.logback.argument.StructuredArguments.kv
-import no.nav.helse.sporbar.dto.BegrunnelseForEksternDto
-import no.nav.helse.sporbar.dto.DokumentForEkstern
-import no.nav.helse.sporbar.dto.FastsattEtterHovedregelForEksternDto
-import no.nav.helse.sporbar.dto.FastsattEtterSkjønnForEksternDto
-import no.nav.helse.sporbar.dto.FastsattIInfotrygdForEksternDto
-import no.nav.helse.sporbar.dto.NavnOgIdentForEksternDto
-import no.nav.helse.sporbar.dto.PeriodeForEksternDto
-import no.nav.helse.sporbar.dto.SykepengegrunnlagsfaktaSelvstendigDto
-import no.nav.helse.sporbar.dto.VedtakFattetForEksternDto
+import no.nav.helse.sporbar.dto.*
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
@@ -25,25 +18,61 @@ private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 internal class VedtakFattetMediator(
     private val spedisjonClient: SpedisjonClient,
     private val producer: KafkaProducer<String, String>,
+    private val sendTilSis: Boolean = (System.getenv("NAIS_CLUSTER_NAME") ?: "false") == "dev-gcp",
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
         val callId = UUID.randomUUID().toString()
         sikkerLogg.info("Henter dokumenter {}", kv("callId", callId))
         log.info("Henter dokumenter for {}", kv("callId", callId))
 
-        val dokumenter: List<Dokument> =
+        val dokumenter: HentMeldingerResponse =
             retryBlocking {
-                spedisjonClient.hentMeldinger(vedtakFattet.hendelseIder, callId).getOrThrow().tilDokumenter()
+                spedisjonClient.hentMeldinger(vedtakFattet.hendelseIder, callId).getOrThrow()
             }
-        val eksternDto = oversett(vedtakFattet, dokumenter)
-        val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
-        producer.send(ProducerRecord("tbd.vedtak", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(VedtakType.VedtakFattet.header())))
-        if ((System.getenv().get("NAIS_CLUSTER_NAME") ?: "false") == "dev-gcp") {
-            producer.send(ProducerRecord("tbd.sis", null, vedtakFattet.fødselsnummer, meldingForEkstern, listOf(VedtakType.VedtakFattet.header())))
-            sikkerLogg.info("Publiserer vedtakFattet til sistopicet: {}", meldingForEkstern)
+        sendVedtakFattetPåTbdVedtak(vedtakFattet, dokumenter)
+        sendVedtakFattetPåTbdSisForHag(vedtakFattet, dokumenter)
+    }
+
+    internal fun sendVedtakFattetPåTbdSisForHag(
+        vedtakFattet: VedtakFattet,
+        dokumenter: HentMeldingerResponse,
+    ) {
+
+        if (sendTilSis) {
+            if (vedtakFattet.yrkesaktivitetstype == "ARBEIDSTAKER") {
+                val eksternDto = oversettVedtakFattetForHag(vedtakFattet, dokumenter.tilAlleDokumenter())
+                val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
+                producer.send(
+                    ProducerRecord(
+                        "tbd.sis",
+                        null,
+                        vedtakFattet.fødselsnummer,
+                        meldingForEkstern,
+                        listOf(VedtakType.VedtakFattet.header()),
+                    ),
+                )
+                sikkerLogg.info("Publiserer vedtakFattet til sistopicet: {}", meldingForEkstern)
+            }
         }
+    }
+
+    private fun sendVedtakFattetPåTbdVedtak(
+        vedtakFattet: VedtakFattet,
+        dokumenter: HentMeldingerResponse,
+    ) {
+        val eksternDto = oversett(vedtakFattet, dokumenter.tilSøknadsdokumenter())
+        val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
+        producer.send(
+            ProducerRecord(
+                "tbd.vedtak",
+                null,
+                vedtakFattet.fødselsnummer,
+                meldingForEkstern,
+                listOf(VedtakType.VedtakFattet.header()),
+            ),
+        )
         sikkerLogg.info("Publiserer vedtakFattet {}", meldingForEkstern)
-        log.info("Publiserte vedtakFattet for {}", dokumenter.map { it.dokumentId })
+        log.info("Publiserte vedtakFattet for {}", dokumenter.tilSøknadsdokumenter().map { it.dokumentId })
     }
 
     private fun oversett(
@@ -61,11 +90,12 @@ internal class VedtakFattetMediator(
             sykepengegrunnlag = vedtakFattet.sykepengegrunnlag,
             dokumenter =
                 dokumenter.map {
-                    DokumentForEkstern(
+                    DokumentForEksternDto(
                         it.dokumentId,
                         when (it.type) {
-                            Dokument.Type.Sykmelding -> DokumentForEkstern.Type.Sykmelding
-                            Dokument.Type.Søknad -> DokumentForEkstern.Type.Søknad
+                            Dokument.Type.Sykmelding -> DokumentForEksternDto.Type.Sykmelding
+                            Dokument.Type.Søknad -> DokumentForEksternDto.Type.Søknad
+                            Dokument.Type.Inntektsmelding -> DokumentForEksternDto.Type.Inntektsmelding
                         },
                     )
                 },
@@ -110,7 +140,13 @@ internal class VedtakFattetMediator(
                     avviksprosent = sykepengegrunnlagsfakta.avviksprosent,
                     `6G` = sykepengegrunnlagsfakta.`6G`,
                     tags = sykepengegrunnlagsfakta.tags,
-                    arbeidsgivere = sykepengegrunnlagsfakta.arbeidsgivere.map { FastsattEtterHovedregelForEksternDto.Arbeidsgiver(it.arbeidsgiver, it.omregnetÅrsinntekt) },
+                    arbeidsgivere =
+                        sykepengegrunnlagsfakta.arbeidsgivere.map {
+                            FastsattEtterHovedregelForEksternDto.Arbeidsgiver(
+                                it.arbeidsgiver,
+                                it.omregnetÅrsinntekt,
+                            )
+                        },
                 )
 
             is FastsattEtterSkjønn ->
@@ -122,7 +158,14 @@ internal class VedtakFattetMediator(
                     avviksprosent = sykepengegrunnlagsfakta.avviksprosent,
                     `6G` = sykepengegrunnlagsfakta.`6G`,
                     tags = sykepengegrunnlagsfakta.tags,
-                    arbeidsgivere = sykepengegrunnlagsfakta.arbeidsgivere.map { FastsattEtterSkjønnForEksternDto.Arbeidsgiver(it.arbeidsgiver, it.omregnetÅrsinntekt, it.skjønnsfastsatt) },
+                    arbeidsgivere =
+                        sykepengegrunnlagsfakta.arbeidsgivere.map {
+                            FastsattEtterSkjønnForEksternDto.Arbeidsgiver(
+                                it.arbeidsgiver,
+                                it.omregnetÅrsinntekt,
+                                it.skjønnsfastsatt,
+                            )
+                        },
                 )
 
             is FastsattIInfotrygd ->
@@ -149,4 +192,50 @@ internal class VedtakFattetMediator(
                         ),
                 )
         }
+
+    private fun oversettVedtakFattetForHag(
+        vedtakFattet: VedtakFattet,
+        dokumenter: List<Dokument>,
+    ): VedtakFattetForHagDto =
+        VedtakFattetForHagDto(
+            fødselsnummer = vedtakFattet.fødselsnummer,
+            organisasjonsnummer = vedtakFattet.organisasjonsnummer,
+            yrkesaktivitetstype = vedtakFattet.yrkesaktivitetstype,
+            vedtaksperiodeId = vedtakFattet.vedtaksperiodeId,
+            fom = vedtakFattet.fom,
+            tom = vedtakFattet.tom,
+            skjæringstidspunkt = vedtakFattet.skjæringstidspunkt,
+            dokumenter =
+                dokumenter.map {
+                    DokumentForEksternDto(
+                        it.dokumentId,
+                        when (it.type) {
+                            Dokument.Type.Sykmelding -> DokumentForEksternDto.Type.Sykmelding
+                            Dokument.Type.Søknad -> DokumentForEksternDto.Type.Søknad
+                            Dokument.Type.Inntektsmelding -> DokumentForEksternDto.Type.Inntektsmelding
+                        },
+                    )
+                },
+            sykepengegrunnlag = vedtakFattet.sykepengegrunnlag,
+            utbetalingsdager =
+                vedtakFattet.utbetalingsdager.map {
+                    UtbetalingsdagDto(
+                        dato = it.dato,
+                        type = it.type,
+                        sykdomsgrad = it.sykdomsgrad,
+                        dekningsgrad = it.dekningsgrad,
+                        beløpTilBruker = it.beløpTilBruker,
+                        beløpTilArbeidsgiver = it.beløpTilArbeidsgiver,
+                        begrunnelser = it.begrunnelser,
+                    )
+                },
+            vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt,
+            vedtaksUtfallTilArbeidsgiver = VedtaksUtfall.INNVILGELSE, // Foreløpig bare hardkodet må snakkes med fag om hvordan dette skal gjøres
+            saksbehandlerIdent = vedtakFattet.saksbehandlerNavnOgIdent?.ident,
+            saksbehandlerNavn = vedtakFattet.saksbehandlerNavnOgIdent?.navn,
+            beslutterIdent = vedtakFattet.beslutterNavnOgIdent?.ident,
+            beslutterNavn = vedtakFattet.beslutterNavnOgIdent?.navn,
+            automatiskFattet = vedtakFattet.automatiskFattet,
+            harArbeidsgiverØnsketRefusjon = vedtakFattet.tags.contains("ArbeidsgiverØnskerRefusjon"),
+        )
 }

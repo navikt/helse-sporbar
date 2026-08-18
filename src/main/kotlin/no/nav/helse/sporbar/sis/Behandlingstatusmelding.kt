@@ -12,8 +12,9 @@ data class Behandlingstatusmelding(
     val tidspunkt: OffsetDateTime,
     val status: Behandlingstatustype,
     val eksterneSøknadIder: Set<UUID>,
+    val eventName: String = "behandlingstatus",
 ) {
-    val versjon = "2.0.2"
+    val versjon = "2.1.0"
 
     enum class Behandlingstatustype {
         OPPRETTET,

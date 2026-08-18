@@ -1,12 +1,7 @@
 package no.nav.helse.sporbar
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
-import com.github.navikt.tbd_libs.rapids_and_rivers.River
-import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
-import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
-import com.github.navikt.tbd_libs.rapids_and_rivers.isMissingOrNull
-import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
+import com.github.navikt.tbd_libs.rapids_and_rivers.*
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageProblems
@@ -20,7 +15,7 @@ import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
 private val sikkerLog = LoggerFactory.getLogger("tjenestekall")
@@ -58,6 +53,9 @@ internal class VedtakFattetRiver(
                     it.interestedIn("saksbehandler", "saksbehandler.navn", "saksbehandler.ident")
                     it.interestedIn("beslutter", "beslutter.navn", "beslutter.ident")
                     it.interestedIn("forsikringsvurderingId")
+                    it.interestedIn("utbetalingsdager")
+                    it.interestedIn("vedtaksperiodeId") { id -> UUID.fromString(id.asText()) }
+                    it.interestedIn("automatiskFattet", JsonNode::asBoolean)
                 }
             }.register(this)
     }
@@ -107,6 +105,7 @@ internal class VedtakFattetRiver(
                     },
                 )
             } ?: emptyList()
+        val automatiskFattet = packet["automatiskFattet"].asBoolean()
         val tags =
             packet["tags"]
                 .takeUnless(JsonNode::isMissingOrNull)
@@ -114,6 +113,19 @@ internal class VedtakFattetRiver(
                 ?.filter { tag -> tag in TAGS_TIL_DELING_UTAD }
                 ?.toSet() ?: emptySet<String>()
         val utbetalingId = UUID.fromString(packet["utbetalingId"].asText())
+        val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
+        val utbetalingsdager =
+            packet["utbetalingsdager"].map {
+                Utbetalingsdag(
+                    dato = it["dato"].asLocalDate(),
+                    type = it["type"].asText(),
+                    sykdomsgrad = it["sykdomsgrad"].asInt(),
+                    dekningsgrad = it["dekningsgrad"].asInt(),
+                    beløpTilBruker = it["beløpTilBruker"].asInt(),
+                    beløpTilArbeidsgiver = it["beløpTilArbeidsgiver"].asInt(),
+                    begrunnelser = it["begrunnelser"].map { begrunnelse -> begrunnelse.asText() },
+                )
+            }
         val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asText()
         val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].asSykepengegrunnlagsfakta(yrkesaktivitetstype)
         val saksbehandlerNavnOgIdent =
@@ -149,7 +161,13 @@ internal class VedtakFattetRiver(
                 tags = tags,
                 saksbehandlerNavnOgIdent = saksbehandlerNavnOgIdent,
                 beslutterNavnOgIdent = beslutterNavnOgIdent,
-                forsikringsvurderingId = packet["forsikringsvurderingId"].takeUnless { it.isMissingOrNull() }?.let { UUID.fromString(it.asText()) },
+                forsikringsvurderingId =
+                    packet["forsikringsvurderingId"]
+                        .takeUnless { it.isMissingOrNull() }
+                        ?.let { UUID.fromString(it.asText()) },
+                vedtaksperiodeId = vedtaksperiodeId,
+                utbetalingsdager = utbetalingsdager,
+                automatiskFattet = automatiskFattet,
             ),
         )
         log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
@@ -234,7 +252,12 @@ internal class VedtakFattetRiver(
     private fun JsonNode.asBigDecimal(): BigDecimal = BigDecimal(asText())
 
     companion object {
-        val TAGS_TIL_DELING_UTAD: Set<String> = setOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn")
+        val TAGS_TIL_DELING_UTAD: Set<String> = setOf(
+            "IngenNyArbeidsgiverperiode",
+            "SykepengegrunnlagUnder2G",
+            "InntektFraAOrdningenLagtTilGrunn",
+            "ArbeidsgiverØnskerRefusjon"
+        )
     }
 }
 
@@ -260,6 +283,7 @@ internal data class VedtakFattet(
     val hendelseIder: List<UUID>,
     val sykepengegrunnlag: Double,
     val utbetalingId: UUID,
+    val vedtaksperiodeId: UUID,
     val vedtakFattetTidspunkt: LocalDateTime,
     val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta,
     val begrunnelser: List<Begrunnelse>,
@@ -267,6 +291,8 @@ internal data class VedtakFattet(
     val saksbehandlerNavnOgIdent: NavnOgIdent?,
     val beslutterNavnOgIdent: NavnOgIdent?,
     val forsikringsvurderingId: UUID?,
+    val utbetalingsdager: List<Utbetalingsdag>,
+    val automatiskFattet: Boolean,
 )
 
 sealed class Sykepengegrunnlagsfakta(

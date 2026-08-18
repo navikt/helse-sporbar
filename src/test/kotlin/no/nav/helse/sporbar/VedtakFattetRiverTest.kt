@@ -18,6 +18,7 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -73,7 +74,7 @@ internal class VedtakFattetRiverTest {
 
             verify { producerMock.send(capture(captureSlot)) }
 
-            val vedtakFattet = captureSlot.last()
+            val vedtakFattet = captureSlot.first { it.topic() == "tbd.vedtak" }
             assertEquals(FØDSELSNUMMER, vedtakFattet.key())
 
             val vedtakFattetJson = vedtakFattet.validertJson()
@@ -107,7 +108,7 @@ internal class VedtakFattetRiverTest {
 
             verify { producerMock.send(capture(captureSlot)) }
 
-            val vedtakFattet = captureSlot.last()
+            val vedtakFattet = captureSlot.first { it.topic() == "tbd.vedtak" }
             assertEquals(FØDSELSNUMMER, vedtakFattet.key())
 
             val vedtakFattetJson = vedtakFattet.validertJson()
@@ -159,7 +160,7 @@ internal class VedtakFattetRiverTest {
             )
 
             verify { producerMock.send(capture(captureSlot)) }
-            val vedtakFattetJson = captureSlot.last().validertJson()
+            val vedtakFattetJson = captureSlot.first { it.topic() == "tbd.vedtak" }.validertJson()
             assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
             assertEquals(2, vedtakFattetJson["begrunnelser"].size())
         }
@@ -175,7 +176,7 @@ internal class VedtakFattetRiverTest {
 
             verify { producerMock.send(capture(captureSlot)) }
 
-            val vedtakFattet = captureSlot.last()
+            val vedtakFattet = captureSlot.first { it.topic() == "tbd.vedtak" }
             assertEquals(FØDSELSNUMMER, vedtakFattet.key())
 
             val vedtakFattetJson = vedtakFattet.validertJson()
@@ -221,7 +222,7 @@ internal class VedtakFattetRiverTest {
 
             verify { producerMock.send(capture(captureSlot)) }
 
-            val vedtakFattet = captureSlot.last()
+            val vedtakFattet = captureSlot.first { it.topic() == "tbd.vedtak" }
             assertEquals(FØDSELSNUMMER, vedtakFattet.key())
 
             val vedtakFattetJson = vedtakFattet.validertJson()
@@ -245,6 +246,170 @@ internal class VedtakFattetRiverTest {
             assertEquals(forsikringsvurderingId, vedtakFattetJson["forsikringsvurderingId"].asText().let { UUID.fromString(it) })
         }
 
+    @Test
+    fun `vedtakFattet sendes på tbd_sis`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+
+            søknadSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett)
+
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val sisRecord = captureSlot.first { it.topic() == "tbd.sis" }
+            assertEquals(FØDSELSNUMMER, sisRecord.key())
+
+            val sisJson = objectMapper.readTree(sisRecord.value())
+            assertEquals("vedtak_fattet", sisJson["eventName"].asText())
+            assertEquals(FØDSELSNUMMER, sisJson["fødselsnummer"].asText())
+            assertEquals(FOM, sisJson["fom"].asLocalDate())
+            assertEquals(TOM, sisJson["tom"].asLocalDate())
+            assertEquals(idSett.vedtaksperiodeId, UUID.fromString(sisJson["vedtaksperiodeId"].asText()))
+        }
+
+    @Test
+    fun `vedtakFattet på tbd_sis inneholder utbetalingsdager`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+
+            val utbetalingsdagerJson = """[
+              {
+                "dato": "2020-01-06",
+                "type": "NavDag",
+                "sykdomsgrad": 100,
+                "dekningsgrad": 100,
+                "beløpTilBruker": 2000,
+                "beløpTilArbeidsgiver": 1000,
+                "begrunnelser": []
+              },
+              {
+                "dato": "2020-01-07",
+                "type": "NavHelgDag",
+                "sykdomsgrad": 100,
+                "dekningsgrad": 100,
+                "beløpTilBruker": 0,
+                "beløpTilArbeidsgiver": 0,
+                "begrunnelser": []
+              }
+            ]"""
+
+            søknadSendt(idSett)
+            testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, utbetalingsdager = utbetalingsdagerJson))
+
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val sisJson = objectMapper.readTree(captureSlot.first { it.topic() == "tbd.sis" }.value())
+            val utbetalingsdager = sisJson["utbetalingsdager"]
+            assertEquals(2, utbetalingsdager.size())
+
+            val førstedag = utbetalingsdager[0]
+            assertEquals("2020-01-06", førstedag["dato"].asText())
+            assertEquals("NavDag", førstedag["type"].asText())
+            assertEquals(100, førstedag["sykdomsgrad"].asInt())
+            assertEquals(100, førstedag["dekningsgrad"].asInt())
+            assertEquals(2000, førstedag["beløpTilBruker"].asInt())
+            assertEquals(1000, førstedag["beløpTilArbeidsgiver"].asInt())
+        }
+
+    @Test
+    fun `vedtakFattet på tbd_sis har korrekt saksbehandler og beslutter`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+
+            søknadSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett)
+
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val sisJson = objectMapper.readTree(captureSlot.first { it.topic() == "tbd.sis" }.value())
+            assertEquals(saksbehandler.navn, sisJson["saksbehandlerNavn"].asText())
+            assertEquals(saksbehandler.ident, sisJson["saksbehandlerIdent"].asText())
+            assertEquals(beslutter.navn, sisJson["beslutterNavn"].asText())
+            assertEquals(beslutter.ident, sisJson["beslutterIdent"].asText())
+            assertFalse(sisJson["automatiskFattet"].asBoolean())
+        }
+
+    @Test
+    fun `automatisk vedtakFattet på tbd_sis har automatiskFattet true og ingen saksbehandler`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+
+            søknadSendt(idSett)
+            automatisertVedtakMedUtbetalingSendt(idSett)
+
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val sisJson = objectMapper.readTree(captureSlot.first { it.topic() == "tbd.sis" }.value())
+            assertTrue(sisJson["automatiskFattet"].asBoolean())
+            assertTrue(sisJson["saksbehandlerIdent"].isNull)
+            assertTrue(sisJson["saksbehandlerNavn"].isNull)
+            assertTrue(sisJson["beslutterIdent"].isNull)
+            assertTrue(sisJson["beslutterNavn"].isNull)
+        }
+
+    @Test
+    fun `harArbeidsgiverØnsketRefusjon er true på tbd_sis når tag er satt`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+
+            søknadSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett, tags = setOf("ArbeidsgiverØnskerRefusjon"))
+
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val sisJson = objectMapper.readTree(captureSlot.first { it.topic() == "tbd.sis" }.value())
+            assertTrue(sisJson["harArbeidsgiverØnsketRefusjon"].asBoolean())
+        }
+
+    @Test
+    fun `harArbeidsgiverØnsketRefusjon er false på tbd_sis når tag ikke er satt`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+
+            søknadSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett, tags = emptySet())
+
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val sisJson = objectMapper.readTree(captureSlot.first { it.topic() == "tbd.sis" }.value())
+            assertFalse(sisJson["harArbeidsgiverØnsketRefusjon"].asBoolean())
+        }
+
+    @Test
+    fun `vedtakFattet på tbd_sis inneholder inntektsmelding i dokumenter`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+
+            søknadSendt(idSett)
+            inntektsmeldingSendt(idSett)
+            testRapid.sendTestMessage(
+                vedtakFattetMedUtbetaling(
+                    idSett,
+                    hendelser = listOf(idSett.nySøknadHendelseId, idSett.sendtSøknadHendelseId, idSett.inntektsmeldingHendelseId),
+                ),
+            )
+
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val sisJson = objectMapper.readTree(captureSlot.first { it.topic() == "tbd.sis" }.value())
+            val dokumenter = sisJson["dokumenter"]
+
+            val dokumentIder = dokumenter.map { UUID.fromString(it["dokumentId"].asText()) }
+            val dokumentTyper = dokumenter.map { it["type"].asText() }
+
+            assertTrue(idSett.søknadDokumentId in dokumentIder)
+            assertTrue(idSett.sykmeldingDokumentId in dokumentIder)
+            assertTrue(idSett.inntektsmeldingDokumentId in dokumentIder)
+            assertTrue("Inntektsmelding" in dokumentTyper)
+        }
+
     private data class E2ETestContext(
         val testRapid: TestRapid,
     ) {
@@ -259,6 +424,7 @@ internal class VedtakFattetRiverTest {
             VedtakFattetMediator(
                 spedisjonClient = spedisjonClient,
                 producer = producerMock,
+                sendTilSis = true,
             )
         val utbetalingMediator =
             UtbetalingMediator(
@@ -360,6 +526,8 @@ internal class VedtakFattetRiverTest {
         utbetalingId: UUID = idSett.utbetalingId,
         begrunnelser: List<Begrunnelse> = emptyList(),
         tags: Set<String> = emptySet(),
+        utbetalingsdager: String = "[]",
+        automatiskFattet: Boolean = false,
     ): String {
         val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
         return """{
@@ -406,7 +574,9 @@ internal class VedtakFattetRiverTest {
         "ident": "${beslutter.ident}"
       },
       "begrunnelser": $begrunnelserJson,
-      "tags": ${tags.map { "\"$it\"" }}
+      "tags": ${tags.map { "\"$it\"" }},
+      "utbetalingsdager": $utbetalingsdager,
+      "automatiskFattet": $automatiskFattet
     }
         """
     }
@@ -421,6 +591,7 @@ internal class VedtakFattetRiverTest {
             ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
         utbetalingId: UUID = idSett.utbetalingId,
+        utbetalingsdager: String = "[]",
     ): String =
         """{
       "vedtaksperiodeId": "$vedtaksperiodeId",
@@ -460,7 +631,9 @@ internal class VedtakFattetRiverTest {
       "saksbehandler": null,
       "beslutter": null,
       "begrunnelser": [],
-      "tags": []
+      "tags": [],
+      "utbetalingsdager": $utbetalingsdager,
+      "automatiskFattet": true
     }
         """
 
@@ -546,6 +719,19 @@ internal class VedtakFattetRiverTest {
         """
     }
 
+    private fun E2ETestContext.inntektsmeldingSendt(idSett: IdSett) {
+        meldinger.add(
+            HentMeldingResponse(
+                type = "inntektsmelding",
+                fnr = "",
+                internDokumentId = idSett.inntektsmeldingHendelseId,
+                eksternDokumentId = idSett.inntektsmeldingDokumentId,
+                duplikatkontroll = "",
+                jsonBody = "{}",
+            ),
+        )
+    }
+
     private data class IdSett(
         val sykmeldingDokumentId: UUID = UUID.randomUUID(),
         val søknadDokumentId: UUID = UUID.randomUUID(),
@@ -553,5 +739,7 @@ internal class VedtakFattetRiverTest {
         val sendtSøknadHendelseId: UUID = UUID.randomUUID(),
         val vedtaksperiodeId: UUID = UUID.randomUUID(),
         val utbetalingId: UUID = UUID.randomUUID(),
+        val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
+        val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
     )
 }
