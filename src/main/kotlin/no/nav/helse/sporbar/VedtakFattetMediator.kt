@@ -44,7 +44,6 @@ internal class VedtakFattetMediator(
         vedtakFattet: VedtakFattet,
         dokumenter: HentMeldingerResponse,
     ) {
-
         if (sendTilSis) {
             if (vedtakFattet.yrkesaktivitetstype == "ARBEIDSTAKER") {
                 val eksternDto = oversettVedtakFattetForHag(vedtakFattet, dokumenter.tilAlleDokumenter())
@@ -136,10 +135,10 @@ internal class VedtakFattetMediator(
                         ident = it.ident,
                     )
                 },
-            forsikringsvurderingId = vedtakFattet.forsikringsvurderingId,
             forsikringsvurdering =
                 forsikringsvurdering?.let {
                     ForsikringsvurderingForEksternDto(
+                        forsikringsvurderingId = checkNotNull(vedtakFattet.forsikringsvurderingId),
                         individuellForsikringNavn = it.individuellForsikringNavn,
                         kollektivForsikringNavn = it.kollektivForsikringNavn,
                         dekning =

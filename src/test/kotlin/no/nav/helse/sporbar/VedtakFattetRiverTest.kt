@@ -88,7 +88,7 @@ internal class VedtakFattetRiverTest {
             assertEquals(saksbehandler.ident, vedtakFattetJson["saksbehandler"]["ident"].asText())
             assertEquals(beslutter.navn, vedtakFattetJson["beslutter"]["navn"].asText())
             assertEquals(beslutter.ident, vedtakFattetJson["beslutter"]["ident"].asText())
-            assertEquals(null, vedtakFattetJson["forsikringsvurderingId"].takeUnless { it.isMissingOrNull() })
+            assertEquals(null, vedtakFattetJson["forsikringsvurdering"].takeUnless { it.isMissingOrNull() })
 
             assertTrue(
                 vedtakFattetJson["dokumenter"]
@@ -120,7 +120,7 @@ internal class VedtakFattetRiverTest {
             assertEquals(VEDTAK_FATTET_TIDSPUNKT, vedtakFattetJson["vedtakFattetTidspunkt"].asLocalDateTime())
             assertEquals(null, vedtakFattetJson["saksbehandler"].takeUnless { it.isMissingOrNull() })
             assertEquals(null, vedtakFattetJson["beslutter"].takeUnless { it.isMissingOrNull() })
-            assertEquals(null, vedtakFattetJson["forsikringsvurderingId"].takeUnless { it.isMissingOrNull() })
+            assertEquals(null, vedtakFattetJson["forsikringsvurdering"].takeUnless { it.isMissingOrNull() })
 
             assertTrue(
                 vedtakFattetJson["dokumenter"]
@@ -249,9 +249,8 @@ internal class VedtakFattetRiverTest {
             assertEquals(beregningsgrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["selvstendig"]["beregningsgrunnlag"].asText()))
             assertEquals(emptyList<String>(), vedtakFattetJson["sykepengegrunnlagsfakta"]["tags"].map { it.asText() })
             assertEquals(seksG, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["6G"].asText()))
-            assertEquals(forsikringsvurderingId, vedtakFattetJson["forsikringsvurderingId"].asText().let { UUID.fromString(it) })
-
             val forsikringsvurderingJson = vedtakFattetJson["forsikringsvurdering"]
+            assertEquals(forsikringsvurderingId, forsikringsvurderingJson["forsikringsvurderingId"].asText().let { UUID.fromString(it) })
             assertEquals("Forsikring for sykepenger fra 17. dag", forsikringsvurderingJson["individuellForsikringNavn"].asText())
             assertEquals("Kollektiv forsikring", forsikringsvurderingJson["kollektivForsikringNavn"].asText())
             assertEquals(65, forsikringsvurderingJson["dekning"]["grad"].asInt())

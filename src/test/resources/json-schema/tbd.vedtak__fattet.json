@@ -358,25 +358,18 @@
     "beslutter": {
       "allOf": [{"$ref": "#/definitions/saksbehandler"}]
     },
-    "forsikringsvurderingId": {
-      "oneOf": [
-        {
-          "type": "string",
-          "format": "uuid",
-          "examples": [ "5f908566-7467-11f1-bcc1-536a2fedfc7e"],
-          "description": "Peker på en forsikringsvurdering som er utført for dette vedtaket."
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "forsikringsvurdering": {
       "type": ["object", "null"],
       "additionalProperties": false,
-      "required": ["individuellForsikringNavn", "kollektivForsikringNavn", "dekning"],
+      "required": ["forsikringsvurderingId", "individuellForsikringNavn", "kollektivForsikringNavn", "dekning"],
       "description": "Forsikringsvurderingen som ligger til grunn for vedtaket, hentet fra sp-forsikring.",
       "properties": {
+        "forsikringsvurderingId": {
+          "type": "string",
+          "format": "uuid",
+          "examples": ["5f908566-7467-11f1-bcc1-536a2fedfc7e"],
+          "description": "Peker på forsikringsvurderingen som er utført for dette vedtaket."
+        },
         "individuellForsikringNavn": {
           "type": ["string", "null"],
           "description": "Navnet på den individuelle forsikringen som er lagt til grunn, om noen."

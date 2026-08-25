@@ -23,7 +23,6 @@ data class VedtakFattetForEksternDto(
     val tags: Set<String>,
     val saksbehandler: NavnOgIdentForEksternDto?,
     val beslutter: NavnOgIdentForEksternDto?,
-    val forsikringsvurderingId: UUID?,
     val forsikringsvurdering: ForsikringsvurderingForEksternDto?,
 ) {
     val versjon: String = "1.3.0"
@@ -98,6 +97,7 @@ data class VedtakFattetForEksternDto(
 private val Double.toDesimaler get() = toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
 
 data class ForsikringsvurderingForEksternDto(
+    val forsikringsvurderingId: UUID,
     val individuellForsikringNavn: String?,
     val kollektivForsikringNavn: String?,
     val dekning: DekningForEksternDto?,
