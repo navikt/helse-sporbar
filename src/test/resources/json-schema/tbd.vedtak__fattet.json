@@ -30,7 +30,7 @@
       "type": "string",
       "description": "schema-versjon for denne meldingen.",
       "enum": [
-        "1.2.2"
+        "1.3.0"
       ]
     },
     "fødselsnummer": {
@@ -370,6 +370,38 @@
           "type": "null"
         }
       ]
+    },
+    "forsikringsvurdering": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["individuellForsikringNavn", "kollektivForsikringNavn", "dekning"],
+      "description": "Forsikringsvurderingen som ligger til grunn for vedtaket, hentet fra sp-forsikring.",
+      "properties": {
+        "individuellForsikringNavn": {
+          "type": ["string", "null"],
+          "description": "Navnet på den individuelle forsikringen som er lagt til grunn, om noen."
+        },
+        "kollektivForsikringNavn": {
+          "type": ["string", "null"],
+          "description": "Navnet på den kollektive forsikringen, om noen."
+        },
+        "dekning": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["grad", "fraDag"],
+          "description": "Samlet dekning fra forsikringsvurderingen.",
+          "properties": {
+            "grad": {
+              "type": "integer",
+              "description": "Grad i prosent."
+            },
+            "fraDag": {
+              "type": "integer",
+              "description": "Hvilken sykedag dekningen gjelder fra."
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {

@@ -209,6 +209,12 @@ internal class VedtakFattetRiverTest {
             val erBegrensetTil6G = false
             val seksG = BigDecimal("815000.0")
             val forsikringsvurderingId = UUID.randomUUID()
+            every { spForsikringClient.hentForsikringsvurdering(forsikringsvurderingId, any()) } returns
+                Forsikringsvurdering(
+                    individuellForsikringNavn = "Forsikring for sykepenger fra 17. dag",
+                    kollektivForsikringNavn = "Kollektiv forsikring",
+                    dekning = Dekning(grad = 65, fraDag = 17),
+                )
             testRapid.sendTestMessage(
                 vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
                     idSett = idSett,
@@ -244,6 +250,12 @@ internal class VedtakFattetRiverTest {
             assertEquals(emptyList<String>(), vedtakFattetJson["sykepengegrunnlagsfakta"]["tags"].map { it.asText() })
             assertEquals(seksG, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["6G"].asText()))
             assertEquals(forsikringsvurderingId, vedtakFattetJson["forsikringsvurderingId"].asText().let { UUID.fromString(it) })
+
+            val forsikringsvurderingJson = vedtakFattetJson["forsikringsvurdering"]
+            assertEquals("Forsikring for sykepenger fra 17. dag", forsikringsvurderingJson["individuellForsikringNavn"].asText())
+            assertEquals("Kollektiv forsikring", forsikringsvurderingJson["kollektivForsikringNavn"].asText())
+            assertEquals(65, forsikringsvurderingJson["dekning"]["grad"].asInt())
+            assertEquals(17, forsikringsvurderingJson["dekning"]["fraDag"].asInt())
         }
 
     @Test
@@ -420,17 +432,23 @@ internal class VedtakFattetRiverTest {
                 every { hentMeldinger(any(), any()) } returns HentMeldingerResponse(meldinger).ok()
             }
 
+        val speedClient = mockk<SpeedClient>()
+        val spForsikringClient =
+            mockk<SpForsikringClient> {
+                every { hentForsikringsvurdering(any(), any()) } returns Forsikringsvurdering(null, null, null)
+            }
+
         val vedtakFattetMediator =
             VedtakFattetMediator(
                 spedisjonClient = spedisjonClient,
                 producer = producerMock,
+                spForsikringClient = spForsikringClient,
                 sendTilSis = true,
             )
         val utbetalingMediator =
             UtbetalingMediator(
                 producer = producerMock,
             )
-        val speedClient = mockk<SpeedClient>()
 
         init {
             VedtakFattetRiver(testRapid, vedtakFattetMediator, speedClient)

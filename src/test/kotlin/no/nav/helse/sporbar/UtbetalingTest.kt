@@ -67,8 +67,12 @@ internal class UtbetalingTest {
             val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
             val vedtakFattetJson = vedtakFattet.validertJson()
 
-            assertEquals(idSett.utbetalingId, utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText()) })
-            assertEquals(idSett.korrelasjonsId, utbetalingUtbetaltJson["korrelasjonsId"].let { UUID.fromString(it.asText()) })
+            assertEquals(
+                idSett.utbetalingId,
+                utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText()) })
+            assertEquals(
+                idSett.korrelasjonsId,
+                utbetalingUtbetaltJson["korrelasjonsId"].let { UUID.fromString(it.asText()) })
             assertEquals(utbetalingUtbetaltJson["utbetalingId"].asText(), vedtakFattetJson["utbetalingId"].asText())
 
             assertEquals("utbetaling_utbetalt", utbetalingUtbetaltJson["event"].textValue())
@@ -81,8 +85,14 @@ internal class UtbetalingTest {
             assertEquals(GJENSTÅENDESYKEDAGER, utbetalingUtbetaltJson["gjenståendeSykedager"].asInt())
             assertEquals(AUTOMATISK_BEHANDLING, utbetalingUtbetaltJson["automatiskBehandling"].asBoolean())
             assertEquals(NETTOBELØP, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["nettoBeløp"].asInt())
-            assertEquals(FOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["fom"].asLocalDate())
-            assertEquals(TOM, utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate())
+            assertEquals(
+                FOM,
+                utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["fom"].asLocalDate()
+            )
+            assertEquals(
+                TOM,
+                utbetalingUtbetaltJson["arbeidsgiverOppdrag"]["utbetalingslinjer"].first()["tom"].asLocalDate()
+            )
             assertEquals(MAKSDATO, utbetalingUtbetaltJson.path("foreløpigBeregnetSluttPåSykepenger").asLocalDate())
             assertTrue(utbetalingUtbetaltJson.path("utbetalingsdager").toList().isNotEmpty())
             assertTrue(utbetalingUtbetaltJson.path("vedtaksperiodeId").isMissingNode)
@@ -135,7 +145,8 @@ internal class UtbetalingTest {
             val utbetalingUtbetalt = captureSlot.last()
             val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
 
-            val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
+            val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager")
+                .associate { it["dato"].asLocalDate() to it["type"].asText() }
             assertEquals(
                 mapOf(
                     LocalDate.parse("2022-05-06") to "AndreYtelser",
@@ -157,7 +168,8 @@ internal class UtbetalingTest {
             val utbetalingUtbetalt = captureSlot.last()
             val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
 
-            val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
+            val utbetalingsdager = utbetalingUtbetaltJson.path("utbetalingsdager")
+                .associate { it["dato"].asLocalDate() to it["type"].asText() }
             assertEquals(
                 mapOf(
                     LocalDate.parse("2021-05-06") to "ArbeidIkkeGjenopptattDag",
@@ -179,7 +191,8 @@ internal class UtbetalingTest {
             val utbetalingUtenUtbetaling = captureSlot.last()
             val utbetalingUtenUtbetalingJson = utbetalingUtenUtbetaling.validertJson()
 
-            val utbetalingsdager = utbetalingUtenUtbetalingJson.path("utbetalingsdager").associate { it["dato"].asLocalDate() to it["type"].asText() }
+            val utbetalingsdager = utbetalingUtenUtbetalingJson.path("utbetalingsdager")
+                .associate { it["dato"].asLocalDate() to it["type"].asText() }
             assertEquals(
                 mapOf(
                     LocalDate.parse("2022-05-06") to "ArbeidIkkeGjenopptattDag",
@@ -227,6 +240,10 @@ internal class UtbetalingTest {
             VedtakFattetMediator(
                 spedisjonClient = spedisjonClient,
                 producer = producerMock,
+                spForsikringClient =
+                    mockk {
+                        every { hentForsikringsvurdering(any(), any()) } returns Forsikringsvurdering(null, null, null)
+                    },
             )
 
         val utbetalingMediator =
@@ -241,12 +258,12 @@ internal class UtbetalingTest {
             UtbetalingUtenUtbetalingRiver(testRapid, utbetalingMediator, speedClient)
 
             every { speedClient.hentFødselsnummerOgAktørId(any(), any()) } returns
-                IdentResponse(
-                    fødselsnummer = FØDSELSNUMMER,
-                    aktørId = AKTØRID,
-                    npid = null,
-                    kilde = IdentResponse.KildeResponse.PDL,
-                ).ok()
+                    IdentResponse(
+                        fødselsnummer = FØDSELSNUMMER,
+                        aktørId = AKTØRID,
+                        npid = null,
+                        kilde = IdentResponse.KildeResponse.PDL,
+                    ).ok()
         }
     }
 

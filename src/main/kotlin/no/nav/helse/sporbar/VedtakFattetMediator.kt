@@ -18,6 +18,7 @@ private val sikkerLogg: Logger = LoggerFactory.getLogger("tjenestekall")
 internal class VedtakFattetMediator(
     private val spedisjonClient: SpedisjonClient,
     private val producer: KafkaProducer<String, String>,
+    private val spForsikringClient: SpForsikringClient,
     private val sendTilSis: Boolean = (System.getenv("NAIS_CLUSTER_NAME") ?: "false") == "dev-gcp",
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
@@ -29,7 +30,13 @@ internal class VedtakFattetMediator(
             retryBlocking {
                 spedisjonClient.hentMeldinger(vedtakFattet.hendelseIder, callId).getOrThrow()
             }
-        sendVedtakFattetPåTbdVedtak(vedtakFattet, dokumenter)
+        val forsikringsvurdering =
+            vedtakFattet.forsikringsvurderingId?.let { forsikringsvurderingId ->
+                retryBlocking {
+                    spForsikringClient.hentForsikringsvurdering(forsikringsvurderingId, callId)
+                }
+            }
+        sendVedtakFattetPåTbdVedtak(vedtakFattet, dokumenter, forsikringsvurdering)
         sendVedtakFattetPåTbdSisForHag(vedtakFattet, dokumenter)
     }
 
@@ -59,8 +66,9 @@ internal class VedtakFattetMediator(
     private fun sendVedtakFattetPåTbdVedtak(
         vedtakFattet: VedtakFattet,
         dokumenter: HentMeldingerResponse,
+        forsikringsvurdering: Forsikringsvurdering?,
     ) {
-        val eksternDto = oversett(vedtakFattet, dokumenter.tilSøknadsdokumenter())
+        val eksternDto = oversett(vedtakFattet, dokumenter.tilSøknadsdokumenter(), forsikringsvurdering)
         val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
         producer.send(
             ProducerRecord(
@@ -78,6 +86,7 @@ internal class VedtakFattetMediator(
     private fun oversett(
         vedtakFattet: VedtakFattet,
         dokumenter: List<Dokument>,
+        forsikringsvurdering: Forsikringsvurdering?,
     ): VedtakFattetForEksternDto =
         VedtakFattetForEksternDto(
             fødselsnummer = vedtakFattet.fødselsnummer,
@@ -128,6 +137,20 @@ internal class VedtakFattetMediator(
                     )
                 },
             forsikringsvurderingId = vedtakFattet.forsikringsvurderingId,
+            forsikringsvurdering =
+                forsikringsvurdering?.let {
+                    ForsikringsvurderingForEksternDto(
+                        individuellForsikringNavn = it.individuellForsikringNavn,
+                        kollektivForsikringNavn = it.kollektivForsikringNavn,
+                        dekning =
+                            it.dekning?.let { dekning ->
+                                DekningForEksternDto(
+                                    grad = dekning.grad,
+                                    fraDag = dekning.fraDag,
+                                )
+                            },
+                    )
+                },
         )
 
     private fun oversett(sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta) =

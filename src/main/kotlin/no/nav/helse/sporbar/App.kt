@@ -48,12 +48,22 @@ fun launchApplication(env: Map<String, String>) {
                     tokenProvider = azureClient,
                 )
 
+            val spForsikringClient =
+                SpForsikringClient(
+                    httpClient = HttpClient.newHttpClient(),
+                    objectMapper = objectMapper,
+                    tokenProvider = azureClient,
+                    baseUrl = env.getValue("SP_FORSIKRING_BASE_URL"),
+                    scope = env.getValue("SP_FORSIKRING_SCOPE"),
+                )
+
             val aivenProducer = factory.createProducer()
 
             val vedtakFattetMediator =
                 VedtakFattetMediator(
                     spedisjonClient = spedisjonClient,
                     producer = aivenProducer,
+                    spForsikringClient = spForsikringClient,
                 )
             val utbetalingMediator = UtbetalingMediator(aivenProducer)
 

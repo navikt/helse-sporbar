@@ -24,8 +24,9 @@ data class VedtakFattetForEksternDto(
     val saksbehandler: NavnOgIdentForEksternDto?,
     val beslutter: NavnOgIdentForEksternDto?,
     val forsikringsvurderingId: UUID?,
+    val forsikringsvurdering: ForsikringsvurderingForEksternDto?,
 ) {
-    val versjon: String = "1.2.2"
+    val versjon: String = "1.3.0"
 
     @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
     val begrensning: String =
@@ -95,6 +96,17 @@ data class VedtakFattetForEksternDto(
 }
 
 private val Double.toDesimaler get() = toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
+
+data class ForsikringsvurderingForEksternDto(
+    val individuellForsikringNavn: String?,
+    val kollektivForsikringNavn: String?,
+    val dekning: DekningForEksternDto?,
+)
+
+data class DekningForEksternDto(
+    val grad: Int,
+    val fraDag: Int,
+)
 
 data class NavnOgIdentForEksternDto(
     val navn: String,
