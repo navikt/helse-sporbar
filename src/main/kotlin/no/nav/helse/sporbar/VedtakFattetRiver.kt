@@ -252,12 +252,13 @@ internal class VedtakFattetRiver(
     private fun JsonNode.asBigDecimal(): BigDecimal = BigDecimal(asText())
 
     companion object {
-        val TAGS_TIL_DELING_UTAD: Set<String> = setOf(
-            "IngenNyArbeidsgiverperiode",
-            "SykepengegrunnlagUnder2G",
-            "InntektFraAOrdningenLagtTilGrunn",
-            "ArbeidsgiverØnskerRefusjon"
-        )
+        val TAGS_TIL_DELING_UTAD: Set<String> =
+            setOf(
+                "IngenNyArbeidsgiverperiode",
+                "SykepengegrunnlagUnder2G",
+                "InntektFraAOrdningenLagtTilGrunn",
+                "ArbeidsgiverØnskerRefusjon",
+            )
     }
 }
 

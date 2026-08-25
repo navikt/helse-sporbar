@@ -27,38 +27,39 @@ fun HentMeldingerResponse.tilSøknader() =
 fun HentMeldingerResponse.tilSøknadsdokumenter() = this.meldinger.flatMap { it.tilSøknadsdokument() }.distinctBy { it }
 
 fun HentMeldingerResponse.tilAlleDokumenter(): List<Dokument> =
-    this.meldinger.flatMap {
-        val type = it.type.tilDokumenttypeOrNull()
-        val eksternDokumentId = it.eksternDokumentId
-        when (type) {
-            Dokument.Type.Søknad -> {
-                val sykmelding =
-                    runCatching {
-                        val sykmeldingId =
-                            objectMapper
-                                .readTree(it.jsonBody)
-                                .path("sykmeldingId")
-                                .asText()
-                                .toUUID()
+    this.meldinger
+        .flatMap {
+            val type = it.type.tilDokumenttypeOrNull()
+            val eksternDokumentId = it.eksternDokumentId
+            when (type) {
+                Dokument.Type.Søknad -> {
+                    val sykmelding =
+                        runCatching {
+                            val sykmeldingId =
+                                objectMapper
+                                    .readTree(it.jsonBody)
+                                    .path("sykmeldingId")
+                                    .asText()
+                                    .toUUID()
+                            Dokument(
+                                dokumentId = sykmeldingId,
+                                type = Dokument.Type.Sykmelding,
+                            )
+                        }.getOrNull()
+                    val søknad =
                         Dokument(
-                            dokumentId = sykmeldingId,
-                            type = Dokument.Type.Sykmelding,
+                            dokumentId = it.eksternDokumentId,
+                            type = type,
                         )
-                    }.getOrNull()
-                val søknad =
-                    Dokument(
-                        dokumentId = it.eksternDokumentId,
-                        type = type,
-                    )
-                listOfNotNull(sykmelding, søknad)
-            }
-            Dokument.Type.Inntektsmelding -> listOf(Dokument(eksternDokumentId, type))
+                    listOfNotNull(sykmelding, søknad)
+                }
+                Dokument.Type.Inntektsmelding -> listOf(Dokument(eksternDokumentId, type))
 
-            Dokument.Type.Sykmelding,
-            null,
-            -> emptyList()
-        }
-    }.distinctBy { it.dokumentId }
+                Dokument.Type.Sykmelding,
+                null,
+                -> emptyList()
+            }
+        }.distinctBy { it.dokumentId }
 
 private fun HentMeldingResponse.tilSøknadsdokument(): List<Dokument> {
     val type = this.type.tilDokumenttypeOrNull()
