@@ -18,7 +18,7 @@ tbdLibs-retry = { module = "com.github.navikt.tbd-libs:retry", version.ref = "tb
 tbdLibs-speedClient = { module = "com.github.navikt.tbd-libs:speed-client", version.ref = "tbdLibs" }
 tbdLibs-spedisjonClient = { module = "com.github.navikt.tbd-libs:spedisjon-client", version.ref = "tbdLibs" }
 
-jsonSchemaValidator = "com.networknt:json-schema-validator:1.0.73"
+jsonSchemaValidator = "com.networknt:json-schema-validator:3.0.7"
 jsonassert = "org.skyscreamer:jsonassert:1.5.3"
 mockk = "io.mockk:mockk:1.14.11"
 
