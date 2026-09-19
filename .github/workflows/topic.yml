@@ -48,7 +48,6 @@ jobs:
 
   deploy-prod:
     name: Deploy til prod
-    needs: deploy-dev
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
