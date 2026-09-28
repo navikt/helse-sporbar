@@ -1,7 +1,7 @@
 [versions]
 ktor = "3.6.0"
 tbdLibs = "20260820.1510"
-sasGradlePlugins = "20260923.0907"
+sasGradlePlugins = "20260925.1602"
 
 [libraries]
 ktor-client-apache = { module = "io.ktor:ktor-client-apache", version.ref = "ktor" }
