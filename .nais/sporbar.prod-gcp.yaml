@@ -1,0 +1,16 @@
+spec:
+  preStopHook:
+    http:
+      path: /stop
+  replicas:
+    max: 6
+  kafka:
+    pool: nav-prod
+  azure:
+    application:
+      tenant: nav.no
+  env:
+    - name: SP_FORSIKRING_SCOPE
+      value: api://prod-gcp.tbd.sp-forsikring/.default
+    - name: KAFKA_RESET_POLICY
+      value: none

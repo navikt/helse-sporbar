@@ -1,0 +1,4 @@
+spec:
+  pool: nav-prod
+  config:
+    retentionHours: -1  # -1 means unlimited

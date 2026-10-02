@@ -1,0 +1,15 @@
+spec:
+  replicas:
+    max: 2
+  kafka:
+    pool: nav-dev
+  azure:
+    application:
+      tenant: trygdeetaten.no
+  env:
+    - name: SP_FORSIKRING_SCOPE
+      value: api://dev-gcp.tbd.sp-forsikring/.default
+    - name: KAFKA_RESET_POLICY
+      value: earliest
+    - name: NULLE_UT_TOMME_OPPDRAG
+      value: "true"

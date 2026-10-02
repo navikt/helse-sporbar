@@ -1,25 +1,22 @@
----
 apiVersion: kafka.nais.io/v1
 kind: Topic
 metadata:
-    name: utbetaling
+    name: vedtak
     namespace: tbd
     labels:
         team: tbd
     annotations:
-        dcat.data.nav.no/title: "Sykepengeutbetalinger"
-        dcat.data.nav.no/description: "Avsluttede utbetalinger fra vedtaksløsning for sykepenger"
+        dcat.data.nav.no/title: "Sykepengevedtak"
+        dcat.data.nav.no/description: "Vedtak fattet om sykepenger"
         dcat.data.nav.no/theme: "helse"
-        dcat.data.nav.no/keyword: "helse, sykepenger, utbetalinger"
+        dcat.data.nav.no/keyword: "helse, sykepenger, vedtak"
 spec:
-    pool: nav-prod
     config:  # optional; all fields are optional too; defaults shown
         cleanupPolicy: delete  # delete, compact
         minimumInSyncReplicas: 1
         partitions: 3
         replication: 2  # see min/max requirements
         retentionBytes: -1  # -1 means unlimited
-        retentionHours: 8760  # -1 means unlimited
     acl:
         - team: tbd
           application: sporbar
@@ -27,15 +24,6 @@ spec:
         - team: flex
           application: spinnsyn-backend
           access: read
-        - team: teamsykmelding
-          application: sparenaproxy
-          access: read
         - team: disykefravar
           application: dvh-sykefravar-airflow-kafka
-          access: read
-        - team: team-esyfo
-          application: sykepengedager-informasjon
-          access: read
-        - team: tbd
-          application: spokelse
           access: read

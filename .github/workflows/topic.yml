@@ -5,13 +5,13 @@ on:
     branches:
       - main
     paths:
-      - 'deploy/aiven-dev-sis.yml'
-      - 'deploy/aiven-dev-utbetaling.yml'
-      - 'deploy/aiven-dev-vedtak.yml'
-      - 'deploy/aiven-prod-sis.yml'
-      - 'deploy/aiven-prod-utbetaling.yml'
-      - 'deploy/aiven-prod-vedtak.yml'
-      - 'topic.yml'
+      - '.nais/sis.yaml'
+      - '.nais/sis.*.yaml'
+      - '.nais/utbetaling.yaml'
+      - '.nais/utbetaling.*.yaml'
+      - '.nais/vedtak.yaml'
+      - '.nais/vedtak.*.yaml'
+      - '.github/workflows/topic.yml'
   workflow_dispatch:
 
 concurrency:
@@ -25,46 +25,22 @@ permissions:
 jobs:
   deploy-dev:
     name: Deploy til dev
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    uses: navikt/sykepenger-github-workflows/.github/workflows/deploy-v2.yml@77c349d62b631cf0fedc02278c68abd33bc8ea5b # v1.0.10
+    with:
+      manifest: .nais/utbetaling.yaml
+      environment: dev-gcp
+      extra_manifests: .nais/vedtak.yaml,.nais/sis.yaml
     permissions:
       contents: read
       id-token: write # for nais login
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: NAIS login
-        uses: nais/login@40b72a35a18ddf2ad74b632461139ab838cc2a2f # v0
-        with:
-          team: tbd
-
-      - name: Deploy
-        uses: nais/deploy/actions/deploy@9850be311389ca754d9a9f2280615419d738c891 # v3
-        env:
-          CLUSTER: dev-gcp
-          RESOURCE: deploy/aiven-dev-utbetaling.yml,deploy/aiven-dev-vedtak.yml,deploy/aiven-dev-sis.yml
 
   deploy-prod:
     name: Deploy til prod
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    uses: navikt/sykepenger-github-workflows/.github/workflows/deploy-v2.yml@77c349d62b631cf0fedc02278c68abd33bc8ea5b # v1.0.10
+    with:
+      manifest: .nais/utbetaling.yaml
+      environment: prod-gcp
+      extra_manifests: .nais/vedtak.yaml,.nais/sis.yaml
     permissions:
       contents: read
       id-token: write # for nais login
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: NAIS login
-        uses: nais/login@40b72a35a18ddf2ad74b632461139ab838cc2a2f # v0
-        with:
-          team: tbd
-
-      - name: Deploy
-        uses: nais/deploy/actions/deploy@9850be311389ca754d9a9f2280615419d738c891 # v3
-        env:
-          CLUSTER: prod-gcp
-          RESOURCE: deploy/aiven-prod-utbetaling.yml,deploy/aiven-prod-vedtak.yml,deploy/aiven-prod-sis.yml
