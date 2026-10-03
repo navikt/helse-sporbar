@@ -1,6 +1,6 @@
 [versions]
 ktor = "3.6.0"
-tbdLibs = "20260820.1510"
+tbdLibs = "20261002.1227"
 sykepengerGradlePlugins = "20261001.1830"
 
 [libraries]
@@ -10,7 +10,7 @@ ktor-serialization-jackson = { module = "io.ktor:ktor-serialization-jackson", ve
 ktor-server-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt", version.ref = "ktor" }
 ktor-server-contentNegotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
 
-rapidsAndRivers = "com.github.navikt:rapids-and-rivers:2026011411051768385145.e8ebad1177b4"
+rapidsAndRivers = "com.github.navikt:rapids-and-rivers:2026091610031789545782"
 
 tbdLibs-azureTokenClientDefault = { module = "com.github.navikt.tbd-libs:azure-token-client-default", version.ref = "tbdLibs" }
 tbdLibs-rapidsAndRiversTest = { module = "com.github.navikt.tbd-libs:rapids-and-rivers-test", version.ref = "tbdLibs" }
@@ -18,7 +18,7 @@ tbdLibs-retry = { module = "com.github.navikt.tbd-libs:retry", version.ref = "tb
 tbdLibs-speedClient = { module = "com.github.navikt.tbd-libs:speed-client", version.ref = "tbdLibs" }
 tbdLibs-spedisjonClient = { module = "com.github.navikt.tbd-libs:spedisjon-client", version.ref = "tbdLibs" }
 
-jsonSchemaValidator = "com.networknt:json-schema-validator:1.0.73"
+jsonSchemaValidator = "com.networknt:json-schema-validator:3.0.7"
 jsonassert = "org.skyscreamer:jsonassert:1.5.3"
 mockk = "io.mockk:mockk:1.14.11"
 
