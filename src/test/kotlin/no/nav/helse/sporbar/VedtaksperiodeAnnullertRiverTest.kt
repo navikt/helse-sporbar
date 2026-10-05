@@ -55,11 +55,11 @@ class VedtaksperiodeAnnullertRiverTest {
         assertEquals(fødselsnummer, vedtakAnnullert.key())
 
         val vedtakAnnullertJson = vedtakAnnullert.validertJson()
-        assertEquals(fødselsnummer, vedtakAnnullertJson["fødselsnummer"].textValue())
-        assertEquals(organisasjonsnummer, vedtakAnnullertJson["organisasjonsnummer"].textValue())
+        assertEquals(fødselsnummer, vedtakAnnullertJson["fødselsnummer"].stringValue())
+        assertEquals(organisasjonsnummer, vedtakAnnullertJson["organisasjonsnummer"].stringValue())
         assertEquals(fom, vedtakAnnullertJson["fom"].asLocalDate())
         assertEquals(tom, vedtakAnnullertJson["tom"].asLocalDate())
-        assertEquals("vedtak_annullert", vedtakAnnullertJson["event"].asText())
+        assertEquals("vedtak_annullert", vedtakAnnullertJson["event"].asString())
     }
 
     @Test
@@ -73,11 +73,11 @@ class VedtaksperiodeAnnullertRiverTest {
         assertEquals(fødselsnummer, vedtakAnnullert.key())
 
         val vedtakAnnullertJson = vedtakAnnullert.validertJson()
-        assertEquals(fødselsnummer, vedtakAnnullertJson["fødselsnummer"].textValue())
-        assertEquals("SELVSTENDIG", vedtakAnnullertJson["organisasjonsnummer"].textValue())
+        assertEquals(fødselsnummer, vedtakAnnullertJson["fødselsnummer"].stringValue())
+        assertEquals("SELVSTENDIG", vedtakAnnullertJson["organisasjonsnummer"].stringValue())
         assertEquals(fom, vedtakAnnullertJson["fom"].asLocalDate())
         assertEquals(tom, vedtakAnnullertJson["tom"].asLocalDate())
-        assertEquals("vedtak_annullert", vedtakAnnullertJson["event"].asText())
+        assertEquals("vedtak_annullert", vedtakAnnullertJson["event"].asString())
     }
 
     @Language("JSON")

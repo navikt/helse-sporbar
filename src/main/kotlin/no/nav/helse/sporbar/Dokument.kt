@@ -39,7 +39,7 @@ fun HentMeldingerResponse.tilAlleDokumenter(): List<Dokument> =
                                 objectMapper
                                     .readTree(it.jsonBody)
                                     .path("sykmeldingId")
-                                    .asText()
+                                    .asString()
                                     .toUUID()
                             Dokument(
                                 dokumentId = sykmeldingId,
@@ -73,7 +73,7 @@ private fun HentMeldingResponse.tilSøknadsdokument(): List<Dokument> {
                 objectMapper
                     .readTree(this.jsonBody)
                     .path("sykmeldingId")
-                    .asText()
+                    .asString()
                     .toUUID()
             Dokument(
                 dokumentId = sykmeldingId,

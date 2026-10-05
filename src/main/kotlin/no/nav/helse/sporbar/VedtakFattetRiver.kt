@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.*
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
@@ -12,6 +11,7 @@ import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -48,13 +48,13 @@ internal class VedtakFattetRiver(
                     it.require("skjæringstidspunkt", JsonNode::asLocalDate)
                     it.require("vedtakFattetTidspunkt", JsonNode::asLocalDateTime)
                     it.require("@opprettet", JsonNode::asLocalDateTime)
-                    it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
+                    it.require("utbetalingId") { id -> UUID.fromString(id.asString()) }
                     it.interestedIn("begrunnelser")
                     it.interestedIn("saksbehandler", "saksbehandler.navn", "saksbehandler.ident")
                     it.interestedIn("beslutter", "beslutter.navn", "beslutter.ident")
                     it.interestedIn("forsikringsvurderingId")
                     it.interestedIn("utbetalingsdager")
-                    it.interestedIn("vedtaksperiodeId") { id -> UUID.fromString(id.asText()) }
+                    it.interestedIn("vedtaksperiodeId") { id -> UUID.fromString(id.asString()) }
                     it.interestedIn("automatiskFattet", JsonNode::asBoolean)
                 }
             }.register(this)
@@ -75,7 +75,7 @@ internal class VedtakFattetRiver(
         metadata: MessageMetadata,
         meterRegistry: MeterRegistry,
     ) {
-        val callId = packet["@id"].asText()
+        val callId = packet["@id"].asString()
         withMDC("callId" to callId) {
             håndterVedtakFattet(packet, callId)
         }
@@ -85,22 +85,22 @@ internal class VedtakFattetRiver(
         packet: JsonMessage,
         callId: String,
     ) {
-        val ident = packet["fødselsnummer"].asText()
+        val ident = packet["fødselsnummer"].asString()
         val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
 
-        val organisasjonsnummer = packet["organisasjonsnummer"].asText()
+        val organisasjonsnummer = packet["organisasjonsnummer"].asString()
         val fom = packet["fom"].asLocalDate()
         val tom = packet["tom"].asLocalDate()
         val skjæringstidspunkt = packet["skjæringstidspunkt"].asLocalDate()
-        val hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) }
+        val hendelseIder = packet["hendelser"].values().map { UUID.fromString(it.asString()) }
         val sykepengegrunnlag = packet["sykepengegrunnlag"].asDouble()
         val vedtakFattetTidspunkt = packet["vedtakFattetTidspunkt"].asLocalDateTime()
         val begrunnelser =
-            packet["begrunnelser"].takeUnless(JsonNode::isMissingOrNull)?.map { begrunnelse ->
+            packet["begrunnelser"].takeUnless(JsonNode::isMissingOrNull)?.values()?.map { begrunnelse ->
                 Begrunnelse(
-                    begrunnelse["type"].asText(),
-                    begrunnelse["begrunnelse"].asText(),
-                    begrunnelse["perioder"].map {
+                    begrunnelse["type"].asString(),
+                    begrunnelse["begrunnelse"].asString(),
+                    begrunnelse["perioder"].values().map {
                         Periode(it["fom"].asLocalDate(), it["tom"].asLocalDate())
                     },
                 )
@@ -109,37 +109,38 @@ internal class VedtakFattetRiver(
         val tags =
             packet["tags"]
                 .takeUnless(JsonNode::isMissingOrNull)
-                ?.map { it.asText() }
+                ?.values()
+                ?.map { it.asString() }
                 ?.filter { tag -> tag in TAGS_TIL_DELING_UTAD }
                 ?.toSet() ?: emptySet<String>()
-        val utbetalingId = UUID.fromString(packet["utbetalingId"].asText())
-        val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
+        val utbetalingId = UUID.fromString(packet["utbetalingId"].asString())
+        val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asString())
         val utbetalingsdager =
-            packet["utbetalingsdager"].map {
+            packet["utbetalingsdager"].values().map {
                 Utbetalingsdag(
                     dato = it["dato"].asLocalDate(),
-                    type = it["type"].asText(),
+                    type = it["type"].asString(),
                     sykdomsgrad = it["sykdomsgrad"].asInt(),
                     dekningsgrad = it["dekningsgrad"].asInt(),
                     beløpTilBruker = it["beløpTilBruker"].asInt(),
                     beløpTilArbeidsgiver = it["beløpTilArbeidsgiver"].asInt(),
-                    begrunnelser = it["begrunnelser"].map { begrunnelse -> begrunnelse.asText() },
+                    begrunnelser = it["begrunnelser"].values().map { begrunnelse -> begrunnelse.asString() },
                 )
             }
-        val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asText()
+        val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asString()
         val sykepengegrunnlagsfakta = packet["sykepengegrunnlagsfakta"].asSykepengegrunnlagsfakta(yrkesaktivitetstype)
         val saksbehandlerNavnOgIdent =
             packet["saksbehandler"].takeUnless { it.isMissingOrNull() }?.let {
                 NavnOgIdent(
-                    it["navn"].asText(),
-                    it["ident"].asText(),
+                    it["navn"].asString(),
+                    it["ident"].asString(),
                 )
             }
         val beslutterNavnOgIdent =
             packet["beslutter"].takeUnless { it.isMissingOrNull() }?.let {
                 NavnOgIdent(
-                    it["navn"].asText(),
-                    it["ident"].asText(),
+                    it["navn"].asString(),
+                    it["ident"].asString(),
                 )
             }
 
@@ -164,28 +165,28 @@ internal class VedtakFattetRiver(
                 forsikringsvurderingId =
                     packet["forsikringsvurderingId"]
                         .takeUnless { it.isMissingOrNull() }
-                        ?.let { UUID.fromString(it.asText()) },
+                        ?.let { UUID.fromString(it.asString()) },
                 vedtaksperiodeId = vedtaksperiodeId,
                 utbetalingsdager = utbetalingsdager,
                 automatiskFattet = automatiskFattet,
             ),
         )
-        log.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
-        sikkerLog.info("Behandler vedtakFattet: ${packet["@id"].asText()}")
+        log.info("Behandler vedtakFattet: ${packet["@id"].asString()}")
+        sikkerLog.info("Behandler vedtakFattet: ${packet["@id"].asString()}")
     }
 
     private fun JsonNode.asSykepengegrunnlagsfakta(yrkesaktivitetstype: String) =
         if (yrkesaktivitetstype == "SELVSTENDIG") {
-            when (val fastsatt = this["fastsatt"].asText()) {
+            when (val fastsatt = this["fastsatt"].asString()) {
                 "EtterHovedregel" -> {
                     SykepengegrunnlagsfaktaSelvstendigNæringsdrivende(
                         `6G` = this["6G"].asBigDecimal(),
-                        tags = get("tags").map { it.asText() }.toSet(),
+                        tags = get("tags").values().map { it.asString() }.toSet(),
                         selvstendig =
                             SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig(
                                 beregningsgrunnlag = this["selvstendig"]["beregningsgrunnlag"].asBigDecimal(),
                                 pensjonsgivendeInntekter =
-                                    this["selvstendig"]["pensjonsgivendeInntekter"].map {
+                                    this["selvstendig"]["pensjonsgivendeInntekter"].values().map {
                                         SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig.PensjonsgivendeInntekt(
                                             årstall = it["årstall"].asInt(),
                                             beløp = it["beløp"].asBigDecimal(),
@@ -203,18 +204,18 @@ internal class VedtakFattetRiver(
                 }
             }
         } else {
-            when (val fastsatt = this["fastsatt"].asText()) {
+            when (val fastsatt = this["fastsatt"].asString()) {
                 "EtterHovedregel" ->
                     FastsattEtterHovedregel(
                         omregnetÅrsinntekt = get("omregnetÅrsinntekt").asDouble(),
                         innrapportertÅrsinntekt = get("innrapportertÅrsinntekt").asDouble(),
                         avviksprosent = get("avviksprosent").asDouble(),
                         `6G` = get("6G").asDouble(),
-                        tags = get("tags").map { it.asText() }.toSet(),
+                        tags = get("tags").values().map { it.asString() }.toSet(),
                         arbeidsgivere =
-                            get("arbeidsgivere").map {
+                            get("arbeidsgivere").values().map {
                                 FastsattEtterHovedregel.Arbeidsgiver(
-                                    arbeidsgiver = it.get("arbeidsgiver").asText(),
+                                    arbeidsgiver = it.get("arbeidsgiver").asString(),
                                     omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble(),
                                 )
                             },
@@ -227,11 +228,11 @@ internal class VedtakFattetRiver(
                         skjønnsfastsatt = get("skjønnsfastsatt").asDouble(),
                         avviksprosent = get("avviksprosent").asDouble(),
                         `6G` = get("6G").asDouble(),
-                        tags = get("tags").map { it.asText() }.toSet(),
+                        tags = get("tags").values().map { it.asString() }.toSet(),
                         arbeidsgivere =
-                            get("arbeidsgivere").map {
+                            get("arbeidsgivere").values().map {
                                 FastsattEtterSkjønn.Arbeidsgiver(
-                                    arbeidsgiver = it.get("arbeidsgiver").asText(),
+                                    arbeidsgiver = it.get("arbeidsgiver").asString(),
                                     omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble(),
                                     skjønnsfastsatt = it.get("skjønnsfastsatt").asDouble(),
                                 )
@@ -249,7 +250,7 @@ internal class VedtakFattetRiver(
             }
         }
 
-    private fun JsonNode.asBigDecimal(): BigDecimal = BigDecimal(asText())
+    private fun JsonNode.asBigDecimal(): BigDecimal = BigDecimal(asString())
 
     companion object {
         val TAGS_TIL_DELING_UTAD: Set<String> =

@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar.sis
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
@@ -13,6 +12,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.FERDIG
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
 
 internal class BehandlingLukketRiver(
     rapid: RapidsConnection,
@@ -44,8 +44,8 @@ internal class BehandlingLukketRiver(
         metadata: MessageMetadata,
         meterRegistry: MeterRegistry,
     ) {
-        val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
-        val behandlingId = packet["behandlingId"].asText().toUUID()
+        val vedtaksperiodeId = packet["vedtaksperiodeId"].asString().toUUID()
+        val behandlingId = packet["behandlingId"].asString().toUUID()
         val tidspunkt = packet["@opprettet"].asOffsetDateTime()
         sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, FERDIG))
     }

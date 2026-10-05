@@ -15,7 +15,7 @@ dependencies {
 
     implementation(libs.ktor.client.apache)
     implementation(libs.ktor.client.contentNegotiation)
-    implementation(libs.ktor.serialization.jackson)
+    implementation(libs.ktor.serialization.jackson3)
     implementation(libs.ktor.server.contentNegotiation)
     implementation(libs.ktor.server.auth.jwt) {
         exclude(group = "junit")

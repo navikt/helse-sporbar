@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
@@ -18,6 +17,7 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
 import java.util.UUID
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
@@ -61,7 +61,7 @@ internal class VedtaksperiodeAnnullertRiver(
         metadata: MessageMetadata,
         meterRegistry: MeterRegistry,
     ) {
-        val callId = packet["@id"].asText()
+        val callId = packet["@id"].asString()
         withMDC("callId" to callId) {
             håndterAnnullering(packet, callId)
         }
@@ -71,7 +71,7 @@ internal class VedtaksperiodeAnnullertRiver(
         packet: JsonMessage,
         callId: String,
     ) {
-        val ident = packet["fødselsnummer"].asText()
+        val ident = packet["fødselsnummer"].asString()
         val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
 
         val vedtakAnnullertDto =
@@ -79,11 +79,11 @@ internal class VedtaksperiodeAnnullertRiver(
                 fødselsnummer = identer.fødselsnummer,
                 aktørId = identer.aktørId,
                 organisasjonsnummer =
-                    when (val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asText()) {
-                        "ARBEIDSTAKER" -> packet["organisasjonsnummer"].asText()
+                    when (val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asString()) {
+                        "ARBEIDSTAKER" -> packet["organisasjonsnummer"].asString()
                         else -> yrkesaktivitetstype
                     },
-                vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText()),
+                vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asString()),
                 fom = packet["fom"].asLocalDate(),
                 tom = packet["tom"].asLocalDate(),
             )

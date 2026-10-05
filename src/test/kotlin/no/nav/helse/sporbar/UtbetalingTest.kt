@@ -69,18 +69,18 @@ internal class UtbetalingTest {
 
             assertEquals(
                 idSett.utbetalingId,
-                utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asText()) },
+                utbetalingUtbetaltJson["utbetalingId"].let { UUID.fromString(it.asString()) },
             )
             assertEquals(
                 idSett.korrelasjonsId,
-                utbetalingUtbetaltJson["korrelasjonsId"].let { UUID.fromString(it.asText()) },
+                utbetalingUtbetaltJson["korrelasjonsId"].let { UUID.fromString(it.asString()) },
             )
-            assertEquals(utbetalingUtbetaltJson["utbetalingId"].asText(), vedtakFattetJson["utbetalingId"].asText())
+            assertEquals(utbetalingUtbetaltJson["utbetalingId"].asString(), vedtakFattetJson["utbetalingId"].asString())
 
-            assertEquals("utbetaling_utbetalt", utbetalingUtbetaltJson["event"].textValue())
-            assertEquals(FØDSELSNUMMER, utbetalingUtbetaltJson["fødselsnummer"].textValue())
-            assertEquals(UTBETALINGSTYPE, utbetalingUtbetaltJson["type"].textValue())
-            assertEquals(AKTØRID, utbetalingUtbetaltJson["aktørId"].textValue())
+            assertEquals("utbetaling_utbetalt", utbetalingUtbetaltJson["event"].stringValue())
+            assertEquals(FØDSELSNUMMER, utbetalingUtbetaltJson["fødselsnummer"].stringValue())
+            assertEquals(UTBETALINGSTYPE, utbetalingUtbetaltJson["type"].stringValue())
+            assertEquals(AKTØRID, utbetalingUtbetaltJson["aktørId"].stringValue())
             assertEquals(FOM, utbetalingUtbetaltJson["fom"].asLocalDate())
             assertEquals(TOM, utbetalingUtbetaltJson["tom"].asLocalDate())
             assertEquals(FORBRUKTESYKEDAGER, utbetalingUtbetaltJson["forbrukteSykedager"].asInt())
@@ -117,7 +117,7 @@ internal class UtbetalingTest {
                     .last()
                     .path("begrunnelser")
                     .toList()
-                    .map { it.asText() }
+                    .map { it.asString() }
             assertEquals(
                 listOf(
                     "EtterDødsdato",
@@ -150,7 +150,7 @@ internal class UtbetalingTest {
             val utbetalingsdager =
                 utbetalingUtbetaltJson
                     .path("utbetalingsdager")
-                    .associate { it["dato"].asLocalDate() to it["type"].asText() }
+                    .associate { it["dato"].asLocalDate() to it["type"].asString() }
             assertEquals(
                 mapOf(
                     LocalDate.parse("2022-05-06") to "AndreYtelser",
@@ -175,7 +175,7 @@ internal class UtbetalingTest {
             val utbetalingsdager =
                 utbetalingUtbetaltJson
                     .path("utbetalingsdager")
-                    .associate { it["dato"].asLocalDate() to it["type"].asText() }
+                    .associate { it["dato"].asLocalDate() to it["type"].asString() }
             assertEquals(
                 mapOf(
                     LocalDate.parse("2021-05-06") to "ArbeidIkkeGjenopptattDag",
@@ -200,7 +200,7 @@ internal class UtbetalingTest {
             val utbetalingsdager =
                 utbetalingUtenUtbetalingJson
                     .path("utbetalingsdager")
-                    .associate { it["dato"].asLocalDate() to it["type"].asText() }
+                    .associate { it["dato"].asLocalDate() to it["type"].asString() }
             assertEquals(
                 mapOf(
                     LocalDate.parse("2022-05-06") to "ArbeidIkkeGjenopptattDag",
@@ -230,7 +230,7 @@ internal class UtbetalingTest {
             assertEquals(FØDSELSNUMMER, utbetalingUtbetalt.key())
             val utbetalingUtbetaltJson = utbetalingUtbetalt.validertJson()
 
-            assertEquals("utbetaling_uten_utbetaling", utbetalingUtbetaltJson["event"].textValue())
+            assertEquals("utbetaling_uten_utbetaling", utbetalingUtbetaltJson["event"].stringValue())
         }
 
     private data class E2ETestContext(
