@@ -92,6 +92,7 @@ internal class VedtakFattetRiverTest {
 
             assertTrue(
                 vedtakFattetJson["dokumenter"]
+                    .values()
                     .map { UUID.fromString(it["dokumentId"].asText()) }
                     .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)),
             )
@@ -124,6 +125,7 @@ internal class VedtakFattetRiverTest {
 
             assertTrue(
                 vedtakFattetJson["dokumenter"]
+                    .values()
                     .map { UUID.fromString(it["dokumentId"].asText()) }
                     .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)),
             )
@@ -189,11 +191,12 @@ internal class VedtakFattetRiverTest {
 
             assertTrue(
                 vedtakFattetJson["dokumenter"]
+                    .values()
                     .map { UUID.fromString(it["dokumentId"].asText()) }
                     .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)),
             )
 
-            assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"), vedtakFattetJson["tags"].map { it.asText() })
+            assertEquals(listOf("IngenNyArbeidsgiverperiode", "SykepengegrunnlagUnder2G", "InntektFraAOrdningenLagtTilGrunn"), vedtakFattetJson["tags"].values().map { it.asText() })
         }
 
     @Test
@@ -241,13 +244,14 @@ internal class VedtakFattetRiverTest {
 
             assertTrue(
                 vedtakFattetJson["dokumenter"]
+                    .values()
                     .map { UUID.fromString(it["dokumentId"].asText()) }
                     .containsAll(listOf(idSett.søknadDokumentId, idSett.sykmeldingDokumentId)),
             )
 
             assertEquals(sykepengegrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlag"].asText()))
             assertEquals(beregningsgrunnlag, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["selvstendig"]["beregningsgrunnlag"].asText()))
-            assertEquals(emptyList<String>(), vedtakFattetJson["sykepengegrunnlagsfakta"]["tags"].map { it.asText() })
+            assertEquals(emptyList<String>(), vedtakFattetJson["sykepengegrunnlagsfakta"]["tags"].values().map { it.asText() })
             assertEquals(seksG, BigDecimal(vedtakFattetJson["sykepengegrunnlagsfakta"]["6G"].asText()))
             val forsikringsvurderingJson = vedtakFattetJson["forsikringsvurdering"]
             assertEquals(forsikringsvurderingId, forsikringsvurderingJson["forsikringsvurderingId"].asText().let { UUID.fromString(it) })
@@ -412,8 +416,8 @@ internal class VedtakFattetRiverTest {
             val sisJson = objectMapper.readTree(captureSlot.first { it.topic() == "tbd.sis" }.value())
             val dokumenter = sisJson["dokumenter"]
 
-            val dokumentIder = dokumenter.map { UUID.fromString(it["dokumentId"].asText()) }
-            val dokumentTyper = dokumenter.map { it["type"].asText() }
+            val dokumentIder = dokumenter.values().map { UUID.fromString(it["dokumentId"].asText()) }
+            val dokumentTyper = dokumenter.values().map { it["type"].asText() }
 
             assertTrue(idSett.søknadDokumentId in dokumentIder)
             assertTrue(idSett.sykmeldingDokumentId in dokumentIder)

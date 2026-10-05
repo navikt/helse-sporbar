@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar.sis
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
@@ -13,6 +12,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Behandlingstatustype.BEHANDLES_UTENFOR_SPEIL
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
 
 internal class BehandlingForkastetRiver(
     rapid: RapidsConnection,

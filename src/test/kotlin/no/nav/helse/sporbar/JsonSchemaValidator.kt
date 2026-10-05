@@ -1,34 +1,61 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.networknt.schema.JsonSchema
-import com.networknt.schema.JsonSchemaFactory
-import com.networknt.schema.SpecVersion
-import com.networknt.schema.ValidationMessage
+import com.networknt.schema.Error
+import com.networknt.schema.ExecutionContext
+import com.networknt.schema.Schema
+import com.networknt.schema.SchemaLocation
+import com.networknt.schema.SchemaRegistry
+import com.networknt.schema.dialect.Dialect
+import com.networknt.schema.dialect.Dialects
+import com.networknt.schema.format.Format
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.header.Headers
 import org.junit.jupiter.api.Assertions.assertEquals
+import tools.jackson.databind.JsonNode
+import tools.jackson.module.kotlin.jacksonObjectMapper
+import java.time.LocalDate
+import java.time.format.DateTimeParseException
 
 internal object JsonSchemaValidator {
     private val mapper = jacksonObjectMapper()
 
+    private object LocalDateFormat : Format {
+        override fun getName() = "date"
+
+        override fun matches(
+            executionContext: ExecutionContext,
+            value: String,
+        ) = try {
+            LocalDate.parse(value)
+            true
+        } catch (_: DateTimeParseException) {
+            false
+        }
+    }
+
+    private val schemaRegistry =
+        SchemaRegistry.withDefaultDialect(
+            Dialect
+                .builder(Dialects.getDraft7())
+                .format(LocalDateFormat)
+                .build(),
+        )
+
     private fun String.getSchema() =
-        JsonSchemaFactory
-            .getInstance(SpecVersion.VersionFlag.V7)
-            .getSchema(JsonSchemaValidator::class.java.getResource("/json-schema/tbd.$this.json")!!.toURI())
+        schemaRegistry
+            .getSchema(SchemaLocation.of("classpath:json-schema/tbd.$this.json"))
 
     private val vedtakFattetSchema by lazy { "vedtak__fattet".getSchema() }
     private val vedtakAnnullertSchema by lazy { "vedtak__annullert".getSchema() }
     private val utbetalingSchema by lazy { "utbetaling".getSchema() }
     private val annulleringSchema by lazy { "utbetaling__annullering".getSchema() }
 
-    private fun JsonSchema.assertSchema(json: JsonNode) {
+    private fun Schema.assertSchema(json: JsonNode) {
         val valideringsfeil = validate(json)
-        assertEquals(emptySet<ValidationMessage>(), valideringsfeil) { "${json.toPrettyString()}\n" }
+        assertEquals(emptyList<Error>(), valideringsfeil) { "${json.toPrettyString()}\n" }
     }
 
-    private fun Melding.hentSchema(): Pair<String, JsonSchema> =
+    private fun Melding.hentSchema(): Pair<String, Schema> =
         when (meldingstype) {
             "VedtakFattet" -> "fødselsnummer" to vedtakFattetSchema
             "VedtakAnnullert" -> "fødselsnummer" to vedtakAnnullertSchema

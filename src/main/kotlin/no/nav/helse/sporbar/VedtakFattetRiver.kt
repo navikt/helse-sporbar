@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.*
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
@@ -12,6 +11,7 @@ import com.github.navikt.tbd_libs.speed.SpeedClient
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -92,15 +92,15 @@ internal class VedtakFattetRiver(
         val fom = packet["fom"].asLocalDate()
         val tom = packet["tom"].asLocalDate()
         val skjæringstidspunkt = packet["skjæringstidspunkt"].asLocalDate()
-        val hendelseIder = packet["hendelser"].map { UUID.fromString(it.asText()) }
+        val hendelseIder = packet["hendelser"].values().map { UUID.fromString(it.asText()) }
         val sykepengegrunnlag = packet["sykepengegrunnlag"].asDouble()
         val vedtakFattetTidspunkt = packet["vedtakFattetTidspunkt"].asLocalDateTime()
         val begrunnelser =
-            packet["begrunnelser"].takeUnless(JsonNode::isMissingOrNull)?.map { begrunnelse ->
+            packet["begrunnelser"].takeUnless(JsonNode::isMissingOrNull)?.values()?.map { begrunnelse ->
                 Begrunnelse(
                     begrunnelse["type"].asText(),
                     begrunnelse["begrunnelse"].asText(),
-                    begrunnelse["perioder"].map {
+                    begrunnelse["perioder"].values().map {
                         Periode(it["fom"].asLocalDate(), it["tom"].asLocalDate())
                     },
                 )
@@ -109,13 +109,14 @@ internal class VedtakFattetRiver(
         val tags =
             packet["tags"]
                 .takeUnless(JsonNode::isMissingOrNull)
+                ?.values()
                 ?.map { it.asText() }
                 ?.filter { tag -> tag in TAGS_TIL_DELING_UTAD }
                 ?.toSet() ?: emptySet<String>()
         val utbetalingId = UUID.fromString(packet["utbetalingId"].asText())
         val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
         val utbetalingsdager =
-            packet["utbetalingsdager"].map {
+            packet["utbetalingsdager"].values().map {
                 Utbetalingsdag(
                     dato = it["dato"].asLocalDate(),
                     type = it["type"].asText(),
@@ -123,7 +124,7 @@ internal class VedtakFattetRiver(
                     dekningsgrad = it["dekningsgrad"].asInt(),
                     beløpTilBruker = it["beløpTilBruker"].asInt(),
                     beløpTilArbeidsgiver = it["beløpTilArbeidsgiver"].asInt(),
-                    begrunnelser = it["begrunnelser"].map { begrunnelse -> begrunnelse.asText() },
+                    begrunnelser = it["begrunnelser"].values().map { begrunnelse -> begrunnelse.asText() },
                 )
             }
         val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asText()
@@ -180,12 +181,12 @@ internal class VedtakFattetRiver(
                 "EtterHovedregel" -> {
                     SykepengegrunnlagsfaktaSelvstendigNæringsdrivende(
                         `6G` = this["6G"].asBigDecimal(),
-                        tags = get("tags").map { it.asText() }.toSet(),
+                        tags = get("tags").values().map { it.asText() }.toSet(),
                         selvstendig =
                             SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig(
                                 beregningsgrunnlag = this["selvstendig"]["beregningsgrunnlag"].asBigDecimal(),
                                 pensjonsgivendeInntekter =
-                                    this["selvstendig"]["pensjonsgivendeInntekter"].map {
+                                    this["selvstendig"]["pensjonsgivendeInntekter"].values().map {
                                         SykepengegrunnlagsfaktaSelvstendigNæringsdrivende.Selvstendig.PensjonsgivendeInntekt(
                                             årstall = it["årstall"].asInt(),
                                             beløp = it["beløp"].asBigDecimal(),
@@ -210,9 +211,9 @@ internal class VedtakFattetRiver(
                         innrapportertÅrsinntekt = get("innrapportertÅrsinntekt").asDouble(),
                         avviksprosent = get("avviksprosent").asDouble(),
                         `6G` = get("6G").asDouble(),
-                        tags = get("tags").map { it.asText() }.toSet(),
+                        tags = get("tags").values().map { it.asText() }.toSet(),
                         arbeidsgivere =
-                            get("arbeidsgivere").map {
+                            get("arbeidsgivere").values().map {
                                 FastsattEtterHovedregel.Arbeidsgiver(
                                     arbeidsgiver = it.get("arbeidsgiver").asText(),
                                     omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble(),
@@ -227,9 +228,9 @@ internal class VedtakFattetRiver(
                         skjønnsfastsatt = get("skjønnsfastsatt").asDouble(),
                         avviksprosent = get("avviksprosent").asDouble(),
                         `6G` = get("6G").asDouble(),
-                        tags = get("tags").map { it.asText() }.toSet(),
+                        tags = get("tags").values().map { it.asText() }.toSet(),
                         arbeidsgivere =
-                            get("arbeidsgivere").map {
+                            get("arbeidsgivere").values().map {
                                 FastsattEtterSkjønn.Arbeidsgiver(
                                     arbeidsgiver = it.get("arbeidsgiver").asText(),
                                     omregnetÅrsinntekt = it.get("omregnetÅrsinntekt").asDouble(),

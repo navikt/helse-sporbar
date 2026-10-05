@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar.sis
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
@@ -17,6 +16,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTime
 import no.nav.helse.sporbar.tilSøknader
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
 import java.util.*
 
 internal class BehandlingOpprettetRiver(
@@ -52,7 +52,7 @@ internal class BehandlingOpprettetRiver(
     ) {
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
         val behandlingId = packet["behandlingId"].asText().toUUID()
-        val interneSøknadIder = packet["søknadIder"].map { it.asText().toUUID() }
+        val interneSøknadIder = packet["søknadIder"].values().map { it.asText().toUUID() }
         val callId = UUID.randomUUID().toString()
         withMDC(
             mapOf(

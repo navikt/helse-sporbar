@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
@@ -21,6 +20,7 @@ import no.nav.helse.sporbar.dto.UtbetalingUtbetaltDto
 import no.nav.helse.sporbar.dto.UtbetalingdagDto
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
 import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
@@ -163,7 +163,7 @@ internal class UtbetalingUtbetaltRiver(
 }
 
 internal fun mapUtbetaligsdager(utbetalingsdager: JsonNode) =
-    utbetalingsdager.map { utbetalingsdag ->
+    utbetalingsdager.values().map { utbetalingsdag ->
         UtbetalingdagDto(
             dato = utbetalingsdag["dato"].asLocalDate(),
             type = utbetalingsdag["type"].dagtype,
@@ -174,6 +174,7 @@ internal fun mapUtbetaligsdager(utbetalingsdager: JsonNode) =
                 utbetalingsdag
                     .path("begrunnelser")
                     .takeUnless(JsonNode::isMissingOrNull)
+                    ?.values()
                     ?.map { it.begrunnelse }
                     ?: emptyList(),
         )

@@ -1,9 +1,9 @@
 package no.nav.helse.sporbar.dto
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
 import no.nav.helse.sporbar.NULLE_UT_TOMME_OPPDRAG
 import no.nav.helse.sporbar.dto.OppdragDto.UtbetalingslinjeDto.Companion.parseLinje
+import tools.jackson.databind.JsonNode
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.collections.map
@@ -99,7 +99,7 @@ data class OppdragDto(
                 stønadsdager = oppdrag["stønadsdager"].asInt(),
                 fom = oppdrag["fom"].asLocalDate(),
                 tom = oppdrag["tom"].asLocalDate(),
-                utbetalingslinjer = oppdrag["linjer"].map { linje -> parseLinje(linje) },
+                utbetalingslinjer = oppdrag["linjer"].values().map { linje -> parseLinje(linje) },
             ).takeUnless { NULLE_UT_TOMME_OPPDRAG && it.utbetalingslinjer.isEmpty() }
     }
 
