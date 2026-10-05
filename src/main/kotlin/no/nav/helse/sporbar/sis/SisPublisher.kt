@@ -1,8 +1,6 @@
 package no.nav.helse.sporbar.sis
 
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import no.nav.helse.sporbar.objectMapper
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.LoggerFactory
@@ -20,10 +18,7 @@ class KafkaSisPublisher(
     private val topicName: String = "tbd.sis",
 ) : SisPublisher {
     private companion object {
-        private val mapper =
-            jacksonObjectMapper()
-                .registerModules(JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+        private val mapper = objectMapper
         private val sikkerLogg = LoggerFactory.getLogger("tjenestekall")
         private val Behandlingstatusmelding.json: String get() = mapper.writeValueAsString(this)
     }

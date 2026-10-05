@@ -1,7 +1,7 @@
 package no.nav.helse.sporbar.sis
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
+import tools.jackson.databind.JsonNode
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.util.UUID

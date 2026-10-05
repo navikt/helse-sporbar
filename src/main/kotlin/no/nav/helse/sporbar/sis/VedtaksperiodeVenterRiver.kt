@@ -1,8 +1,6 @@
 package no.nav.helse.sporbar.sis
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.module.kotlin.convertValue
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
@@ -24,6 +22,8 @@ import no.nav.helse.sporbar.sis.Behandlingstatusmelding.Companion.asOffsetDateTi
 import no.nav.helse.sporbar.sis.VedtaksperiodeVenterRiver.Venteårsak.*
 import no.nav.helse.sporbar.tilSøknader
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
+import tools.jackson.module.kotlin.convertValue
 import java.time.OffsetDateTime
 import java.util.*
 
