@@ -63,7 +63,7 @@ internal object JsonSchemaValidator {
             "Utbetaling" -> "fødselsnummer" to utbetalingSchema
             "UtenUtbetaling" -> "fødselsnummer" to utbetalingSchema
             else -> error("Mangler schema for meldingstype $meldingstype")
-        }.let { json.path(it.first).asText() to it.second }
+        }.let { json.path(it.first).asString() to it.second }
 
     private fun Melding.udokumentertMelding() =
         (topic == "aapen-helse-sporbar" && meldingstype != "Annullering").also {

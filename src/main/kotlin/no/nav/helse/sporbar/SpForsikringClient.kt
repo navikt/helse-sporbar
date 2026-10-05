@@ -63,12 +63,12 @@ internal class SpForsikringClient(
                 get("individuelleForsikringer")
                     .firstOrNull { it["lagtTilGrunn"].asBoolean() }
                     ?.get("navn")
-                    ?.textValue(),
+                    ?.stringValue(),
             kollektivForsikringNavn =
                 get("kollektivForsikring")
                     .takeUnless { it.isNull }
                     ?.get("navn")
-                    ?.textValue(),
+                    ?.stringValue(),
             dekning =
                 get("samletDekning")
                     .takeUnless { it.isNull }

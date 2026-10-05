@@ -50,9 +50,9 @@ internal class BehandlingOpprettetRiver(
         metadata: MessageMetadata,
         meterRegistry: MeterRegistry,
     ) {
-        val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
-        val behandlingId = packet["behandlingId"].asText().toUUID()
-        val interneSøknadIder = packet["søknadIder"].values().map { it.asText().toUUID() }
+        val vedtaksperiodeId = packet["vedtaksperiodeId"].asString().toUUID()
+        val behandlingId = packet["behandlingId"].asString().toUUID()
+        val interneSøknadIder = packet["søknadIder"].values().map { it.asString().toUUID() }
         val callId = UUID.randomUUID().toString()
         withMDC(
             mapOf(

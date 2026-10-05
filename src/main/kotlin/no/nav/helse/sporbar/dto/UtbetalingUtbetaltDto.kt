@@ -92,9 +92,9 @@ data class OppdragDto(
     companion object {
         fun parseOppdrag(oppdrag: JsonNode) =
             OppdragDto(
-                mottaker = oppdrag["mottaker"].asText(),
-                fagområde = oppdrag["fagområde"].asText(),
-                fagsystemId = oppdrag["fagsystemId"].asText(),
+                mottaker = oppdrag["mottaker"].asString(),
+                fagområde = oppdrag["fagområde"].asString(),
+                fagsystemId = oppdrag["fagsystemId"].asString(),
                 nettoBeløp = oppdrag["nettoBeløp"].asInt(),
                 stønadsdager = oppdrag["stønadsdager"].asInt(),
                 fom = oppdrag["fom"].asLocalDate(),

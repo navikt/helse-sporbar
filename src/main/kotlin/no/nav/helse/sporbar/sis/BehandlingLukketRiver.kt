@@ -44,8 +44,8 @@ internal class BehandlingLukketRiver(
         metadata: MessageMetadata,
         meterRegistry: MeterRegistry,
     ) {
-        val vedtaksperiodeId = packet["vedtaksperiodeId"].asText().toUUID()
-        val behandlingId = packet["behandlingId"].asText().toUUID()
+        val vedtaksperiodeId = packet["vedtaksperiodeId"].asString().toUUID()
+        val behandlingId = packet["behandlingId"].asString().toUUID()
         val tidspunkt = packet["@opprettet"].asOffsetDateTime()
         sisPublisher.send(vedtaksperiodeId, Behandlingstatusmelding.behandlingstatus(vedtaksperiodeId, behandlingId, tidspunkt, FERDIG))
     }

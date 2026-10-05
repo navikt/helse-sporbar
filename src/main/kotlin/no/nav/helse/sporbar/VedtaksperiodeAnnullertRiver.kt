@@ -61,7 +61,7 @@ internal class VedtaksperiodeAnnullertRiver(
         metadata: MessageMetadata,
         meterRegistry: MeterRegistry,
     ) {
-        val callId = packet["@id"].asText()
+        val callId = packet["@id"].asString()
         withMDC("callId" to callId) {
             håndterAnnullering(packet, callId)
         }
@@ -71,7 +71,7 @@ internal class VedtaksperiodeAnnullertRiver(
         packet: JsonMessage,
         callId: String,
     ) {
-        val ident = packet["fødselsnummer"].asText()
+        val ident = packet["fødselsnummer"].asString()
         val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
 
         val vedtakAnnullertDto =
@@ -79,11 +79,11 @@ internal class VedtaksperiodeAnnullertRiver(
                 fødselsnummer = identer.fødselsnummer,
                 aktørId = identer.aktørId,
                 organisasjonsnummer =
-                    when (val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asText()) {
-                        "ARBEIDSTAKER" -> packet["organisasjonsnummer"].asText()
+                    when (val yrkesaktivitetstype = packet["yrkesaktivitetstype"].asString()) {
+                        "ARBEIDSTAKER" -> packet["organisasjonsnummer"].asString()
                         else -> yrkesaktivitetstype
                     },
-                vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText()),
+                vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asString()),
                 fom = packet["fom"].asLocalDate(),
                 tom = packet["tom"].asLocalDate(),
             )
