@@ -63,7 +63,7 @@ class AnnulleringRiver(
         metadata: MessageMetadata,
         meterRegistry: MeterRegistry,
     ) {
-        val callId = packet["@id"].asText()
+        val callId = packet["@id"].asString()
         withMDC("callId" to callId) {
             håndterAnnullering(packet, callId)
         }
@@ -73,20 +73,20 @@ class AnnulleringRiver(
         packet: JsonMessage,
         callId: String,
     ) {
-        val ident = packet["fødselsnummer"].asText()
+        val ident = packet["fødselsnummer"].asString()
         val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
 
         val annulleringDto =
             AnnulleringDto(
-                organisasjonsnummer = packet["organisasjonsnummer"].asText(),
+                organisasjonsnummer = packet["organisasjonsnummer"].asString(),
                 fødselsnummer = identer.fødselsnummer,
                 tidsstempel = packet["tidspunkt"].asLocalDateTime(),
                 fom = packet["fom"].asLocalDate(),
                 tom = packet["tom"].asLocalDate(),
-                utbetalingId = UUID.fromString(packet["utbetalingId"].asText()),
-                korrelasjonsId = UUID.fromString(packet["korrelasjonsId"].asText()),
-                arbeidsgiverFagsystemId = packet["arbeidsgiverFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText(),
-                personFagsystemId = packet["personFagsystemId"].takeUnless { it.isMissingOrNull() }?.asText(),
+                utbetalingId = UUID.fromString(packet["utbetalingId"].asString()),
+                korrelasjonsId = UUID.fromString(packet["korrelasjonsId"].asString()),
+                arbeidsgiverFagsystemId = packet["arbeidsgiverFagsystemId"].takeUnless { it.isMissingOrNull() }?.asString(),
+                personFagsystemId = packet["personFagsystemId"].takeUnless { it.isMissingOrNull() }?.asString(),
             )
         val annulleringJson = objectMapper.writeValueAsString(annulleringDto)
         aivenProducer.send(ProducerRecord("tbd.utbetaling", null, identer.fødselsnummer, annulleringJson, listOf(UtbetalingType.Annullering.header())))

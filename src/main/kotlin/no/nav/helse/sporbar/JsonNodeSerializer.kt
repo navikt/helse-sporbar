@@ -1,7 +1,7 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import org.apache.kafka.common.serialization.Serializer
+import tools.jackson.databind.JsonNode
 
 internal class JsonNodeSerializer : Serializer<JsonNode> {
     override fun serialize(

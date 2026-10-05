@@ -68,15 +68,15 @@ class AnnulleringRiverTest {
         assertEquals(fødselsnummer, annullering.key())
 
         val annulleringJson = annullering.validertJson()
-        assertEquals(fødselsnummer, annulleringJson["fødselsnummer"].textValue())
-        assertEquals(organisasjonsnummer, annulleringJson["organisasjonsnummer"].textValue())
-        assertEquals(organisasjonsnummer, annulleringJson["orgnummer"].textValue())
+        assertEquals(fødselsnummer, annulleringJson["fødselsnummer"].stringValue())
+        assertEquals(organisasjonsnummer, annulleringJson["organisasjonsnummer"].stringValue())
+        assertEquals(organisasjonsnummer, annulleringJson["orgnummer"].stringValue())
         assertEquals(tidsstempel, annulleringJson["tidsstempel"].asLocalDateTime())
         assertEquals(fom, annulleringJson["fom"].asLocalDate())
         assertEquals(tom, annulleringJson["tom"].asLocalDate())
-        assertEquals(personFagsystemId, annulleringJson["personFagsystemId"].asText())
-        assertEquals(arbeidsgiverFagsystemId, annulleringJson["arbeidsgiverFagsystemId"].asText())
-        assertEquals("utbetaling_annullert", annulleringJson["event"].asText())
+        assertEquals(personFagsystemId, annulleringJson["personFagsystemId"].asString())
+        assertEquals(arbeidsgiverFagsystemId, annulleringJson["arbeidsgiverFagsystemId"].asString())
+        assertEquals("utbetaling_annullert", annulleringJson["event"].asString())
     }
 
     @Test
@@ -95,15 +95,15 @@ class AnnulleringRiverTest {
         assertEquals(fødselsnummer, annullering.key())
 
         val annulleringJson = annullering.validertJson()
-        assertEquals(fødselsnummer, annulleringJson["fødselsnummer"].textValue())
-        assertEquals(organisasjonsnummer, annulleringJson["organisasjonsnummer"].textValue())
-        assertEquals(organisasjonsnummer, annulleringJson["orgnummer"].textValue())
+        assertEquals(fødselsnummer, annulleringJson["fødselsnummer"].stringValue())
+        assertEquals(organisasjonsnummer, annulleringJson["organisasjonsnummer"].stringValue())
+        assertEquals(organisasjonsnummer, annulleringJson["orgnummer"].stringValue())
         assertEquals(tidsstempel, annulleringJson["tidsstempel"].asLocalDateTime())
         assertEquals(fom, annulleringJson["fom"].asLocalDate())
         assertEquals(tom, annulleringJson["tom"].asLocalDate())
         assertTrue(annulleringJson["personFagsystemId"].isMissingOrNull())
-        assertEquals(arbeidsgiverFagsystemId, annulleringJson["arbeidsgiverFagsystemId"].asText())
-        assertEquals("utbetaling_annullert", annulleringJson["event"].asText())
+        assertEquals(arbeidsgiverFagsystemId, annulleringJson["arbeidsgiverFagsystemId"].asString())
+        assertEquals("utbetaling_annullert", annulleringJson["event"].asString())
     }
 
     @Test
@@ -122,15 +122,15 @@ class AnnulleringRiverTest {
         assertEquals(fødselsnummer, annullering.key())
 
         val annulleringJson = annullering.validertJson()
-        assertEquals(fødselsnummer, annulleringJson["fødselsnummer"].textValue())
-        assertEquals(organisasjonsnummer, annulleringJson["organisasjonsnummer"].textValue())
-        assertEquals(organisasjonsnummer, annulleringJson["orgnummer"].textValue())
+        assertEquals(fødselsnummer, annulleringJson["fødselsnummer"].stringValue())
+        assertEquals(organisasjonsnummer, annulleringJson["organisasjonsnummer"].stringValue())
+        assertEquals(organisasjonsnummer, annulleringJson["orgnummer"].stringValue())
         assertEquals(tidsstempel, annulleringJson["tidsstempel"].asLocalDateTime())
         assertEquals(fom, annulleringJson["fom"].asLocalDate())
         assertEquals(tom, annulleringJson["tom"].asLocalDate())
-        assertEquals(personFagsystemId, annulleringJson["personFagsystemId"].asText())
+        assertEquals(personFagsystemId, annulleringJson["personFagsystemId"].asString())
         assertTrue(annulleringJson["arbeidsgiverFagsystemId"].isMissingOrNull())
-        assertEquals("utbetaling_annullert", annulleringJson["event"].asText())
+        assertEquals("utbetaling_annullert", annulleringJson["event"].asString())
     }
 
     @Language("JSON")

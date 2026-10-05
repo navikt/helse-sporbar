@@ -1,6 +1,5 @@
 package no.nav.helse.sporbar
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDate
@@ -21,6 +20,7 @@ import no.nav.helse.sporbar.dto.UtbetalingUtbetaltDto
 import no.nav.helse.sporbar.dto.UtbetalingdagDto
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
 import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
@@ -54,8 +54,8 @@ internal class UtbetalingUtbetaltRiver(
                     it.require("tom", JsonNode::asLocalDate)
                     it.require("maksdato", JsonNode::asLocalDate)
                     it.require("@opprettet", JsonNode::asLocalDateTime)
-                    it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
-                    it.require("korrelasjonsId") { id -> UUID.fromString(id.asText()) }
+                    it.require("utbetalingId") { id -> UUID.fromString(id.asString()) }
+                    it.require("korrelasjonsId") { id -> UUID.fromString(id.asString()) }
 
                     it.requireKey(
                         "arbeidsgiverOppdrag.mottaker",
@@ -109,7 +109,7 @@ internal class UtbetalingUtbetaltRiver(
         metadata: MessageMetadata,
         meterRegistry: MeterRegistry,
     ) {
-        val callId = packet["@id"].asText()
+        val callId = packet["@id"].asString()
         withMDC("callId" to callId) {
             håndterUtbetalingUtbetalt(packet, callId)
         }
@@ -119,20 +119,20 @@ internal class UtbetalingUtbetaltRiver(
         packet: JsonMessage,
         callId: String,
     ) {
-        val ident = packet["fødselsnummer"].asText()
+        val ident = packet["fødselsnummer"].asString()
         val identer = retryBlocking { speedClient.hentFødselsnummerOgAktørId(ident, callId).getOrThrow() }
 
-        val organisasjonsnummer = packet["organisasjonsnummer"].asText()
+        val organisasjonsnummer = packet["organisasjonsnummer"].asString()
         val fom = packet["fom"].asLocalDate()
         val tom = packet["tom"].asLocalDate()
         val maksdato = packet["maksdato"].asLocalDate()
-        val utbetalingId = packet["utbetalingId"].let { UUID.fromString(it.asText()) }
-        val korrelasjonsId = packet["korrelasjonsId"].let { UUID.fromString(it.asText()) }
+        val utbetalingId = packet["utbetalingId"].let { UUID.fromString(it.asString()) }
+        val korrelasjonsId = packet["korrelasjonsId"].let { UUID.fromString(it.asString()) }
         val forbrukteSykedager = packet["forbrukteSykedager"].asInt()
         val gjenståendeSykedager = packet["gjenståendeSykedager"].asInt()
         val stønadsdager = packet["stønadsdager"].asInt()
         val automatiskBehandling = packet["automatiskBehandling"].asBoolean()
-        val type = packet["type"].asText()
+        val type = packet["type"].asString()
         val utbetalingsdager = mapUtbetaligsdager(packet["utbetalingsdager"])
         val arbeidsgiverOppdrag = parseOppdrag(packet["arbeidsgiverOppdrag"])
         val personOppdrag = parseOppdrag(packet["personOppdrag"])
@@ -157,13 +157,13 @@ internal class UtbetalingUtbetaltRiver(
                 foreløpigBeregnetSluttPåSykepenger = maksdato,
             ),
         )
-        log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
-        sikkerLog.info("Behandler utbetaling_utbetalt: ${packet["@id"].asText()}")
+        log.info("Behandler utbetaling_utbetalt: ${packet["@id"].asString()}")
+        sikkerLog.info("Behandler utbetaling_utbetalt: ${packet["@id"].asString()}")
     }
 }
 
 internal fun mapUtbetaligsdager(utbetalingsdager: JsonNode) =
-    utbetalingsdager.map { utbetalingsdag ->
+    utbetalingsdager.values().map { utbetalingsdag ->
         UtbetalingdagDto(
             dato = utbetalingsdag["dato"].asLocalDate(),
             type = utbetalingsdag["type"].dagtype,
@@ -174,6 +174,7 @@ internal fun mapUtbetaligsdager(utbetalingsdager: JsonNode) =
                 utbetalingsdag
                     .path("begrunnelser")
                     .takeUnless(JsonNode::isMissingOrNull)
+                    ?.values()
                     ?.map { it.begrunnelse }
                     ?: emptyList(),
         )
@@ -197,13 +198,13 @@ private val KjenteDagtyper =
     )
 
 private val JsonNode.dagtype get(): String {
-    val fraSpleis = asText()
+    val fraSpleis = asString()
     if (fraSpleis in KjenteDagtyper) return fraSpleis
     throw IllegalStateException("Ny dagtype fra Spleis: $fraSpleis. Vurder om denne skal eksponeres videre ut på tbd.utbetaling")
 }
 
 private val JsonNode.begrunnelse get() =
-    when (val tekstverdi = asText()) {
+    when (val tekstverdi = asString()) {
         "SykepengedagerOppbrukt" -> BegrunnelseDto.SykepengedagerOppbrukt
         "SykepengedagerOppbruktOver67" -> BegrunnelseDto.SykepengedagerOppbruktOver67
         "MinimumInntekt" -> BegrunnelseDto.MinimumInntekt
