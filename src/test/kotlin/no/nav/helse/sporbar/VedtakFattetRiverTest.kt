@@ -540,6 +540,7 @@ internal class VedtakFattetRiverTest {
                 idSett.sendtSøknadHendelseId,
             ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
+        behandlingId: UUID = idSett.behandlingId,
         utbetalingId: UUID = idSett.utbetalingId,
         begrunnelser: List<Begrunnelse> = emptyList(),
         tags: Set<String> = emptySet(),
@@ -549,6 +550,7 @@ internal class VedtakFattetRiverTest {
         val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
         return """{
       "vedtaksperiodeId": "$vedtaksperiodeId",
+      "behandlingId": "$behandlingId",
       "fom": "$FOM",
       "tom": "$TOM",
       "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
@@ -607,11 +609,13 @@ internal class VedtakFattetRiverTest {
                 idSett.sendtSøknadHendelseId,
             ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
+        behandlingId: UUID = idSett.behandlingId,
         utbetalingId: UUID = idSett.utbetalingId,
         utbetalingsdager: String = "[]",
     ): String =
         """{
       "vedtaksperiodeId": "$vedtaksperiodeId",
+      "behandlingId": "$behandlingId",
       "fom": "$FOM",
       "tom": "$TOM",
       "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
@@ -658,6 +662,7 @@ internal class VedtakFattetRiverTest {
     private fun vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
         idSett: IdSett,
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
+        behandlingId: UUID = idSett.behandlingId,
         utbetalingId: UUID = idSett.utbetalingId,
         hendelser: List<UUID> =
             listOf(
@@ -675,6 +680,7 @@ internal class VedtakFattetRiverTest {
         val begrunnelserJson = objectMapper.writeValueAsString(begrunnelser)
         return """{
       "vedtaksperiodeId": "$vedtaksperiodeId",
+      "behandlingId": "$behandlingId",
       "fom": "$FOM",
       "tom": "$TOM",
       "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
@@ -758,5 +764,6 @@ internal class VedtakFattetRiverTest {
         val utbetalingId: UUID = UUID.randomUUID(),
         val inntektsmeldingDokumentId: UUID = UUID.randomUUID(),
         val inntektsmeldingHendelseId: UUID = UUID.randomUUID(),
+        val behandlingId: UUID = UUID.randomUUID(),
     )
 }

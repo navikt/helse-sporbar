@@ -49,12 +49,14 @@ internal class VedtakFattetRiver(
                     it.require("vedtakFattetTidspunkt", JsonNode::asLocalDateTime)
                     it.require("@opprettet", JsonNode::asLocalDateTime)
                     it.require("utbetalingId") { id -> UUID.fromString(id.asText()) }
+                    it.require("vedtaksperiodeId") { id -> UUID.fromString(id.asText()) }
+                    it.require("behandlingId") { id -> UUID.fromString(id.asText()) }
+
                     it.interestedIn("begrunnelser")
                     it.interestedIn("saksbehandler", "saksbehandler.navn", "saksbehandler.ident")
                     it.interestedIn("beslutter", "beslutter.navn", "beslutter.ident")
                     it.interestedIn("forsikringsvurderingId")
                     it.interestedIn("utbetalingsdager")
-                    it.interestedIn("vedtaksperiodeId") { id -> UUID.fromString(id.asText()) }
                     it.interestedIn("automatiskFattet", JsonNode::asBoolean)
                 }
             }.register(this)
@@ -114,6 +116,7 @@ internal class VedtakFattetRiver(
                 ?.toSet() ?: emptySet<String>()
         val utbetalingId = UUID.fromString(packet["utbetalingId"].asText())
         val vedtaksperiodeId = UUID.fromString(packet["vedtaksperiodeId"].asText())
+        val behandlingId = UUID.fromString(packet["behandlingId"].asText())
         val utbetalingsdager =
             packet["utbetalingsdager"].map {
                 Utbetalingsdag(
@@ -166,6 +169,7 @@ internal class VedtakFattetRiver(
                         .takeUnless { it.isMissingOrNull() }
                         ?.let { UUID.fromString(it.asText()) },
                 vedtaksperiodeId = vedtaksperiodeId,
+                behandlingId = behandlingId,
                 utbetalingsdager = utbetalingsdager,
                 automatiskFattet = automatiskFattet,
             ),
@@ -285,6 +289,7 @@ internal data class VedtakFattet(
     val sykepengegrunnlag: Double,
     val utbetalingId: UUID,
     val vedtaksperiodeId: UUID,
+    val behandlingId: UUID,
     val vedtakFattetTidspunkt: LocalDateTime,
     val sykepengegrunnlagsfakta: Sykepengegrunnlagsfakta,
     val begrunnelser: List<Begrunnelse>,

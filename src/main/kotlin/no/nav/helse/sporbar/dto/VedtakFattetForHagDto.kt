@@ -10,6 +10,7 @@ data class VedtakFattetForHagDto(
     val organisasjonsnummer: String,
     val yrkesaktivitetstype: String = "ARBEIDSTAKER",
     val vedtaksperiodeId: UUID,
+    val behandlingId: UUID,
     val fom: LocalDate,
     val tom: LocalDate,
     val skjæringstidspunkt: LocalDate,

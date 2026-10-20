@@ -224,6 +224,7 @@ internal class VedtakFattetMediator(
             organisasjonsnummer = vedtakFattet.organisasjonsnummer,
             yrkesaktivitetstype = vedtakFattet.yrkesaktivitetstype,
             vedtaksperiodeId = vedtakFattet.vedtaksperiodeId,
+            behandlingId = vedtakFattet.behandlingId,
             fom = vedtakFattet.fom,
             tom = vedtakFattet.tom,
             skjæringstidspunkt = vedtakFattet.skjæringstidspunkt,

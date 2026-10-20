@@ -341,8 +341,10 @@ internal class UtbetalingTest {
             ),
         vedtaksperiodeId: UUID = idSett.vedtaksperiodeId,
         utbetalingId: UUID = idSett.utbetalingId,
+        behandlingId: UUID = idSett.behandlingId,
     ) = """{
     "vedtaksperiodeId": "$vedtaksperiodeId",
+    "behandlingId": "$behandlingId",
     "fom": "$FOM",
     "tom": "$TOM",
     "skjæringstidspunkt": "$SKJÆRINGSTIDSPUNKT",
@@ -908,5 +910,6 @@ internal class UtbetalingTest {
         val vedtaksperiodeId: UUID = UUID.randomUUID(),
         val utbetalingId: UUID = UUID.randomUUID(),
         val korrelasjonsId: UUID = UUID.randomUUID(),
+        val behandlingId: UUID = UUID.randomUUID()
     )
 }
