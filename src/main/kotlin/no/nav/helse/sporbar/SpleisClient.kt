@@ -33,14 +33,14 @@ internal data class SpleisBehandling(
         val sykdomsgrad: Int,
         val dekningsgrad: Int,
         val begrunnelser: List<String>,
-        val forespurtRefusjonsbeløp: Int,
-        val kilde: Kilde?,
+        val forespurtRefusjon: ForespurtRefusjon,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    internal data class Kilde(
+    internal data class ForespurtRefusjon(
+        val beløp: Int,
         val avsender: String,
-        val referanse: UUID,
+        val sasInternInntektsmeldingReferanse: UUID?, // kun satt hvis avsender er ARBEIDSGIVER
     )
 }
 

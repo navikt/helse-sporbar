@@ -10,12 +10,13 @@ data class UtbetalingsdagDto(
     val dekningsgrad: Int,
     val beløpTilBruker: Int,
     val beløpTilArbeidsgiver: Int,
-    val forespurtRefusjonsbeløp: Int,
-    val kilde: KildeDto?,
+    val forespurtRefusjon: ForespurtRefusjonDto,
     val begrunnelser: List<String>,
 )
 
-data class KildeDto(
+data class ForespurtRefusjonDto(
+    val beløp: Int,
     val avsender: String,
-    val referanse: UUID,
+    val sasInntektsmeldingReferanse: UUID?,
+    val hagInntektsmeldingReferanse: UUID?,
 )

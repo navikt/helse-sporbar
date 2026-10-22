@@ -59,7 +59,7 @@ internal class VedtakFattetMediator(
         val kjente = dokumenter.meldinger.associate { it.internDokumentId to it.eksternDokumentId }
         val manglende =
             behandling.utbetalingstidslinje
-                .mapNotNull { it.kilde?.referanse }
+                .mapNotNull { it.forespurtRefusjon.sasInternInntektsmeldingReferanse }
                 .toSet()
                 .filterNot { it in kjente }
         if (manglende.isEmpty()) return kjente
@@ -80,7 +80,6 @@ internal class VedtakFattetMediator(
     ) {
         if (skalSendesTilSis(vedtakFattet)) {
             check(behandling != null) { "Behandling må være hentet for å sende melding om vedtak på tbd.sis" }
-            // TODO: Legg behandling.utbetalingstidslinje i payloaden når formatet mot HAG er bestemt
             val eksternDto = oversettVedtakFattetForHag(vedtakFattet, dokumenter.tilAlleDokumenter(), behandling, eksterneKildeIder)
             val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
             producer.send(
@@ -286,15 +285,13 @@ internal class VedtakFattetMediator(
                         beløpTilBruker = it.beløpTilBruker,
                         beløpTilArbeidsgiver = it.beløpTilArbeidsgiver,
                         begrunnelser = it.begrunnelser,
-                        forespurtRefusjonsbeløp = it.forespurtRefusjonsbeløp,
-                        kilde =
-                            it.kilde?.let { kilde ->
-                                KildeDto(
-                                    avsender = kilde.avsender,
-                                    referanse =
-                                        checkNotNull(eksterneKildeIder[kilde.referanse]) {
-                                            "Fant ikke ekstern dokument-id for kilde ${kilde.referanse}"
-                                        },
+                        forespurtRefusjon =
+                            it.forespurtRefusjon.let { refusjon ->
+                                ForespurtRefusjonDto(
+                                    beløp = refusjon.beløp,
+                                    avsender = refusjon.avsender,
+                                    sasInntektsmeldingReferanse = refusjon.sasInternInntektsmeldingReferanse,
+                                    hagInntektsmeldingReferanse = eksterneKildeIder[refusjon.sasInternInntektsmeldingReferanse],
                                 )
                             },
                     )

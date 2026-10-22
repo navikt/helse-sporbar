@@ -49,8 +49,7 @@ internal class SpleisClientTest {
                   "sykdomsgrad": 100,
                   "dekningsgrad": 100,
                   "begrunnelser": [],
-                  "forespurtRefusjonsbeløp": 1431,
-                  "kilde": { "avsender": "ARBEIDSGIVER", "referanse": "$kildeId" }
+                  "forespurtRefusjon": { "avsender": "ARBEIDSGIVER", "sasInternInntektsmeldingReferanse": "$kildeId", "beløp": 1431 }
                 },
                 {
                   "dato": "2018-01-18",
@@ -60,8 +59,7 @@ internal class SpleisClientTest {
                   "sykdomsgrad": 10,
                   "dekningsgrad": 100,
                   "begrunnelser": ["MinimumSykdomsgrad"],
-                  "forespurtRefusjonsbeløp": 0,
-                  "kilde": null
+                      "forespurtRefusjon": { "avsender": "SAKSBEHANDLER", "sasInternInntektsmeldingReferanse": null, "beløp": 1431 }
                 }
               ],
               "ukjentFelt": true
@@ -75,10 +73,10 @@ internal class SpleisClientTest {
         val (navDag, avvistDag) = behandling.utbetalingstidslinje
         assertEquals(LocalDate.of(2018, 1, 17), navDag.dato)
         assertEquals(1431, navDag.beløpTilArbeidsgiver)
-        assertEquals(1431, navDag.forespurtRefusjonsbeløp)
-        assertEquals(SpleisBehandling.Kilde("ARBEIDSGIVER", kildeId), navDag.kilde)
+        assertEquals(1431, navDag.forespurtRefusjon.beløp)
+        assertEquals(SpleisBehandling.ForespurtRefusjon(1431, "ARBEIDSGIVER", kildeId), navDag.forespurtRefusjon)
         assertEquals(listOf("MinimumSykdomsgrad"), avvistDag.begrunnelser)
-        assertNull(avvistDag.kilde)
+        assertNull(avvistDag.forespurtRefusjon.sasInternInntektsmeldingReferanse)
         assertEquals("http://spleis-api/api/behandling", request.captured.uri().toString())
         assertEquals("POST", request.captured.method())
     }

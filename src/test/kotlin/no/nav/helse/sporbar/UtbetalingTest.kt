@@ -911,6 +911,6 @@ internal class UtbetalingTest {
         val vedtaksperiodeId: UUID = UUID.randomUUID(),
         val utbetalingId: UUID = UUID.randomUUID(),
         val korrelasjonsId: UUID = UUID.randomUUID(),
-        val behandlingId: UUID = UUID.randomUUID()
+        val behandlingId: UUID = UUID.randomUUID(),
     )
 }

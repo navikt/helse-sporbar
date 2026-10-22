@@ -306,7 +306,7 @@ internal class VedtakFattetRiverTest {
             val captureSlot = mutableListOf<ProducerRecord<String, String>>()
             val idSett = IdSett()
 
-            val inntektsmeldingReferanse = idSett.sendtSøknadHendelseId
+            val inntektsmeldingReferanse = idSett.inntektsmeldingDokumentId
             utbetalingstidslinje =
                 listOf(
                     SpleisBehandling.Utbetalingsdag(
@@ -317,11 +317,12 @@ internal class VedtakFattetRiverTest {
                         sykdomsgrad = 100,
                         dekningsgrad = 100,
                         begrunnelser = emptyList(),
-                        forespurtRefusjonsbeløp = 1000,
-                        kilde = SpleisBehandling.Kilde(
-                            avsender = "ARBEIDSGIVER",
-                            referanse = inntektsmeldingReferanse,
-                        )
+                        forespurtRefusjon =
+                            SpleisBehandling.ForespurtRefusjon(
+                                beløp = 1000,
+                                avsender = "ARBEIDSGIVER",
+                                sasInternInntektsmeldingReferanse = inntektsmeldingReferanse,
+                            ),
                     ),
                     SpleisBehandling.Utbetalingsdag(
                         dato = LocalDate.of(2020, 1, 7),
@@ -331,8 +332,12 @@ internal class VedtakFattetRiverTest {
                         sykdomsgrad = 100,
                         dekningsgrad = 100,
                         begrunnelser = emptyList(),
-                        forespurtRefusjonsbeløp = 0,
-                        kilde = null,
+                        forespurtRefusjon =
+                            SpleisBehandling.ForespurtRefusjon(
+                                beløp = 0,
+                                avsender = "SAKSBEHANDLER",
+                                sasInternInntektsmeldingReferanse = null,
+                            ),
                     ),
                 )
 
@@ -352,9 +357,9 @@ internal class VedtakFattetRiverTest {
             assertEquals(100, førstedag["dekningsgrad"].asInt())
             assertEquals(2000, førstedag["beløpTilBruker"].asInt())
             assertEquals(1000, førstedag["beløpTilArbeidsgiver"].asInt())
-            assertEquals(1000, førstedag["forespurtRefusjonsbeløp"].asInt())
-            assertEquals("ARBEIDSGIVER", førstedag["kilde"]["avsender"].asText())
-            assertEquals(idSett.søknadDokumentId.toString(), førstedag["kilde"]["referanse"].asText())
+            assertEquals(1000, førstedag["forespurtRefusjon"]["beløp"].asInt())
+            assertEquals("ARBEIDSGIVER", førstedag["forespurtRefusjon"]["avsender"].asText())
+            assertEquals(idSett.inntektsmeldingDokumentId.toString(), førstedag["forespurtRefusjon"]["sasInntektsmeldingReferanse"].asText())
         }
 
     @Test
