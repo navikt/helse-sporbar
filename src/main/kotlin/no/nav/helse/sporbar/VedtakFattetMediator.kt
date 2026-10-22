@@ -19,6 +19,7 @@ internal class VedtakFattetMediator(
     private val spedisjonClient: SpedisjonClient,
     private val producer: KafkaProducer<String, String>,
     private val spForsikringClient: SpForsikringClient,
+    private val spleisClient: SpleisClient,
     private val sendTilSis: Boolean = (System.getenv("NAIS_CLUSTER_NAME") ?: "false") == "dev-gcp",
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
@@ -36,29 +37,61 @@ internal class VedtakFattetMediator(
                     spForsikringClient.hentForsikringsvurdering(forsikringsvurderingId, callId)
                 }
             }
+        val behandling =
+            if (skalSendesTilSis(vedtakFattet)) {
+                retryBlocking {
+                    spleisClient.hentBehandling(vedtakFattet.fødselsnummer, vedtakFattet.behandlingId, callId)
+                }
+            } else {
+                null
+            }
+        val eksterneKildeIder = behandling?.let { eksterneKildeIder(it, dokumenter, callId) } ?: emptyMap()
         sendVedtakFattetPåTbdVedtak(vedtakFattet, dokumenter, forsikringsvurdering)
-        sendVedtakFattetPåTbdSisForHag(vedtakFattet, dokumenter)
+        sendVedtakFattetPåTbdSisForHag(vedtakFattet, dokumenter, behandling, eksterneKildeIder)
     }
+
+    // Kilde.referanse fra spleis er sas-intern id og må mappes til ekstern dokument-id
+    private fun eksterneKildeIder(
+        behandling: SpleisBehandling,
+        dokumenter: HentMeldingerResponse,
+        callId: String,
+    ): Map<UUID, UUID> {
+        val kjente = dokumenter.meldinger.associate { it.internDokumentId to it.eksternDokumentId }
+        val manglende =
+            behandling.utbetalingstidslinje
+                .mapNotNull { it.forespurtRefusjon.sasInternInntektsmeldingReferanse }
+                .toSet()
+                .filterNot { it in kjente }
+        if (manglende.isEmpty()) return kjente
+        val hentet =
+            retryBlocking {
+                spedisjonClient.hentMeldinger(manglende, callId).getOrThrow()
+            }
+        return kjente + hentet.meldinger.associate { it.internDokumentId to it.eksternDokumentId }
+    }
+
+    private fun skalSendesTilSis(vedtakFattet: VedtakFattet) = sendTilSis && vedtakFattet.yrkesaktivitetstype == "ARBEIDSTAKER"
 
     internal fun sendVedtakFattetPåTbdSisForHag(
         vedtakFattet: VedtakFattet,
         dokumenter: HentMeldingerResponse,
+        behandling: SpleisBehandling?,
+        eksterneKildeIder: Map<UUID, UUID>,
     ) {
-        if (sendTilSis) {
-            if (vedtakFattet.yrkesaktivitetstype == "ARBEIDSTAKER") {
-                val eksternDto = oversettVedtakFattetForHag(vedtakFattet, dokumenter.tilAlleDokumenter())
-                val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
-                producer.send(
-                    ProducerRecord(
-                        "tbd.sis",
-                        null,
-                        vedtakFattet.fødselsnummer,
-                        meldingForEkstern,
-                        listOf(VedtakType.VedtakFattet.header()),
-                    ),
-                )
-                sikkerLogg.info("Publiserer vedtakFattet til sistopicet: {}", meldingForEkstern)
-            }
+        if (skalSendesTilSis(vedtakFattet)) {
+            check(behandling != null) { "Behandling må være hentet for å sende melding om vedtak på tbd.sis" }
+            val eksternDto = oversettVedtakFattetForHag(vedtakFattet, dokumenter.tilAlleDokumenter(), behandling, eksterneKildeIder)
+            val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
+            producer.send(
+                ProducerRecord(
+                    "tbd.sis",
+                    null,
+                    vedtakFattet.fødselsnummer,
+                    meldingForEkstern,
+                    listOf(VedtakType.VedtakFattet.header()),
+                ),
+            )
+            sikkerLogg.info("Publiserer vedtakFattet til sistopicet: {}", meldingForEkstern)
         }
     }
 
@@ -218,6 +251,8 @@ internal class VedtakFattetMediator(
     private fun oversettVedtakFattetForHag(
         vedtakFattet: VedtakFattet,
         dokumenter: List<Dokument>,
+        behandling: SpleisBehandling,
+        eksterneKildeIder: Map<UUID, UUID>,
     ): VedtakFattetForHagDto =
         VedtakFattetForHagDto(
             fødselsnummer = vedtakFattet.fødselsnummer,
@@ -241,7 +276,7 @@ internal class VedtakFattetMediator(
                 },
             sykepengegrunnlag = vedtakFattet.sykepengegrunnlag,
             utbetalingsdager =
-                vedtakFattet.utbetalingsdager.map {
+                behandling.utbetalingstidslinje.map {
                     UtbetalingsdagDto(
                         dato = it.dato,
                         type = it.type,
@@ -250,6 +285,15 @@ internal class VedtakFattetMediator(
                         beløpTilBruker = it.beløpTilBruker,
                         beløpTilArbeidsgiver = it.beløpTilArbeidsgiver,
                         begrunnelser = it.begrunnelser,
+                        forespurtRefusjon =
+                            it.forespurtRefusjon.let { refusjon ->
+                                ForespurtRefusjonDto(
+                                    beløp = refusjon.beløp,
+                                    avsender = refusjon.avsender,
+                                    sasInntektsmeldingReferanse = refusjon.sasInternInntektsmeldingReferanse,
+                                    hagInntektsmeldingReferanse = eksterneKildeIder[refusjon.sasInternInntektsmeldingReferanse],
+                                )
+                            },
                     )
                 },
             vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt,

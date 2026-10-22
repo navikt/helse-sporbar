@@ -57,6 +57,15 @@ fun launchApplication(env: Map<String, String>) {
                     scope = env.getValue("SP_FORSIKRING_SCOPE"),
                 )
 
+            val spleisClient =
+                SpleisClient(
+                    httpClient = HttpClient.newHttpClient(),
+                    objectMapper = objectMapper,
+                    tokenProvider = azureClient,
+                    baseUrl = env.getValue("SPLEIS_API_URL"),
+                    scope = env.getValue("SPLEIS_SCOPE"),
+                )
+
             val aivenProducer = factory.createProducer()
 
             val vedtakFattetMediator =
@@ -64,6 +73,7 @@ fun launchApplication(env: Map<String, String>) {
                     spedisjonClient = spedisjonClient,
                     producer = aivenProducer,
                     spForsikringClient = spForsikringClient,
+                    spleisClient = spleisClient,
                 )
             val utbetalingMediator = UtbetalingMediator(aivenProducer)
 

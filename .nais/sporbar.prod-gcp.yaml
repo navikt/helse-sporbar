@@ -12,5 +12,7 @@ spec:
   env:
     - name: SP_FORSIKRING_SCOPE
       value: api://prod-gcp.tbd.sp-forsikring/.default
+    - name: SPLEIS_SCOPE
+      value: api://prod-gcp.tbd.spleis-api/.default
     - name: KAFKA_RESET_POLICY
       value: none
