@@ -255,6 +255,27 @@ internal class VedtakFattetRiverTest {
             assertEquals("Kollektiv forsikring", forsikringsvurderingJson["kollektivForsikringNavn"].asText())
             assertEquals(65, forsikringsvurderingJson["dekning"]["grad"].asInt())
             assertEquals(17, forsikringsvurderingJson["dekning"]["fraDag"].asInt())
+            verify(exactly = 0) { spleisClient.hentBehandling(any(), any(), any()) }
+        }
+
+    @Test
+    fun `henter behandling fra spleis når vedtak for arbeidstaker sendes på tbd_sis`() =
+        e2e {
+            val idSett = IdSett()
+            søknadSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett)
+
+            verify(exactly = 1) { spleisClient.hentBehandling(FØDSELSNUMMER, idSett.behandlingId, any()) }
+        }
+
+    @Test
+    fun `henter ikke behandling fra spleis når vedtak ikke sendes på tbd_sis`() =
+        e2e(sendTilSis = false) {
+            val idSett = IdSett()
+            søknadSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett)
+
+            verify(exactly = 0) { spleisClient.hentBehandling(any(), any(), any()) }
         }
 
     @Test
@@ -285,29 +306,38 @@ internal class VedtakFattetRiverTest {
             val captureSlot = mutableListOf<ProducerRecord<String, String>>()
             val idSett = IdSett()
 
-            val utbetalingsdagerJson = """[
-              {
-                "dato": "2020-01-06",
-                "type": "NavDag",
-                "sykdomsgrad": 100,
-                "dekningsgrad": 100,
-                "beløpTilBruker": 2000,
-                "beløpTilArbeidsgiver": 1000,
-                "begrunnelser": []
-              },
-              {
-                "dato": "2020-01-07",
-                "type": "NavHelgDag",
-                "sykdomsgrad": 100,
-                "dekningsgrad": 100,
-                "beløpTilBruker": 0,
-                "beløpTilArbeidsgiver": 0,
-                "begrunnelser": []
-              }
-            ]"""
+            val inntektsmeldingReferanse = idSett.sendtSøknadHendelseId
+            utbetalingstidslinje =
+                listOf(
+                    SpleisBehandling.Utbetalingsdag(
+                        dato = LocalDate.of(2020, 1, 6),
+                        type = "NavDag",
+                        beløpTilArbeidsgiver = 1000,
+                        beløpTilBruker = 2000,
+                        sykdomsgrad = 100,
+                        dekningsgrad = 100,
+                        begrunnelser = emptyList(),
+                        forespurtRefusjonsbeløp = 1000,
+                        kilde = SpleisBehandling.Kilde(
+                            avsender = "ARBEIDSGIVER",
+                            referanse = inntektsmeldingReferanse,
+                        )
+                    ),
+                    SpleisBehandling.Utbetalingsdag(
+                        dato = LocalDate.of(2020, 1, 7),
+                        type = "NavHelgDag",
+                        beløpTilArbeidsgiver = 0,
+                        beløpTilBruker = 0,
+                        sykdomsgrad = 100,
+                        dekningsgrad = 100,
+                        begrunnelser = emptyList(),
+                        forespurtRefusjonsbeløp = 0,
+                        kilde = null,
+                    ),
+                )
 
             søknadSendt(idSett)
-            testRapid.sendTestMessage(vedtakFattetMedUtbetaling(idSett, utbetalingsdager = utbetalingsdagerJson))
+            vedtakFattetMedUtbetalingSendt(idSett)
 
             verify { producerMock.send(capture(captureSlot)) }
 
@@ -322,6 +352,9 @@ internal class VedtakFattetRiverTest {
             assertEquals(100, førstedag["dekningsgrad"].asInt())
             assertEquals(2000, førstedag["beløpTilBruker"].asInt())
             assertEquals(1000, førstedag["beløpTilArbeidsgiver"].asInt())
+            assertEquals(1000, førstedag["forespurtRefusjonsbeløp"].asInt())
+            assertEquals("ARBEIDSGIVER", førstedag["kilde"]["avsender"].asText())
+            assertEquals(idSett.søknadDokumentId.toString(), førstedag["kilde"]["referanse"].asText())
         }
 
     @Test
@@ -423,6 +456,7 @@ internal class VedtakFattetRiverTest {
 
     private data class E2ETestContext(
         val testRapid: TestRapid,
+        val sendTilSis: Boolean = true,
     ) {
         val meldinger = mutableListOf<HentMeldingResponse>()
         val producerMock = mockk<KafkaProducer<String, String>>(relaxed = true)
@@ -436,13 +470,27 @@ internal class VedtakFattetRiverTest {
             mockk<SpForsikringClient> {
                 every { hentForsikringsvurdering(any(), any()) } returns Forsikringsvurdering(null, null, null)
             }
+        var utbetalingstidslinje = emptyList<SpleisBehandling.Utbetalingsdag>()
+        val spleisClient =
+            mockk<SpleisClient> {
+                every { hentBehandling(any(), any(), any()) } answers {
+                    SpleisBehandling(
+                        vedtaksperiodeId = UUID.randomUUID(),
+                        behandlingId = secondArg(),
+                        organisasjonsnummer = ORGNUMMER,
+                        yrkesaktivitetstype = "ARBEIDSTAKER",
+                        utbetalingstidslinje = utbetalingstidslinje,
+                    )
+                }
+            }
 
         val vedtakFattetMediator =
             VedtakFattetMediator(
                 spedisjonClient = spedisjonClient,
                 producer = producerMock,
                 spForsikringClient = spForsikringClient,
-                sendTilSis = true,
+                spleisClient = spleisClient,
+                sendTilSis = sendTilSis,
             )
         val utbetalingMediator =
             UtbetalingMediator(
@@ -463,9 +511,12 @@ internal class VedtakFattetRiverTest {
         }
     }
 
-    private fun e2e(testblokk: E2ETestContext.() -> Unit) {
+    private fun e2e(
+        sendTilSis: Boolean = true,
+        testblokk: E2ETestContext.() -> Unit,
+    ) {
         val testRapid = TestRapid()
-        testblokk(E2ETestContext(testRapid))
+        testblokk(E2ETestContext(testRapid, sendTilSis))
     }
 
     private fun E2ETestContext.søknadSendt(idSett: IdSett) {

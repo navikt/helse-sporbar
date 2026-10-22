@@ -252,6 +252,7 @@ internal class UtbetalingTest {
                     mockk {
                         every { hentForsikringsvurdering(any(), any()) } returns Forsikringsvurdering(null, null, null)
                     },
+                spleisClient = mockk(),
             )
 
         val utbetalingMediator =
