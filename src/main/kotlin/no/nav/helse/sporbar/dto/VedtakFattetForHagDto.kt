@@ -1,5 +1,6 @@
 package no.nav.helse.sporbar.dto
 
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -25,6 +26,7 @@ data class VedtakFattetForHagDto(
     val beslutterNavn: String?,
     val automatiskFattet: Boolean,
     val harArbeidsgiverØnsketRefusjon: Boolean,
+    val anvendtSeksG: BigDecimal?,
 )
 
 // Snakke med noen om dette! :)

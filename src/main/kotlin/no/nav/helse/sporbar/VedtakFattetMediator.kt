@@ -10,6 +10,7 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.math.BigDecimal
 import java.util.*
 
 private val log: Logger = LoggerFactory.getLogger("sporbar")
@@ -295,6 +296,13 @@ internal class VedtakFattetMediator(
                                 )
                             },
                     )
+                },
+            anvendtSeksG =
+                when (val sykepengegrunnlagsfakta = vedtakFattet.sykepengegrunnlagsfakta) {
+                    is FastsattEtterHovedregel -> BigDecimal.valueOf(sykepengegrunnlagsfakta.`6G`)
+                    is FastsattEtterSkjønn -> BigDecimal.valueOf(sykepengegrunnlagsfakta.`6G`)
+                    is FastsattIInfotrygd -> null
+                    is SykepengegrunnlagsfaktaSelvstendigNæringsdrivende -> null
                 },
             vedtakFattetTidspunkt = vedtakFattet.vedtakFattetTidspunkt,
             vedtaksUtfallTilArbeidsgiver = VedtaksUtfall.INNVILGELSE, // Foreløpig bare hardkodet må snakkes med fag om hvordan dette skal gjøres

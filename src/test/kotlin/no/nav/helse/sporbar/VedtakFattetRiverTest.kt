@@ -358,6 +358,7 @@ internal class VedtakFattetRiverTest {
             assertEquals(2000, førstedag["beløpTilBruker"].asInt())
             assertEquals(1000, førstedag["beløpTilArbeidsgiver"].asInt())
             assertEquals(1000, førstedag["forespurtRefusjon"]["beløp"].asInt())
+            assertEquals(620000.0, sisJson["anvendtSeksG"].asDouble())
             assertEquals("ARBEIDSGIVER", førstedag["forespurtRefusjon"]["avsender"].asText())
             assertEquals(idSett.inntektsmeldingDokumentId.toString(), førstedag["forespurtRefusjon"]["sasInntektsmeldingReferanse"].asText())
         }
