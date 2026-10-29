@@ -1,7 +1,7 @@
 [versions]
 ktor = "3.6.0"
-tbdLibs = "20261002.1227"
-sykepengerGradlePlugins = "20261001.1830"
+tbdLibs = "20261013.1613"
+sykepengerGradlePlugins = "20261028.1441"
 
 [libraries]
 ktor-client-apache = { module = "io.ktor:ktor-client-apache", version.ref = "ktor" }
@@ -18,7 +18,7 @@ tbdLibs-retry = { module = "com.github.navikt.tbd-libs:retry", version.ref = "tb
 tbdLibs-speedClient = { module = "com.github.navikt.tbd-libs:speed-client", version.ref = "tbdLibs" }
 tbdLibs-spedisjonClient = { module = "com.github.navikt.tbd-libs:spedisjon-client", version.ref = "tbdLibs" }
 
-jsonSchemaValidator = "com.networknt:json-schema-validator:3.0.7"
+jsonSchemaValidator = "com.networknt:json-schema-validator:3.0.8"
 jsonassert = "org.skyscreamer:jsonassert:1.5.3"
 mockk = "io.mockk:mockk:1.14.11"
 
