@@ -138,6 +138,30 @@ internal class UtbetalingTest {
         }
 
     @Test
+    fun `utbetaling - mapper ut Oppholdskrav og Melding til Nav-begrunnelser`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            testRapid.sendTestMessage(
+                utbetalingUtbetaltEnAvvistDag(
+                    begrunnelser = listOf("Oppholdskrav", "AvslåttMeldingTilNavDag", "MeldingTilNavDagUtenforVentetid"),
+                ),
+            )
+            verify { producerMock.send(capture(captureSlot)) }
+
+            val avvistDag =
+                captureSlot
+                    .last()
+                    .validertJson()
+                    .path("utbetalingsdager")
+                    .toList()
+                    .last()
+                    .path("begrunnelser")
+                    .toList()
+                    .map { it.asString() }
+            assertEquals(listOf("Oppholdskrav", "AvslattMeldingTilNavDag", "MeldingTilNavDagUtenforVentetid"), avvistDag)
+        }
+
+    @Test
     fun `utbetaling_utbetalt - mapper AndreYtelserDag hele veien ut`() =
         e2e {
             val captureSlot = mutableListOf<ProducerRecord<String, String>>()
@@ -513,6 +537,21 @@ internal class UtbetalingTest {
     private fun utbetalingUtbetaltEnAvvistDag(
         id: UUID = UUID.randomUUID(),
         utbetalingId: UUID = UUID.randomUUID(),
+        begrunnelser: List<String> =
+            listOf(
+                "EtterDødsdato",
+                "MinimumInntekt",
+                "Over70",
+                "MinimumInntektOver67",
+                "SykepengedagerOppbruktOver67",
+                "AndreYtelserAap",
+                "AndreYtelserDagpenger",
+                "AndreYtelserForeldrepenger",
+                "AndreYtelserOmsorgspenger",
+                "AndreYtelserOpplaringspenger",
+                "AndreYtelserPleiepenger",
+                "AndreYtelserSvangerskapspenger",
+            ),
     ) = """{
   "@id": "$id",
   "fødselsnummer": "12345678910",
@@ -636,20 +675,7 @@ internal class UtbetalingTest {
           "beløpTilArbeidsgiver": 0,
           "beløpTilBruker": 0,
           "sykdomsgrad": 100,
-          "begrunnelser": [
-              "EtterDødsdato", 
-              "MinimumInntekt", 
-              "Over70", 
-              "MinimumInntektOver67", 
-              "SykepengedagerOppbruktOver67", 
-              "AndreYtelserAap",
-              "AndreYtelserDagpenger",
-              "AndreYtelserForeldrepenger",
-              "AndreYtelserOmsorgspenger",
-              "AndreYtelserOpplaringspenger",
-              "AndreYtelserPleiepenger",
-              "AndreYtelserSvangerskapspenger"
-          ]
+          "begrunnelser": ${begrunnelser.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }}
         }
   ],
   "@opprettet": "${LocalDateTime.now()}",

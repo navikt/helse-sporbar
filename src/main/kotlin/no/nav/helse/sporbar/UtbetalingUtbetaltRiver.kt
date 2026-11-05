@@ -224,5 +224,6 @@ private val JsonNode.begrunnelse get() =
         "AvslåttMeldingTilNavDag" -> BegrunnelseDto.AvslattMeldingTilNavDag
         "MeldingTilNavDagUtenforVentetid" -> BegrunnelseDto.MeldingTilNavDagUtenforVentetid
         "Over70" -> BegrunnelseDto.Over70
+        "Oppholdskrav" -> BegrunnelseDto.Oppholdskrav
         else -> error("Ukjent begrunnelse $tekstverdi")
     }

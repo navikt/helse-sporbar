@@ -76,6 +76,7 @@ enum class BegrunnelseDto {
     MinimumInntektOver67,
     AvslattMeldingTilNavDag,
     MeldingTilNavDagUtenforVentetid,
+    Oppholdskrav,
     // NyVilkårsprøvingNødvendig <- Denne mappes til SykepengedagerOppbrukt i Spleis PGA lang kjedelig historie
 }
 

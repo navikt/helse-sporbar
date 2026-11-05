@@ -145,7 +145,10 @@
                 "EtterDødsdato",
                 "ManglerOpptjening",
                 "ManglerMedlemskap",
-                "Over70"
+                "Over70",
+                "AvslattMeldingTilNavDag",
+                "MeldingTilNavDagUtenforVentetid",
+                "Oppholdskrav"
               ]
             }
           },
