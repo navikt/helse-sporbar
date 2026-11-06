@@ -1,5 +1,5 @@
 [versions]
-ktor = "3.6.0"
+ktor = "3.6.1"
 tbdLibs = "20261029.1843"
 sykepengerGradlePlugins = "20261029.1945"
 
