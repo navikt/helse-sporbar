@@ -20,7 +20,7 @@ tbdLibs-spedisjonClient = { module = "com.github.navikt.tbd-libs:spedisjon-clien
 
 jsonSchemaValidator = "com.networknt:json-schema-validator:3.0.9"
 jsonassert = "org.skyscreamer:jsonassert:1.5.3"
-mockk = "io.mockk:mockk:1.14.11"
+mockk = "io.mockk:mockk:1.14.12"
 
 [plugins]
 sykepenger-deployable = { id = "no.nav.sykepenger.deployable", version.ref = "sykepengerGradlePlugins" }
