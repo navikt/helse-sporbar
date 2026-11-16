@@ -60,7 +60,8 @@ internal class UtbetalingTest {
             verify { producerMock.send(capture(captureSlot)) }
 
             val utbetalingUtbetalt = captureSlot.last()
-            val vedtakFattet = captureSlot[captureSlot.size - 2]
+            val utenSis = captureSlot.filterNot { it.topic() == "tbd.sis" }
+            val vedtakFattet = utenSis[utenSis.size - 2]
 
             assertEquals(FØDSELSNUMMER, utbetalingUtbetalt.key())
 
@@ -276,7 +277,18 @@ internal class UtbetalingTest {
                     mockk {
                         every { hentForsikringsvurdering(any(), any()) } returns Forsikringsvurdering(null, null, null)
                     },
-                spleisClient = mockk(),
+                spleisClient =
+                    mockk {
+                        every { hentBehandling(any(), any(), any()) } answers {
+                            SpleisBehandling(
+                                vedtaksperiodeId = UUID.randomUUID(),
+                                behandlingId = secondArg(),
+                                organisasjonsnummer = "123456789",
+                                yrkesaktivitetstype = "ARBEIDSTAKER",
+                                utbetalingstidslinje = emptyList(),
+                            )
+                        }
+                    },
             )
 
         val utbetalingMediator =

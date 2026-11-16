@@ -21,7 +21,6 @@ internal class VedtakFattetMediator(
     private val producer: KafkaProducer<String, String>,
     private val spForsikringClient: SpForsikringClient,
     private val spleisClient: SpleisClient,
-    private val sendTilSis: Boolean = (System.getenv("NAIS_CLUSTER_NAME") ?: "false") == "dev-gcp",
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
         val callId = UUID.randomUUID().toString()
@@ -71,7 +70,7 @@ internal class VedtakFattetMediator(
         return kjente + hentet.meldinger.associate { it.internDokumentId to it.eksternDokumentId }
     }
 
-    private fun skalSendesTilSis(vedtakFattet: VedtakFattet) = sendTilSis && vedtakFattet.yrkesaktivitetstype == "ARBEIDSTAKER"
+    private fun skalSendesTilSis(vedtakFattet: VedtakFattet) = vedtakFattet.yrkesaktivitetstype == "ARBEIDSTAKER"
 
     internal fun sendVedtakFattetPåTbdSisForHag(
         vedtakFattet: VedtakFattet,

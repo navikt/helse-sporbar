@@ -273,12 +273,24 @@ internal class VedtakFattetRiverTest {
         }
 
     @Test
-    fun `henter ikke behandling fra spleis når vedtak ikke sendes på tbd_sis`() =
-        e2e(sendTilSis = false) {
+    fun `vedtak for selvstendig næringsdrivende sendes ikke på tbd_sis`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
             val idSett = IdSett()
             søknadSendt(idSett)
-            vedtakFattetMedUtbetalingSendt(idSett)
+            testRapid.sendTestMessage(
+                vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
+                    idSett = idSett,
+                    sykepengegrunnlag = BigDecimal("500000.0"),
+                    beregningsgrunnlag = BigDecimal("500000.0"),
+                    erBegrensetTil6G = false,
+                    seksG = BigDecimal("815000.0"),
+                    forsikringsvurderingId = UUID.randomUUID(),
+                ),
+            )
 
+            verify { producerMock.send(capture(captureSlot)) }
+            assertTrue(captureSlot.none { it.topic() == "tbd.sis" })
             verify(exactly = 0) { spleisClient.hentBehandling(any(), any(), any()) }
         }
 
@@ -466,7 +478,6 @@ internal class VedtakFattetRiverTest {
 
     private data class E2ETestContext(
         val testRapid: TestRapid,
-        val sendTilSis: Boolean = true,
     ) {
         val meldinger = mutableListOf<HentMeldingResponse>()
         val producerMock = mockk<KafkaProducer<String, String>>(relaxed = true)
@@ -500,7 +511,6 @@ internal class VedtakFattetRiverTest {
                 producer = producerMock,
                 spForsikringClient = spForsikringClient,
                 spleisClient = spleisClient,
-                sendTilSis = sendTilSis,
             )
         val utbetalingMediator =
             UtbetalingMediator(
@@ -521,12 +531,9 @@ internal class VedtakFattetRiverTest {
         }
     }
 
-    private fun e2e(
-        sendTilSis: Boolean = true,
-        testblokk: E2ETestContext.() -> Unit,
-    ) {
+    private fun e2e(testblokk: E2ETestContext.() -> Unit) {
         val testRapid = TestRapid()
-        testblokk(E2ETestContext(testRapid, sendTilSis))
+        testblokk(E2ETestContext(testRapid))
     }
 
     private fun E2ETestContext.søknadSendt(idSett: IdSett) {
