@@ -40,7 +40,7 @@ internal class VedtakFattetMediator(
         val behandling =
             if (skalSendesTilSis(vedtakFattet)) {
                 retryBlocking {
-                    spleisClient.hentBehandling(vedtakFattet.fødselsnummer, vedtakFattet.behandlingId, callId)
+                    spleisClient.hentBehandling(vedtakFattet.originaltFødselsnummer, vedtakFattet.behandlingId, callId)
                 }
             } else {
                 null

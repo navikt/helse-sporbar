@@ -273,6 +273,32 @@ internal class VedtakFattetRiverTest {
         }
 
     @Test
+    fun `henter behandling med original ident og publiserer vedtak med gjeldende ident`() =
+        e2e {
+            val gjeldendeFødselsnummer = "10987654321"
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+            every { speedClient.hentFødselsnummerOgAktørId(FØDSELSNUMMER, any()) } returns
+                IdentResponse(
+                    fødselsnummer = gjeldendeFødselsnummer,
+                    aktørId = AKTØRID,
+                    npid = null,
+                    kilde = IdentResponse.KildeResponse.PDL,
+                ).ok()
+
+            søknadSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett)
+
+            verify { producerMock.send(capture(captureSlot)) }
+            listOf("tbd.vedtak", "tbd.sis").forEach { topic ->
+                val vedtak = captureSlot.single { it.topic() == topic }
+                assertEquals(gjeldendeFødselsnummer, vedtak.key())
+                assertEquals(gjeldendeFødselsnummer, objectMapper.readTree(vedtak.value())["fødselsnummer"].asString())
+            }
+            verify(exactly = 1) { spleisClient.hentBehandling(FØDSELSNUMMER, idSett.behandlingId, any()) }
+        }
+
+    @Test
     fun `vedtak for selvstendig næringsdrivende sendes ikke på tbd_sis`() =
         e2e {
             val captureSlot = mutableListOf<ProducerRecord<String, String>>()

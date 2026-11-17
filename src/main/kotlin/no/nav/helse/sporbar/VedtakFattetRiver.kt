@@ -149,6 +149,7 @@ internal class VedtakFattetRiver(
         vedtakFattetMediator.vedtakFattet(
             VedtakFattet(
                 fødselsnummer = identer.fødselsnummer,
+                originaltFødselsnummer = ident,
                 aktørId = identer.aktørId,
                 organisasjonsnummer = organisasjonsnummer,
                 yrkesaktivitetstype = yrkesaktivitetstype,
@@ -279,6 +280,7 @@ internal class Periode(
 
 internal data class VedtakFattet(
     val fødselsnummer: String,
+    val originaltFødselsnummer: String,
     val aktørId: String,
     val organisasjonsnummer: String,
     val yrkesaktivitetstype: String,
