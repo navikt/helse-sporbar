@@ -33,7 +33,7 @@ internal data class SpleisBehandling(
         val sykdomsgrad: Int,
         val dekningsgrad: Int,
         val begrunnelser: List<String>,
-        val forespurtRefusjon: ForespurtRefusjon,
+        val forespurtRefusjon: ForespurtRefusjon?,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)

@@ -55,7 +55,7 @@ internal class VedtakFattetMediator(
         val kjente = dokumenter.meldinger.associate { it.internDokumentId to it.eksternDokumentId }
         val manglende =
             behandling.utbetalingstidslinje
-                .mapNotNull { it.forespurtRefusjon.sasInternInntektsmeldingReferanse }
+                .mapNotNull { it.forespurtRefusjon?.sasInternInntektsmeldingReferanse }
                 .toSet()
                 .filterNot { it in kjente }
         if (manglende.isEmpty()) return kjente
@@ -281,7 +281,7 @@ internal class VedtakFattetMediator(
                         beløpTilArbeidsgiver = it.beløpTilArbeidsgiver,
                         begrunnelser = it.begrunnelser,
                         forespurtRefusjon =
-                            it.forespurtRefusjon.let { refusjon ->
+                            checkNotNull(it.forespurtRefusjon) { "Mangler forespurt refusjon for utbetalingsdag ${it.dato}" }.let { refusjon ->
                                 ForespurtRefusjonDto(
                                     beløp = refusjon.beløp,
                                     avsender = refusjon.avsender,

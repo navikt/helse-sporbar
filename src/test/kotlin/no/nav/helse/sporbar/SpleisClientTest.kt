@@ -73,12 +73,43 @@ internal class SpleisClientTest {
         val (navDag, avvistDag) = behandling.utbetalingstidslinje
         assertEquals(LocalDate.of(2018, 1, 17), navDag.dato)
         assertEquals(1431, navDag.beløpTilArbeidsgiver)
-        assertEquals(1431, navDag.forespurtRefusjon.beløp)
+        assertEquals(1431, navDag.forespurtRefusjon?.beløp)
         assertEquals(SpleisBehandling.ForespurtRefusjon(1431, "ARBEIDSGIVER", kildeId), navDag.forespurtRefusjon)
         assertEquals(listOf("MinimumSykdomsgrad"), avvistDag.begrunnelser)
-        assertNull(avvistDag.forespurtRefusjon.sasInternInntektsmeldingReferanse)
+        assertNull(avvistDag.forespurtRefusjon?.sasInternInntektsmeldingReferanse)
         assertEquals("http://spleis-api/api/behandling", request.captured.uri().toString())
         assertEquals("POST", request.captured.method())
+    }
+
+    @Test
+    fun `parser behandling uten forespurt refusjon for selvstendig næringsdrivende`() {
+        svar(
+            200,
+            """
+            {
+              "vedtaksperiodeId": "${UUID.randomUUID()}",
+              "behandlingId": "$behandlingId",
+              "organisasjonsnummer": "SELVSTENDIG",
+              "yrkesaktivitetstype": "SELVSTENDIG",
+              "utbetalingstidslinje": [
+                {
+                  "dato": "2018-01-17",
+                  "type": "NavDag",
+                  "beløpTilArbeidsgiver": 0,
+                  "beløpTilBruker": 1431,
+                  "sykdomsgrad": 100,
+                  "dekningsgrad": 80,
+                  "begrunnelser": [],
+                  "forespurtRefusjon": null
+                }
+              ]
+            }
+            """,
+        )
+
+        val behandling = client.hentBehandling(fødselsnummer, behandlingId, "callId")
+
+        assertNull(behandling.utbetalingstidslinje.single().forespurtRefusjon)
     }
 
     @Test
