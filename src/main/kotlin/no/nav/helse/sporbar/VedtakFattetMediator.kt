@@ -38,14 +38,10 @@ internal class VedtakFattetMediator(
                 }
             }
         val behandling =
-            if (skalSendesTilSis(vedtakFattet)) {
-                retryBlocking {
-                    spleisClient.hentBehandling(vedtakFattet.originaltFødselsnummer, vedtakFattet.behandlingId, callId)
-                }
-            } else {
-                null
+            retryBlocking {
+                spleisClient.hentBehandling(vedtakFattet.originaltFødselsnummer, vedtakFattet.behandlingId, callId)
             }
-        val eksterneKildeIder = behandling?.let { eksterneKildeIder(it, dokumenter, callId) } ?: emptyMap()
+        val eksterneKildeIder = if (skalSendesTilSis(vedtakFattet)) eksterneKildeIder(behandling, dokumenter, callId) else emptyMap()
         sendVedtakFattetPåTbdVedtak(vedtakFattet, dokumenter, forsikringsvurdering)
         sendVedtakFattetPåTbdSisForHag(vedtakFattet, dokumenter, behandling, eksterneKildeIder)
     }
@@ -75,11 +71,10 @@ internal class VedtakFattetMediator(
     internal fun sendVedtakFattetPåTbdSisForHag(
         vedtakFattet: VedtakFattet,
         dokumenter: HentMeldingerResponse,
-        behandling: SpleisBehandling?,
+        behandling: SpleisBehandling,
         eksterneKildeIder: Map<UUID, UUID>,
     ) {
         if (skalSendesTilSis(vedtakFattet)) {
-            check(behandling != null) { "Behandling må være hentet for å sende melding om vedtak på tbd.sis" }
             val eksternDto = oversettVedtakFattetForHag(vedtakFattet, dokumenter.tilAlleDokumenter(), behandling, eksterneKildeIder)
             val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
             producer.send(

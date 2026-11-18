@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -259,7 +260,6 @@ internal class VedtakFattetRiverTest {
             assertEquals("Kollektiv forsikring", forsikringsvurderingJson["kollektivForsikringNavn"].asString())
             assertEquals(65, forsikringsvurderingJson["dekning"]["grad"].asInt())
             assertEquals(17, forsikringsvurderingJson["dekning"]["fraDag"].asInt())
-            verify(exactly = 0) { spleisClient.hentBehandling(any(), any(), any()) }
         }
 
     @Test
@@ -317,7 +317,41 @@ internal class VedtakFattetRiverTest {
 
             verify { producerMock.send(capture(captureSlot)) }
             assertTrue(captureSlot.none { it.topic() == "tbd.sis" })
-            verify(exactly = 0) { spleisClient.hentBehandling(any(), any(), any()) }
+        }
+
+    @Test
+    fun `henter behandling fra spleis for vedtak for selvstendig næringsdrivende`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+            søknadSendt(idSett)
+            testRapid.sendTestMessage(
+                vedtakFattetMedUtbetalingForSelvstendigNæringsdrivende(
+                    idSett = idSett,
+                    sykepengegrunnlag = BigDecimal("500000.0"),
+                    beregningsgrunnlag = BigDecimal("500000.0"),
+                    erBegrensetTil6G = false,
+                    seksG = BigDecimal("815000.0"),
+                    forsikringsvurderingId = UUID.randomUUID(),
+                ),
+            )
+
+            verify(exactly = 1) { spleisClient.hentBehandling(FØDSELSNUMMER, idSett.behandlingId, any()) }
+            verify { producerMock.send(capture(captureSlot)) }
+            assertEquals(listOf("tbd.vedtak"), captureSlot.map { it.topic() })
+        }
+
+    @Test
+    fun `sender ikke vedtaket når behandlingen ikke kan hentes fra spleis`() =
+        e2e {
+            val idSett = IdSett()
+            søknadSendt(idSett)
+            every { spleisClient.hentBehandling(any(), any(), any()) } throws IllegalStateException("spleis-api svarte ikke")
+
+            assertThrows<IllegalStateException> { vedtakFattetMedUtbetalingSendt(idSett) }
+
+            verify(exactly = 4) { spleisClient.hentBehandling(FØDSELSNUMMER, idSett.behandlingId, any()) }
+            verify(exactly = 0) { producerMock.send(any()) }
         }
 
     @Test
