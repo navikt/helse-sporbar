@@ -355,6 +355,73 @@ internal class VedtakFattetRiverTest {
         }
 
     @Test
+    fun `vedtakFattet har periodene med graderte andre ytelser`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+            val versjon = UUID.randomUUID()
+            graderteAndreYtelserVersjon = versjon
+            every { spAndreYtelserClient.hentPerioder(versjon, FOM, TOM, any()) } returns
+                listOf(
+                    GraderteAndreYtelserPeriode(
+                        fom = LocalDate.of(2020, 1, 3),
+                        tom = LocalDate.of(2020, 1, 9),
+                        ytelser = listOf(YtelseMedGrad("FORELDREPENGER", 40), YtelseMedGrad("OMSORGSPENGER", 20)),
+                    ),
+                )
+            søknadSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett)
+
+            verify { producerMock.send(capture(captureSlot)) }
+            val vedtakFattetJson = captureSlot.single { it.topic() == "tbd.vedtak" }.validertJson()
+            assertEquals(
+                objectMapper.readTree(
+                    """
+                    [
+                      {
+                        "fom": "2020-01-03",
+                        "tom": "2020-01-09",
+                        "ytelser": [
+                          { "type": "FORELDREPENGER", "grad": 40 },
+                          { "type": "OMSORGSPENGER", "grad": 20 }
+                        ]
+                      }
+                    ]
+                    """,
+                ),
+                vedtakFattetJson["graderteAndreYtelser"],
+            )
+        }
+
+    @Test
+    fun `vedtakFattet uten versjon av graderte andre ytelser har tom liste`() =
+        e2e {
+            val captureSlot = mutableListOf<ProducerRecord<String, String>>()
+            val idSett = IdSett()
+            søknadSendt(idSett)
+            vedtakFattetMedUtbetalingSendt(idSett)
+
+            verify { producerMock.send(capture(captureSlot)) }
+            val vedtakFattetJson = captureSlot.single { it.topic() == "tbd.vedtak" }.validertJson()
+            assertEquals(objectMapper.readTree("[]"), vedtakFattetJson["graderteAndreYtelser"])
+            verify(exactly = 0) { spAndreYtelserClient.hentPerioder(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `sender ikke vedtaket når graderte andre ytelser ikke kan hentes`() =
+        e2e {
+            val idSett = IdSett()
+            graderteAndreYtelserVersjon = UUID.randomUUID()
+            every { spAndreYtelserClient.hentPerioder(any(), any(), any(), any()) } throws IllegalStateException("sp-andre-ytelser svarte ikke")
+            søknadSendt(idSett)
+
+            assertThrows<IllegalStateException> { vedtakFattetMedUtbetalingSendt(idSett) }
+
+            verify(exactly = 4) { spAndreYtelserClient.hentPerioder(any(), any(), any(), any()) }
+            verify(exactly = 0) { producerMock.send(any()) }
+        }
+
+    @Test
     fun `vedtakFattet sendes på tbd_sis`() =
         e2e {
             val captureSlot = mutableListOf<ProducerRecord<String, String>>()
@@ -552,6 +619,7 @@ internal class VedtakFattetRiverTest {
                 every { hentForsikringsvurdering(any(), any()) } returns Forsikringsvurdering(null, null, null)
             }
         var utbetalingstidslinje = emptyList<SpleisBehandling.Utbetalingsdag>()
+        var graderteAndreYtelserVersjon: UUID? = null
         val spleisClient =
             mockk<SpleisClient> {
                 every { hentBehandling(any(), any(), any()) } answers {
@@ -561,9 +629,11 @@ internal class VedtakFattetRiverTest {
                         organisasjonsnummer = ORGNUMMER,
                         yrkesaktivitetstype = "ARBEIDSTAKER",
                         utbetalingstidslinje = utbetalingstidslinje,
+                        graderteAndreYtelserVersjon = graderteAndreYtelserVersjon,
                     )
                 }
             }
+        val spAndreYtelserClient = mockk<SpAndreYtelserClient>()
 
         val vedtakFattetMediator =
             VedtakFattetMediator(
@@ -571,6 +641,7 @@ internal class VedtakFattetRiverTest {
                 producer = producerMock,
                 spForsikringClient = spForsikringClient,
                 spleisClient = spleisClient,
+                spAndreYtelserClient = spAndreYtelserClient,
             )
         val utbetalingMediator =
             UtbetalingMediator(

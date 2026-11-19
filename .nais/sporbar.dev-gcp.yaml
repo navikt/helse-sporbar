@@ -11,6 +11,8 @@ spec:
       value: api://dev-gcp.tbd.sp-forsikring/.default
     - name: SPLEIS_SCOPE
       value: api://dev-gcp.tbd.spleis-api/.default
+    - name: SP_ANDRE_YTELSER_SCOPE
+      value: api://dev-gcp.tbd.sp-andre-ytelser/.default
     - name: KAFKA_RESET_POLICY
       value: earliest
     - name: NULLE_UT_TOMME_OPPDRAG

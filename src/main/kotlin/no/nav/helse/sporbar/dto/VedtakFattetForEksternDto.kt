@@ -24,8 +24,9 @@ data class VedtakFattetForEksternDto(
     val saksbehandler: NavnOgIdentForEksternDto?,
     val beslutter: NavnOgIdentForEksternDto?,
     val forsikringsvurdering: ForsikringsvurderingForEksternDto?,
+    val graderteAndreYtelser: List<GraderteAndreYtelserPeriodeForEksternDto>,
 ) {
-    val versjon: String = "1.3.0"
+    val versjon: String = "1.4.0"
 
     @Deprecated("denne verdien aner vi ikke om brukes av noen, og utregningen er jo også ganske suspekt")
     val begrensning: String =
@@ -106,6 +107,17 @@ data class ForsikringsvurderingForEksternDto(
 data class DekningForEksternDto(
     val grad: Int,
     val fraDag: Int,
+)
+
+data class GraderteAndreYtelserPeriodeForEksternDto(
+    val fom: LocalDate,
+    val tom: LocalDate,
+    val ytelser: List<YtelseMedGradForEksternDto>,
+)
+
+data class YtelseMedGradForEksternDto(
+    val type: String,
+    val grad: Int,
 )
 
 data class NavnOgIdentForEksternDto(

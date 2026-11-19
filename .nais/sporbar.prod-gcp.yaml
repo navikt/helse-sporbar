@@ -14,5 +14,7 @@ spec:
       value: api://prod-gcp.tbd.sp-forsikring/.default
     - name: SPLEIS_SCOPE
       value: api://prod-gcp.tbd.spleis-api/.default
+    - name: SP_ANDRE_YTELSER_SCOPE
+      value: api://prod-gcp.tbd.sp-andre-ytelser/.default
     - name: KAFKA_RESET_POLICY
       value: none

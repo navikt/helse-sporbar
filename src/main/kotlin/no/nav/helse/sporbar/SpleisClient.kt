@@ -23,6 +23,7 @@ internal data class SpleisBehandling(
     val organisasjonsnummer: String,
     val yrkesaktivitetstype: String,
     val utbetalingstidslinje: List<Utbetalingsdag>,
+    val graderteAndreYtelserVersjon: UUID? = null,
 ) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     internal data class Utbetalingsdag(

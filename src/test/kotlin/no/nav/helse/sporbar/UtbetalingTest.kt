@@ -289,6 +289,7 @@ internal class UtbetalingTest {
                             )
                         }
                     },
+                spAndreYtelserClient = mockk(),
             )
 
         val utbetalingMediator =

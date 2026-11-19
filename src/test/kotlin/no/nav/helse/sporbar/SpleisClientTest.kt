@@ -113,6 +113,28 @@ internal class SpleisClientTest {
     }
 
     @Test
+    fun `parser versjonen av graderte andre ytelser fra spleis-api`() {
+        val versjon = UUID.randomUUID()
+        svar(200, behandlingMedVersjon("\"$versjon\""))
+        assertEquals(versjon, client.hentBehandling(fødselsnummer, behandlingId, "callId").graderteAndreYtelserVersjon)
+
+        svar(200, behandlingMedVersjon("null"))
+        assertNull(client.hentBehandling(fødselsnummer, behandlingId, "callId").graderteAndreYtelserVersjon)
+    }
+
+    private fun behandlingMedVersjon(versjon: String) =
+        """
+        {
+          "vedtaksperiodeId": "${UUID.randomUUID()}",
+          "behandlingId": "$behandlingId",
+          "organisasjonsnummer": "987654321",
+          "yrkesaktivitetstype": "ARBEIDSTAKER",
+          "utbetalingstidslinje": [],
+          "graderteAndreYtelserVersjon": $versjon
+        }
+        """
+
+    @Test
     fun `feil fra spleis-api gir exception uten personopplysninger`() {
         listOf(404, 500).forEach { status ->
             svar(status, """{"fødselsnummer":"$fødselsnummer"}""")

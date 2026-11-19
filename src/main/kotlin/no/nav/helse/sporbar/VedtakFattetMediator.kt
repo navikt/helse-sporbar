@@ -21,6 +21,7 @@ internal class VedtakFattetMediator(
     private val producer: KafkaProducer<String, String>,
     private val spForsikringClient: SpForsikringClient,
     private val spleisClient: SpleisClient,
+    private val spAndreYtelserClient: SpAndreYtelserClient,
 ) {
     internal fun vedtakFattet(vedtakFattet: VedtakFattet) {
         val callId = UUID.randomUUID().toString()
@@ -41,8 +42,14 @@ internal class VedtakFattetMediator(
             retryBlocking {
                 spleisClient.hentBehandling(vedtakFattet.originaltFødselsnummer, vedtakFattet.behandlingId, callId)
             }
+        val graderteAndreYtelser =
+            behandling.graderteAndreYtelserVersjon?.let { versjon ->
+                retryBlocking {
+                    spAndreYtelserClient.hentPerioder(versjon, vedtakFattet.fom, vedtakFattet.tom, callId)
+                }
+            } ?: emptyList()
         val eksterneKildeIder = if (skalSendesTilSis(vedtakFattet)) eksterneKildeIder(behandling, dokumenter, callId) else emptyMap()
-        sendVedtakFattetPåTbdVedtak(vedtakFattet, dokumenter, forsikringsvurdering)
+        sendVedtakFattetPåTbdVedtak(vedtakFattet, dokumenter, forsikringsvurdering, graderteAndreYtelser)
         sendVedtakFattetPåTbdSisForHag(vedtakFattet, dokumenter, behandling, eksterneKildeIder)
     }
 
@@ -94,8 +101,9 @@ internal class VedtakFattetMediator(
         vedtakFattet: VedtakFattet,
         dokumenter: HentMeldingerResponse,
         forsikringsvurdering: Forsikringsvurdering?,
+        graderteAndreYtelser: List<GraderteAndreYtelserPeriode>,
     ) {
-        val eksternDto = oversett(vedtakFattet, dokumenter.tilSøknadsdokumenter(), forsikringsvurdering)
+        val eksternDto = oversett(vedtakFattet, dokumenter.tilSøknadsdokumenter(), forsikringsvurdering, graderteAndreYtelser)
         val meldingForEkstern = objectMapper.writeValueAsString(eksternDto)
         producer.send(
             ProducerRecord(
@@ -114,6 +122,7 @@ internal class VedtakFattetMediator(
         vedtakFattet: VedtakFattet,
         dokumenter: List<Dokument>,
         forsikringsvurdering: Forsikringsvurdering?,
+        graderteAndreYtelser: List<GraderteAndreYtelserPeriode>,
     ): VedtakFattetForEksternDto =
         VedtakFattetForEksternDto(
             fødselsnummer = vedtakFattet.fødselsnummer,
@@ -176,6 +185,14 @@ internal class VedtakFattetMediator(
                                     fraDag = dekning.fraDag,
                                 )
                             },
+                    )
+                },
+            graderteAndreYtelser =
+                graderteAndreYtelser.map { periode ->
+                    GraderteAndreYtelserPeriodeForEksternDto(
+                        fom = periode.fom,
+                        tom = periode.tom,
+                        ytelser = periode.ytelser.map { YtelseMedGradForEksternDto(it.type, it.grad) },
                     )
                 },
         )
