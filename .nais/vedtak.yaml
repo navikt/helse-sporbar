@@ -21,6 +21,9 @@ spec:
         - team: tbd
           application: sporbar
           access: readwrite
+        - team: tbd
+          application: spokelse
+          access: read
         - team: flex
           application: spinnsyn-backend
           access: read
